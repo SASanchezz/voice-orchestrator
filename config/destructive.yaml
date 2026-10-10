@@ -1,0 +1,29 @@
+# Destructive actions. Hot-reloaded on save; also editable by voice ("add terraform apply to destructive").
+#
+# Anything matching here can never be auto-approved or "always allowed".
+# To approve, you must SAY the confirm phrase: "confirm <verb>" (e.g. "confirm push").
+#
+#   pattern: case-insensitive regex, tested against the command text
+#            (Bash: the command; other tools: "<Tool> <file path or input>")
+#   verb:    the word you have to say after "confirm"
+#   tools:   optional, which tools the rule applies to (default: Bash); workers' tools or the operator's own
+
+rules:
+  - { pattern: '\bgit\s+push\b',                 verb: push }
+  - { pattern: '\bgit\s+commit\b',               verb: commit }
+  - { pattern: '\bgit\s+reset\s+--hard\b',       verb: reset }
+  - { pattern: '\bgit\s+clean\b',                verb: clean }
+  - { pattern: '\bgit\s+branch\s+-D\b',          verb: delete }
+  - { pattern: '\bgit\s+(checkout|restore)\s+(--\s+)?\.(\s|$)', verb: discard }
+  - { pattern: '\bgit\s+rebase\b',               verb: rebase }
+  - { pattern: '\bgit\s+stash\s+(drop|clear)\b', verb: drop }
+  - { pattern: '\brm\s+(-\w*[rf]\w*\s+)',        verb: delete }
+  - { pattern: '\b(drop|truncate)\s+(table|database|schema)\b', verb: drop }
+  - { pattern: '\bnpm\s+publish\b',              verb: publish }
+  - { pattern: '\bdocker\s+(system\s+prune|volume\s+rm|rm)\b', verb: prune }
+  - { pattern: '\bkubectl\s+(delete|apply)\b',   verb: apply }
+  - { pattern: '\bterraform\s+(apply|destroy)\b', verb: apply }
+  - { pattern: '\b(migrate|migration)\b.*\b(prod|production)\b', verb: migrate }
+  - { pattern: '\bdeploy\b',                     verb: deploy }
+  - { pattern: '^mcp__claude_ai_Google_Calendar__delete_event\b', verb: delete, tools: [mcp__claude_ai_Google_Calendar__delete_event] }
+  - { pattern: '^mcp__claude_ai_Google_Calendar__update_event\b', verb: update, tools: [mcp__claude_ai_Google_Calendar__update_event] }

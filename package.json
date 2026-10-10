@@ -1,0 +1,26 @@
+{
+  "name": "voice-orchestrator",
+  "version": "1.0.0",
+  "description": "Push-to-talk voice operator for multiple Claude Code workers across two accounts",
+  "scripts": {
+    "start": "tsx src/supervisor.ts",
+    "start:text": "tsx src/supervisor.ts --text",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/*.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.292",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

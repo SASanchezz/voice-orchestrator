@@ -1,0 +1,5 @@
+node_modules/
+state/
+.playwright-mcp/
+config/config.yaml
+config/notes.md
