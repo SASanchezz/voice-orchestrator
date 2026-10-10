@@ -65,6 +65,7 @@ export type AppEvent = EventSubject &
   (
     | (TaskSubject & { kind: "task_done"; result: string })
     | (TaskSubject & { kind: "task_failed"; error: string })
+    | { kind: "usage_limit"; account: string; resetsAt?: string; savedTasks: number }
     | { kind: "permission"; id: string; description: string; destructiveVerb?: string; reminder?: boolean }
   );
 

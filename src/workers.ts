@@ -8,6 +8,8 @@ import { Registry } from "./registry.js";
 import { PermissionBroker } from "./permissions.js";
 import { DestructiveList } from "./destructive.js";
 import type { ChatKind, SessionMessage } from "./chats.js";
+import { detectUsageLimit, type UsageLimits } from "./usage-limit.js";
+import type { SavedTodo } from "./todo.js";
 
 /** The parts of an assistant message block the chat uses. */
 interface ContentBlock {
@@ -37,9 +39,32 @@ export class WorkerManager extends EventEmitter {
     private registry: Registry,
     private broker: PermissionBroker,
     private destructive: DestructiveList,
+    private limits: UsageLimits,
     private query: QueryFn = sdkQuery,
   ) {
     super();
+  }
+
+  /** Tasks saved to the todo list because their account hit a usage limit, oldest first. */
+  savedTasks(): SavedTodo[] {
+    return this.limits.saved();
+  }
+
+  /** Runs a saved task in its project's active session and takes it off the todo list. */
+  runSavedTask(id: string): string {
+    const saved = this.limits.find(id);
+    if (!this.cfg.projects[saved.project]) throw new Error(`Project ${saved.project} is no longer known; todo task ${id} kept.`);
+    if (!existsSync(this.cfg.projects[saved.project].path)) throw new Error(`Folder for ${saved.project} not found; todo task ${id} kept.`);
+    this.limits.endEpisode(saved.account); // a new limit failure is announced again
+    const started = this.run(saved.project, saved.task);
+    this.limits.discard(id);
+    return started;
+  }
+
+  discardSavedTask(id: string): string {
+    const saved = this.limits.find(id);
+    this.limits.discard(id);
+    return `Removed todo task ${id} (${saved.project}).`;
   }
 
   /** Start a task in the project's active session, or queue it if that session is busy. */
@@ -156,6 +181,7 @@ export class WorkerManager extends EventEmitter {
         : {};
     };
 
+    let failureReported = false;
     try {
       const q = this.query({
         prompt:
@@ -184,13 +210,12 @@ export class WorkerManager extends EventEmitter {
             this.registry.updateSession(sessionId, { status: "done", lastResult: msg.result, finishedAt: new Date().toISOString(), costUsd: cost });
             this.registry.recordTask(sessionId, { task: instruction, outcome: "done", result: msg.result });
             this.registry.emitEvent({ kind: "task_done", ...subject(), result: msg.result.slice(-1200) });
+            this.limits.endEpisode(this.registry.get(project).profile);
             this.say(sessionId, "status", "Finished.");
           } else {
-            const error = msg.subtype === "success" ? msg.result : msg.subtype;
-            this.registry.updateSession(sessionId, { status: "failed", lastError: error, finishedAt: new Date().toISOString(), costUsd: cost });
-            this.registry.recordTask(sessionId, { task: instruction, outcome: "failed", result: error });
-            this.registry.emitEvent({ kind: "task_failed", ...subject(), error });
-            this.say(sessionId, "status", `Failed: ${error}`, true);
+            this.registry.updateSession(sessionId, { costUsd: cost });
+            this.fail(sessionId, instruction, msg.subtype === "success" ? msg.result : msg.subtype);
+            failureReported = true;
           }
         }
       }
@@ -199,14 +224,24 @@ export class WorkerManager extends EventEmitter {
         this.registry.updateSession(sessionId, { status: "stopped", finishedAt: new Date().toISOString() });
         this.registry.recordTask(sessionId, { task: instruction, outcome: "stopped", result: "Stopped by the user." });
         this.say(sessionId, "status", "Stopped.");
-      } else {
-        const error = (e as Error).message;
-        this.registry.updateSession(sessionId, { status: "failed", lastError: error });
-        this.registry.recordTask(sessionId, { task: instruction, outcome: "failed", result: error });
-        this.registry.emitEvent({ kind: "task_failed", ...subject(), error });
-        this.say(sessionId, "status", `Failed: ${error}`, true);
-      }
+      } else if (!failureReported) this.fail(sessionId, instruction, (e as Error).message); // else Claude Code repeating the error result it just sent
     }
+  }
+
+  /** A failed task; one that hit its account's usage limit is saved to todo with the session's queue instead of being reported. */
+  private fail(sessionId: string, instruction: string, error: string) {
+    const { project, number: sessionNumber, queued } = this.registry.session(sessionId);
+    this.registry.updateSession(sessionId, { status: "failed", lastError: error, finishedAt: new Date().toISOString() });
+    const limit = detectUsageLimit(error);
+    if (!limit) this.registry.recordTask(sessionId, { task: instruction, outcome: "failed", result: error }); // a limit hit never ran; it waits in todo
+    if (limit) {
+      this.registry.updateSession(sessionId, { queued: [] });
+      this.limits.park(sessionId, [instruction, ...queued], limit);
+      this.say(sessionId, "status", `The ${this.registry.get(project).profile} account hit its usage limit; saved to todo: this task${queued.length ? ` and ${queued.length} queued` : ""}.`, true);
+      return;
+    }
+    this.registry.emitEvent({ kind: "task_failed", project, session: sessionId, label: this.registry.labelOf(sessionId), task: instruction, sessionNumber, error });
+    this.say(sessionId, "status", `Failed: ${error}`, true);
   }
 
   /** The worker's words go to the session's chat; its tool calls also become its current activity. */

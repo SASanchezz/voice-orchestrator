@@ -29,6 +29,7 @@ hold key ─► sox ─► whisper.cpp ─► Orchestrator (personal account, Ag
 - **Pause and keep talking.** Release the key and press it again within `voice.mergeWindowSeconds` (1.5 s by default, in `config/config.yaml`) and both recordings go out as one message, in the order you said them. The web UI shows "Holding your message…" meanwhile. Typed messages and notifications are never held.
 - **Restart by voice.** Say "restart the orchestrator" and it confirms aloud, then restarts the whole app, picking up code changes. `npm start` runs a small supervisor (`src/supervisor.ts`) that starts the app again once it has fully exited, so the port, hotkey helper and workers are never doubled. Running worker tasks are stopped; projects, sessions, history and notes are kept, and the open UI page reconnects by itself.
 - **Reset on request.** Say "restart your context" to get a fresh orchestrator session that keeps a short handoff, or "forget everything and start fresh" for one with no handoff. Project history is kept either way.
+- **Usage limits go to a todo list.** When a worker's account hits its usage or spend limit ("You've hit your org's monthly spend limit", "usage limit", "session limit resets …"), the task isn't retried or announced as a failure. It is saved, with anything queued behind it, to `state/todo/`: one Markdown file per task, with the project, session number, account, time saved, the limit's reset time if the error gave one, and the full task text. You hear one message per account per limit episode, for example "webshop hit the work account limit; resets 9pm (Europe/Warsaw); 2 tasks saved to todo"; further limit failures on that account are saved quietly. The episode ends when a task on that account succeeds, when you re-run saved tasks, or when the error names a new reset time. Ask "what's in my todo?" or "run all todo tasks" (tools `list_todo`, `run_todo`, `discard_todo`); running one takes it off the list. You can also edit or delete the files by hand.
 - **Memory across restarts.** Each project's last 10 finished tasks (instruction plus the worker's closing note) are kept in `state/registry.json`. The orchestrator's last 20 exchanges and its handoff are kept in `state/conversation.json`. After `npm start`, the new session sees both, so "what did webshop do last time?" still works.
 - **Work code stays on the work account.** `summarize_changes` runs inside the project's own account (a read-only fork of its session). Only the 3–4 spoken sentences reach the personal orchestrator.
 
@@ -100,6 +101,7 @@ Pressing the key while Claude is speaking cuts it off. Notifications wait until 
 | `src/workers.ts` | per-project headless Claude Code sessions |
 | `src/permissions.ts` | permission broker (voice approval, confirm-phrase check) |
 | `src/voice.ts` | push-to-talk, whisper.cpp, `say`; text mode |
+| `src/usage-limit.ts`, `src/todo.ts` | spotting usage-limit failures, one message per limit episode, and the todo folder |
 | `src/utterance-merger.ts` | joins recordings made within `voice.mergeWindowSeconds` of each other into one message |
 | `src/ui/server.ts` | web UI server: live state over server-sent events, actions over POST, token check |
 | `src/ui/feed.ts` | the UI's timeline of conversation, worker events and clicks, behind `state/feed.jsonl` |
@@ -107,6 +109,7 @@ Pressing the key while Claude is speaking cuts it off. Notifications wait until 
 | `src/screen.ts` | screenshot of the display under the cursor, one-day retention |
 | `state/registry.json` | session ids and statuses (survives restarts) |
 | `state/conversation.json` | orchestrator's recent exchanges and handoff (survives restarts) |
+| `state/todo/` | tasks put aside because their account hit a usage limit, one Markdown file each |
 | `state/feed.jsonl` | the Assistant chat shown in the web UI (survives restarts; emptied only by **Clear**) |
 | `src/memory.ts` | conversation memory behind `state/conversation.json` |
 

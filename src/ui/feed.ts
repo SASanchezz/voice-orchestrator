@@ -3,6 +3,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { resolve } from "node:path";
 import { STATE_DIR } from "../config.js";
 import type { AppEvent, Registry } from "../registry.js";
+import { usageLimitMessage } from "../usage-limit.js";
 import type { ConversationLine, InputSource, Orchestrator } from "../orchestrator.js";
 
 export interface FeedEntry {
@@ -61,6 +62,8 @@ export class Feed extends EventEmitter {
     registry.on("event", (e: AppEvent) => {
       if (e.kind === "task_done") this.add({ kind: "event", about: e.label, text: "finished its task", detail: e.result, taskOutcome: "done" });
       if (e.kind === "task_failed") this.add({ kind: "event", about: e.label, text: "failed", detail: e.error, failed: true, taskOutcome: "failed" });
+      if (e.kind === "usage_limit")
+        this.add({ kind: "event", about: e.label, text: usageLimitMessage(e.project, e.account, e.resetsAt, e.savedTasks), failed: true });
       if (e.kind === "permission" && !e.reminder) this.add({ kind: "event", about: e.label, text: `asks: ${e.description}` });
     });
   }

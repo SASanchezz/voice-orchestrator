@@ -18,6 +18,8 @@ import type { HookCallback, PermissionResult, PermissionUpdate, SDKUserMessage }
 import { setStateDir, DESTRUCTIVE_PATH, type AppConfig } from "./config.js";
 import { DestructiveList } from "./destructive.js";
 import { Registry, type AppEvent } from "./registry.js";
+import { TodoList } from "./todo.js";
+import { UsageLimits } from "./usage-limit.js";
 import { PermissionBroker } from "./permissions.js";
 import { WorkerManager, type QueryFn } from "./workers.js";
 import { Orchestrator } from "./orchestrator.js";
@@ -74,6 +76,7 @@ const account = (dir?: string) => (dir === personalDir ? "personal" : dir === wo
  * Instruction script, one step per line:
  *   run: <shell command>   -> asks permission like Claude Code does, then really executes it
  *   sleep: <ms>            -> simulates a long step (abortable)
+ *   error: <text>          -> ends with an error result, then throws it again, as Claude Code does
  */
 async function* fakeWorker(prompt: string, o: any): AsyncGenerator<any> {
   const acct = account(o.env?.CLAUDE_CONFIG_DIR);
@@ -92,6 +95,10 @@ async function* fakeWorker(prompt: string, o: any): AsyncGenerator<any> {
   for (const line of prompt.split("\n").map((l) => l.trim())) {
     const [kind, ...rest] = line.split(":");
     const arg = rest.join(":").trim();
+    if (kind === "error") {
+      yield { type: "result", subtype: "success", is_error: true, result: arg, total_cost_usd: 0, session_id: sid };
+      throw new Error(`Claude Code returned an error result: ${arg}`);
+    }
     if (kind === "sleep") {
       await new Promise<void>((res, rej) => {
         const t = setTimeout(res, Number(arg));
@@ -136,7 +143,7 @@ const uiNotesSeen: string[] = [];
 
 /** Very small rule-based stand-in for the LLM: maps phrases to the same tool calls the model would make. */
 async function brain(raw: string): Promise<string> {
-  const notes = raw.match(/^(\[UI\][^\n]*\n)+/)?.[0] ?? "";
+  const notes = raw.match(/^(\[(UI|NOTICE)\][^\n]*\n)+/)?.[0] ?? "";
   uiNotesSeen.push(...notes.split("\n").filter(Boolean));
   const msg = raw.slice(notes.length);
   const call = (n: string, a: Record<string, unknown> = {}) => orch.callTool(n, a);
@@ -170,6 +177,8 @@ async function brain(raw: string): Promise<string> {
   if ((m = u.match(/^reset context (notes|nothing)$/))) return call("reset_context", { keep: m[1] });
   if (/^restart yourself$/.test(u)) return call("restart_orchestrator");
   if (/^what's on my screen$/.test(u)) return call("look_at_screen");
+  if (/^list todo$/.test(u)) return call("list_todo");
+  if ((m = u.match(/^run todo (\S+)$/))) return call("run_todo", { id: m[1] });
   return `I didn't get that: ${u}`;
 }
 
@@ -241,7 +250,8 @@ const screen = new TestScreen();
 const destructive = new DestructiveList(destFile, false);
 const registry = new Registry({});
 const broker = new PermissionBroker(cfg, registry, destructive);
-const workers = new WorkerManager(cfg, registry, broker, destructive, fakeQuery);
+const todo = new TodoList(join(root, "state", "todo"));
+const workers = new WorkerManager(cfg, registry, broker, destructive, new UsageLimits(todo, registry), fakeQuery);
 const notesFile = join(root, "notes.md");
 writeFileSync(notesFile, "# Assistant notes\n\n## Aliases\n\n- dbadmin is also called database admin.\n");
 orch = new Orchestrator(cfg, registry, workers, broker, destructive, voice, screen, new ConversationMemory(), new AssistantNotes(notesFile), fakeQuery);
@@ -869,6 +879,104 @@ test("ui: clearing the assistant keeps project history", async () => {
   const i = mark();
   voice.say("history dbadmin");
   assert.match(await voice.heard(/\[done\]/, i), /echo hello > dummy\.txt/);
+});
+
+// ------------------------------------------------------------------ usage limits
+
+const LIMIT_ERROR =
+  "You've hit your org's monthly spend limit · run /usage-credits to ask your admin for a higher limit · your session limit resets 9pm (Europe/Warsaw)";
+const LIMIT_NOTICE = /^dbadmin hit the personal account limit; resets 9pm \(Europe\/Warsaw\); \d+ tasks? saved to todo$/;
+
+async function untilIdle(project: string) {
+  while (workers.isBusy(project)) await pause(20);
+}
+
+/** Runs a dbadmin task that fails on the account limit; resolves once it has ended. */
+async function hitLimit(task: string) {
+  await untilIdle("dbadmin");
+  workers.run("dbadmin", `${task}\nerror: ${LIMIT_ERROR}`);
+  await pause(50);
+  await untilIdle("dbadmin");
+}
+
+function emptyTodo() {
+  for (const saved of todo.list()) todo.remove(saved.id);
+}
+
+test("limit: a task that hits the account limit is saved to todo with its details", async () => {
+  await hitLimit("Add sorting to the users list");
+  const [saved] = todo.list();
+  assert.deepEqual(
+    [saved.project, saved.sessionNumber, saved.account, saved.resetsAt, saved.task],
+    ["dbadmin", registry.activeSession("dbadmin").number, "personal", "9pm (Europe/Warsaw)", `Add sorting to the users list\nerror: ${LIMIT_ERROR}`],
+  );
+});
+
+test("limit: the user is told once, with the reset time and how many tasks were saved", async () => {
+  assert.match(await voice.heard(LIMIT_NOTICE, 0), /1 task saved to todo$/);
+});
+
+test("limit: the failure is not also reported as a failed task", async () => {
+  await feedHas(/account limit/);
+  assert.equal(feed.recent().filter((e) => /spend limit/.test(e.detail ?? "")).length, 0);
+});
+
+test("limit: the duplicate error Claude Code throws is ignored", async () => {
+  assert.equal(feed.recent().filter((e) => /account limit/.test(e.text)).length, 1);
+});
+
+test("limit: a second limit failure on the same account is saved quietly", async () => {
+  const i = mark();
+  await hitLimit("Add filters to the events list");
+  await pause(300);
+  assert.deepEqual([todo.list().length, countSince(i, LIMIT_NOTICE)], [2, 0]);
+});
+
+test("limit: tasks queued behind a limit failure are saved to todo, not run", async () => {
+  emptyTodo();
+  await untilIdle("dbadmin");
+  workers.run("dbadmin", `sleep: 100\nerror: ${LIMIT_ERROR}`);
+  workers.run("dbadmin", "Queued after the limit");
+  await pause(50);
+  await untilIdle("dbadmin");
+  assert.deepEqual(todo.list().map((t) => t.task.split("\n")[0]), ["sleep: 100", "Queued after the limit"]);
+});
+
+test("limit: the assistant can list the todo tasks", async () => {
+  const i = mark();
+  voice.say("list todo");
+  await voice.heard(/: dbadmin session \d+, personal account, saved .*, limit resets 9pm \(Europe\/Warsaw\)\n  Queued after the limit/, i);
+});
+
+test("limit: running all todo tasks starts them and empties the list", async () => {
+  emptyTodo();
+  todo.save({ project: "dbadmin", sessionNumber: 1, account: "personal", savedAt: new Date().toISOString(), task: "sleep: 5" });
+  const i = mark();
+  voice.say("run todo all");
+  await voice.heard(/^Started on dbadmin/, i);
+  assert.equal(todo.list().length, 0);
+});
+
+test("limit: after a retry, hitting the limit again is announced again", async () => {
+  emptyTodo();
+  await untilIdle("dbadmin");
+  todo.save({ project: "dbadmin", sessionNumber: 1, account: "personal", savedAt: new Date().toISOString(), task: `retry\nerror: ${LIMIT_ERROR}` });
+  const i = mark();
+  voice.say("run todo all");
+  await voice.heard(LIMIT_NOTICE, i);
+  emptyTodo();
+});
+
+test("an ordinary failure is reported once, not again for Claude Code's repeated error", async () => {
+  await untilIdle("dbadmin");
+  const failures: AppEvent[] = [];
+  const listen = (e: AppEvent) => e.kind === "task_failed" && failures.push(e);
+  registry.on("event", listen);
+  workers.run("dbadmin", "error: the build broke");
+  await pause(50);
+  await untilIdle("dbadmin");
+  registry.off("event", listen);
+  assert.equal(failures.length, 1);
 });
 
 test("cleanup: remove dummy files from both repos", () => {

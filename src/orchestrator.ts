@@ -13,6 +13,7 @@ import type { VoiceIO, VoiceInputState } from "./voice.js";
 import type { ConversationMemory } from "./memory.js";
 import { NOTE_SECTIONS, type AssistantNotes } from "./notes.js";
 import { spokenGist } from "./gist.js";
+import { usageLimitMessage } from "./usage-limit.js";
 import type { ScreenSource } from "./screen.js";
 
 const run = promisify(execFile);
@@ -35,6 +36,7 @@ How to talk:
 - Anything after a line "[SCREEN]" is shown in the web UI's chat and never spoken. Use it when a fuller explanation helps: say the short version, then [SCREEN] and the detailed one (plain text; short lists and file names are fine there).
 - Reply in the language the user spoke.
 - Never invent status. Use project_status or list_projects when asked about progress.
+- When an account hits its usage or spend limit, its failed tasks are saved to a todo list instead of being retried; the user is told once. When they ask what's waiting or want to retry after the limit resets, use list_todo and run_todo.
 - When the user refers to earlier work on a project ("what did webshop do yesterday", "continue from last time"), call project_history. It survives restarts.
 - "Auto mode" means workers run everything except destructive commands without asking; "ask mode" means every request goes to the user. Switch with set_permission_mode when asked.
 - When the user asks to restart the orchestrator or the app itself (not just your context), call restart_orchestrator and say a short confirmation like "Restarting now, back in a few seconds." If list_projects shows a task running, tell the user it will be stopped and ask first.
@@ -54,6 +56,7 @@ What you control:
 
 Incoming messages:
 - "[USER] ..." is the user speaking.
+- "[NOTICE] ..." lines report what the user was already told (e.g. an account hit its usage limit). Don't repeat them; use them if the user asks.
 - "[UI] ..." lines report what the user did by clicking in the web UI (answered a permission, sent a task directly). Treat them as done; don't ask about them again.
 - "[EVENT] ..." is a notification. Announce it briefly. For finished or failed tasks the user has already heard "<project> session <n> done: <a few words of the task>" (or "failed"). If the task answered a question the user asked, give a brief spoken answer (a few short sentences), then [SCREEN] and the full explanation from the worker's closing note. Otherwise start your reply with [SCREEN], so nothing more is spoken: say on screen which project finished and offer details ("Want details?"); don't summarize the full result unless asked.
 - "[PERMISSION pN] ..." is a worker waiting for approval. Say which project and what it wants in plain words, then: "Allow once, always, or deny?". When the user answers, call answer_permission with that id.
@@ -108,7 +111,12 @@ export type InputSource = "voice" | "ui";
 type Input =
   | { kind: "user"; text: string; source: InputSource }
   | { kind: "event"; text: string; permissionId?: string; urgent: boolean; announcement?: string }
+  /** Said once and shown, without a model turn; the model hears of it with your next message. */
+  | { kind: "notice"; text: string; spoken: string }
   | { kind: "clear"; saved: () => void; failed: (error: unknown) => void };
+
+/** What the model gets a turn for. */
+type TurnInput = Extract<Input, { kind: "user" | "event" }>;
 
 /** One line of the conversation, for the UI feed. */
 export interface ConversationLine {
@@ -161,14 +169,18 @@ export class Orchestrator extends EventEmitter {
     this.defs = this.toolDefs();
     voice.onPress(() => screen.capture()); // what you're looking at when you start asking, not seconds later
     voice.onUtterance((t) => this.enqueue({ kind: "user", text: t, source: "voice" }));
-    registry.on("event", (e: AppEvent) =>
-      this.enqueue({
-        kind: "event",
-        text: this.describeEvent(e),
-        permissionId: e.kind === "permission" ? e.id : undefined,
-        urgent: e.kind !== "task_done",
-        announcement: announcementFor(e),
-      }));
+    registry.on("event", (e: AppEvent) => this.enqueue(this.inputFor(e)));
+  }
+
+  private inputFor(e: AppEvent): Input {
+    if (e.kind === "usage_limit") return { kind: "notice", text: this.describeEvent(e), spoken: usageLimitMessage(e.project, e.account, e.resetsAt, e.savedTasks) };
+    return {
+      kind: "event",
+      text: this.describeEvent(e),
+      permissionId: e.kind === "permission" ? e.id : undefined,
+      urgent: e.kind !== "task_done",
+      announcement: announcementFor(e),
+    };
   }
 
   /** A message typed in the UI; handled like speech, answered on screen. */
@@ -221,6 +233,8 @@ export class Orchestrator extends EventEmitter {
           `[PERMISSION ${e.id}] ${e.reminder ? "(reminder, still waiting) " : ""}${e.label} wants approval for ${e.description}` +
           (e.destructiveVerb ? ` -- DESTRUCTIVE: user must say "confirm ${e.destructiveVerb}".` : "")
         );
+      case "usage_limit":
+        return `[NOTICE] ${usageLimitMessage(e.project, e.account, e.resetsAt, e.savedTasks)}. Later limit failures on this account are saved to todo without notice.`;
     }
   }
 
@@ -294,6 +308,16 @@ export class Orchestrator extends EventEmitter {
       tool("run_task", "Send an instruction to a project's coding worker. Queued if it is busy.",
         { project, instruction: z.string().describe("What the worker should do, in plain words") },
         async ({ project: p, instruction }) => text(this.workers.run(need(p), instruction))),
+
+      tool("list_todo", "Tasks saved to the todo list because their account hit a usage limit: id, project, session, account, when saved, when the limit resets, and the task.", {},
+        async () => text(this.todoListing())),
+
+      tool("run_todo", "Run a saved todo task (or all of them) in its project's active session, like run_task, and take it off the list. Use after the limit has reset, when the user asks.",
+        { id: z.string().describe('A todo id from list_todo, or "all"') },
+        async ({ id }) => text(this.runTodo(id))),
+
+      tool("discard_todo", "Delete a saved todo task without running it, when the user asks.", { id: z.string().describe("A todo id from list_todo") },
+        async ({ id }) => text(this.workers.discardSavedTask(id))),
 
       tool("project_history", "A project's recent finished tasks with the worker's closing notes, including ones from before a restart.",
         { project },
@@ -400,6 +424,28 @@ export class Orchestrator extends EventEmitter {
     if (!d) throw new Error(`no tool ${name}`);
     const r = await d.handler(args, {});
     return r.content.map((c) => (c.type === "text" ? c.text : `[${c.type}]`)).join("\n");
+  }
+
+  private todoListing(): string {
+    const saved = this.workers.savedTasks();
+    if (!saved.length) return "The todo list is empty.";
+    return saved
+      .map((t) => `${t.id}: ${t.project} session ${t.sessionNumber}, ${t.account} account, saved ${t.savedAt}${t.resetsAt ? `, limit resets ${t.resetsAt}` : ""}\n  ${t.task.slice(0, 300)}`)
+      .join("\n");
+  }
+
+  private runTodo(id: string): string {
+    const ids = id === "all" ? this.workers.savedTasks().map((t) => t.id) : [id];
+    if (!ids.length) return "The todo list is empty.";
+    return ids.map((one) => this.runOneTodo(one)).join("\n");
+  }
+
+  private runOneTodo(id: string): string {
+    try {
+      return this.workers.runSavedTask(id);
+    } catch (error) {
+      return (error as Error).message;
+    }
   }
 
   /** For tests: set the transcript that permission/destructive checks see. */
@@ -583,6 +629,10 @@ export class Orchestrator extends EventEmitter {
           await this.clearWithHandoff(input);
           continue;
         }
+        if (input.kind === "notice") {
+          await this.tell(input);
+          continue;
+        }
         if (input.kind === "event" && this.isAnsweredPermission(input)) continue;
         if (input.kind === "user") {
           this.openQuestion = undefined;
@@ -611,7 +661,7 @@ export class Orchestrator extends EventEmitter {
     this.emit("restart");
   }
 
-  private finishTurn(input: Exclude<Input, { kind: "clear" }>, reply: string, aloud: boolean) {
+  private finishTurn(input: TurnInput, reply: string, aloud: boolean) {
     this.memory.record(input.kind === "user" ? `user: ${input.text}` : input.text, onScreen(reply));
     if (aloud && input.kind === "event") this.openQuestion = this.questionFor(input);
   }
@@ -630,7 +680,7 @@ export class Orchestrator extends EventEmitter {
     this.emit("line", line);
   }
 
-  private shouldSpeak(input: Exclude<Input, { kind: "clear" }>): boolean {
+  private shouldSpeak(input: TurnInput): boolean {
     if (this.speech === "muted") return false;
     if (input.kind === "user") return input.source === "voice";
     if (input.announcement) return true; // only a spoken part before [SCREEN]; the announcement said the rest
@@ -642,6 +692,11 @@ export class Orchestrator extends EventEmitter {
     if (this.speech === "muted") return;
     await this.speakWhenQuiet(announcement);
     this.openQuestion = this.questionFor(input);
+  }
+
+  private async tell(notice: Extract<Input, { kind: "notice" }>) {
+    if (this.speech !== "muted") await this.speakWhenQuiet(notice.spoken);
+    this.uiNotes.push(notice.text);
   }
 
   private async speakWhenQuiet(text: string) {
@@ -657,11 +712,11 @@ export class Orchestrator extends EventEmitter {
   }
 
   private isReady(input: Input): boolean {
-    if (input.kind !== "event") return true;
+    if (input.kind === "user" || input.kind === "clear") return true;
     if (this.voice.isListening()) return false;
     if (!this.isQuestionOpen()) return true;
     // a reminder of the very question you're being asked may repeat it
-    return !!input.permissionId && input.permissionId === this.openQuestion?.permissionId;
+    return input.kind === "event" && !!input.permissionId && input.permissionId === this.openQuestion?.permissionId;
   }
 
   private isQuestionOpen(): boolean {

@@ -1,10 +1,13 @@
 import { spawn } from "node:child_process";
-import { loadConfig, checkAuth, loginCommand, NOTES_PATH } from "./config.js";
+import { resolve } from "node:path";
+import { loadConfig, checkAuth, loginCommand, NOTES_PATH, STATE_DIR } from "./config.js";
 import { AssistantNotes } from "./notes.js";
 import { DestructiveList } from "./destructive.js";
 import { Registry } from "./registry.js";
 import { PermissionBroker } from "./permissions.js";
 import { CommandExplainer } from "./explainer.js";
+import { UsageLimits } from "./usage-limit.js";
+import { TodoList } from "./todo.js";
 import { WorkerManager } from "./workers.js";
 import { Orchestrator } from "./orchestrator.js";
 import { MacVoice, TextVoice } from "./voice.js";
@@ -20,6 +23,7 @@ import { RESTART_EXIT_CODE, RESTARTED_ENV } from "./restart.js";
 const WORKER_STOP_GRACE_MS = 300;
 
 const cfg = loadConfig();
+const TODO_DIR = resolve(STATE_DIR, "todo");
 const textMode = process.argv.includes("--text");
 
 // Fail fast on logins instead of hearing "Not logged in" from every session.
@@ -41,7 +45,7 @@ const destructive = new DestructiveList();
 const registry = new Registry(Object.fromEntries(Object.entries(cfg.projects).map(([n, p]) => [n, p.profile])));
 const explainer = new CommandExplainer(cfg, registry);
 const broker = new PermissionBroker(cfg, registry, destructive, (project, command) => explainer.explain(project, command));
-const workers = new WorkerManager(cfg, registry, broker, destructive);
+const workers = new WorkerManager(cfg, registry, broker, destructive, new UsageLimits(new TodoList(TODO_DIR), registry));
 const voice = textMode ? new TextVoice() : new MacVoice(cfg.voice, new MacHotkey(cfg.voice.hotkey));
 const screen = await MacScreen.create();
 const notes = new AssistantNotes(NOTES_PATH);
