@@ -12,7 +12,7 @@ TypeScript (strict, ESM, NodeNext) on Node ≥ 22, run with `tsx`. See README.md
 General clean-code rules come from the user's global CLAUDE.md, and the linter enforces typing, promise and error rules.
 These are the project-specific additions.
 
-- Size limits: files ≤ 200 lines, classes ≤ 40 lines, functions ≤ 20 lines (aim for ≤ 15), ≤ 3 parameters, ≤ 3 levels of nesting.
+- Size limits: files ≤ 200 lines, classes ≤ 60 lines, functions ≤ 20 lines (aim for ≤ 15), ≤ 3 parameters, ≤ 3 levels of nesting.
 - If a file you touch is already over a limit, don't grow it: put new code in a new module.
 - Before finishing, run Prettier and `npx oxlint --type-aware <files>` on the files you changed and fix every error there,
   then run `npm run typecheck` and `npm test`. Report any failures.

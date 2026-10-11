@@ -11,7 +11,7 @@ import { renderDetail } from "./detail.js";
 
 const chat = new ChatView();
 
-function renderPage() {
+function renderPage(): void {
   renderIndicators();
   renderProjects();
   renderApprovals();
@@ -19,10 +19,10 @@ function renderPage() {
   renderDetail();
 }
 
-function connect() {
+function connect(): void {
   const events = openEvents();
-  events.onopen = () => setConnected(true);
-  events.onerror = () => setConnected(false); // EventSource reconnects by itself
+  events.addEventListener("open", () => setConnected(true));
+  events.addEventListener("error", () => setConnected(false)); // EventSource reconnects by itself
   onServerEvent(events, "state", (state) => store.receive(state));
   onServerEvent(events, "backlog", (entries) => chat.setOrchestratorBacklog(entries));
   onServerEvent(events, "feed", (entry) => {

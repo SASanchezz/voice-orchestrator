@@ -1,9 +1,16 @@
 // Small DOM helpers. Text is always inserted as text, never as HTML.
 
 /** A child for el(): "" leaves a slot empty. */
-export type Child = Node | string;
+type Child = Node | string;
 
-export function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, ...children: Child[]): HTMLElementTagNameMap[K] {
+const MINUTE_MS = 60_000;
+const MAX_COMPOSER_HEIGHT_PX = 200;
+
+export function el<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  attrs: Record<string, string> = {},
+  ...children: Child[]
+): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
   for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, value);
   node.append(...children.filter((c) => c !== ""));
@@ -25,22 +32,27 @@ export function formatTime(iso: string): string {
 }
 
 export function timeAgo(ms: number): string {
-  const minutes = Math.round((Date.now() - ms) / 60_000);
+  const minutes = Math.round((Date.now() - ms) / MINUTE_MS);
   return minutes < 1 ? "just now" : `${minutes} min ago`;
 }
 
-const MAX_COMPOSER_HEIGHT_PX = 200;
-
-export function autoGrow(textarea: HTMLTextAreaElement) {
+export function autoGrow(textarea: HTMLTextAreaElement): void {
   textarea.style.height = "auto";
   textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_COMPOSER_HEIGHT_PX)}px`;
 }
 
-/** An element the page's HTML always has; a missing one is a bug in index.html. */
-export function byId<T extends HTMLElement = HTMLElement>(id: string): T {
+/** An element the page's HTML always has, of the kind it always is; anything else is a bug in index.html. */
+export function byId<T extends HTMLElement>(id: string, kind: new () => T): T {
   const node = document.getElementById(id);
-  if (!node) throw new Error(`#${id} is missing from the page`);
-  return node as T;
+  if (!(node instanceof kind)) throw new Error(`#${id} is missing from the page`);
+  return node;
+}
+
+/** The first element matching `selector`, which the page's HTML always has. */
+export function bySelector<T extends Element>(selector: string, kind: new () => T): T {
+  const node = document.querySelector(selector);
+  if (!(node instanceof kind)) throw new Error(`${selector} is missing from the page`);
+  return node;
 }
 
 export function localRead(key: string): string | undefined {
@@ -51,7 +63,7 @@ export function localRead(key: string): string | undefined {
   }
 }
 
-export function localWrite(key: string, value: string) {
+export function localWrite(key: string, value: string): void {
   try {
     localStorage.setItem(key, value);
   } catch {

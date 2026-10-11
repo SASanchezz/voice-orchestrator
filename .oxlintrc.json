@@ -59,10 +59,11 @@
       "env": { "browser": true, "node": false }
     },
     {
-      "files": ["**/*.test.ts"],
+      "files": ["**/*.test.ts", "src/e2e/**", "src/testing/**"],
       "rules": {
         "no-magic-numbers": "off",
-        "typescript/no-non-null-assertion": "off"
+        "typescript/no-non-null-assertion": "off",
+        "import/no-unassigned-import": ["error", { "allow": ["**/*.flow.js"] }]
       }
     }
   ]

@@ -1,0 +1,47 @@
+/* ---------------------------------------------------------------- dialogs and notices */
+
+.confirm-dialog {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 20px;
+  width: min(480px, calc(100vw - 32px));
+}
+.confirm-dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+.confirm-dialog form {
+  display: grid;
+  gap: 10px;
+}
+.confirm-dialog h2 {
+  font-size: 17px;
+}
+.confirm-dialog p {
+  margin: 0;
+}
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.notice {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 20%);
+  z-index: 10;
+}
+.notice.done {
+  background: var(--ok);
+}
+.notice.failed {
+  background: var(--danger);
+}

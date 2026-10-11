@@ -1,58 +1,74 @@
 // "Waiting for you": worker permission requests, answered by click.
 
 import type { PendingRequestView } from "../protocol.js";
-import { el, button, byId, timeAgo } from "./dom.js";
 import { act } from "./api.js";
+import { button, byId, el, timeAgo } from "./dom.js";
 import { store } from "./store.js";
 
 type Decision = "once" | "always" | "deny";
 
-export function renderApprovals() {
+export function renderApprovals(): void {
   const { pending } = store.state;
-  byId("approvals").hidden = !pending.length;
-  byId("approval-list").replaceChildren(...pending.map(approvalCard));
+  byId("approvals", HTMLElement).hidden = !pending.length;
+  byId("approval-list", HTMLElement).replaceChildren(...pending.map(approvalCard));
 }
 
 function approvalCard(request: PendingRequestView): HTMLDivElement {
   const destructive = Boolean(request.destructiveVerb);
-  const actions = destructive
-    ? [button(`Allow ${request.destructiveVerb}…`, "danger", () => confirmDestructive(request)), button("Deny", "", () => void answer(request.id, "deny"))]
-    : [
-        button("Allow once", "primary", () => void answer(request.id, "once")),
-        button("Always", "", () => void answer(request.id, "always")),
-        button("Deny", "", () => void answer(request.id, "deny")),
-      ];
-  return el("div", { class: `approval${destructive ? " destructive" : ""}` },
-    el("div", { class: "approval-head" },
-      el("strong", {}, request.label),
-      el("span", { class: "muted" }, destructive ? `destructive · ${request.destructiveVerb}` : "wants to run"),
-      el("span", { class: "muted" }, `· ${timeAgo(request.createdAt)}`)),
+  return el(
+    "div",
+    { class: `approval${destructive ? " destructive" : ""}` },
+    cardHead(request),
     ...explanationOf(request),
     el("pre", { class: "command" }, request.description),
-    el("div", { class: "approval-actions" }, ...actions));
+    el("div", { class: "approval-actions" }, ...actionsFor(request)),
+  );
 }
 
-/** Plain words above a destructive command: what it does and how risky it is. */
+function cardHead(request: PendingRequestView): HTMLDivElement {
+  const kind = request.destructiveVerb ? `destructive · ${request.destructiveVerb}` : "wants to run";
+  return el(
+    "div",
+    { class: "approval-head" },
+    el("strong", {}, request.label),
+    el("span", { class: "muted" }, kind),
+    el("span", { class: "muted" }, `· ${timeAgo(request.createdAt)}`),
+  );
+}
+
+function actionsFor(request: PendingRequestView): HTMLButtonElement[] {
+  const deny = button("Deny", "", () => void answer(request.id, "deny"));
+  if (request.destructiveVerb)
+    return [button(`Allow ${request.destructiveVerb}…`, "danger", () => confirmDestructive(request)), deny];
+  return [
+    button("Allow once", "primary", () => void answer(request.id, "once")),
+    button("Always", "", () => void answer(request.id, "always")),
+    deny,
+  ];
+}
+
+/** Plain words above the command: what it does and how risky it is. */
 function explanationOf(request: PendingRequestView): HTMLParagraphElement[] {
   if (request.explanation) return [el("p", { class: "explanation" }, request.explanation)];
   if (request.explaining) return [el("p", { class: "explanation muted" }, "Explaining what this does…")];
   return [];
 }
 
-function answer(id: string, decision: Decision) {
+function answer(id: string, decision: Decision): Promise<string | undefined> {
   return act(`/api/permissions/${id}`, { decision });
 }
 
-function confirmDestructive(request: PendingRequestView) {
-  const dialog = byId<HTMLDialogElement>("confirm-dialog");
-  byId("confirm-title").textContent = `Allow ${request.destructiveVerb}?`;
-  byId("confirm-project").textContent = `${request.label} wants to run:`;
-  byId("confirm-explanation").textContent = request.explanation ?? "";
-  byId("confirm-command").textContent = request.description;
+function confirmDestructive(request: PendingRequestView): void {
+  const dialog = byId("confirm-dialog", HTMLDialogElement);
+  byId("confirm-title", HTMLElement).textContent = `Allow ${request.destructiveVerb}?`;
+  byId("confirm-project", HTMLElement).textContent = `${request.label} wants to run:`;
+  byId("confirm-explanation", HTMLElement).textContent = request.explanation ?? "";
+  byId("confirm-command", HTMLElement).textContent = request.description;
   dialog.returnValue = "";
-  dialog.onclose = () => {
+  const onClose = (): void => {
     if (dialog.returnValue === "confirm") void answer(request.id, "once");
   };
+  dialog.addEventListener("close", onClose, { once: true });
   dialog.showModal();
   dialog.querySelector<HTMLButtonElement>(".ghost")?.focus(); // Enter must not approve by accident
 }

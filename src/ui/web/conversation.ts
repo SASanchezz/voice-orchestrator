@@ -1,15 +1,16 @@
 // The center: the assistant's chat, or the selected project's active session with its tabs; the message box below.
 
-import type { ProjectView, SessionView } from "../protocol.js";
-import { el, button, byId, autoGrow } from "./dom.js";
+import type { ProjectView } from "../protocol.js";
 import { act } from "./api.js";
-import { store, activeSession, isBusy, STATUS_LABELS } from "./store.js";
 import type { ChatView } from "./chat.js";
+import { autoGrow, button, byId } from "./dom.js";
+import { sessionTabs } from "./session-tabs.js";
+import { activeSession, store } from "./store.js";
 
-export function renderConversation(chat: ChatView) {
+export function renderConversation(chat: ChatView): void {
   const project = store.selectedProject();
-  const tabs = byId("session-tabs");
-  const input = byId<HTMLTextAreaElement>("composer-input");
+  const tabs = byId("session-tabs", HTMLElement);
+  const input = byId("composer-input", HTMLTextAreaElement);
   tabs.hidden = !project;
   if (!project) {
     input.placeholder = "Message the assistant…";
@@ -23,40 +24,13 @@ export function renderConversation(chat: ChatView) {
   void chat.showSession(session.id);
 }
 
-function sessionTabs(project: ProjectView): HTMLDivElement[] {
-  return project.sessions.map((session) => {
-    const active = session.id === project.activeSession;
-    const open = el("button", { type: "button", class: "session-open", title: sessionTitle(session) },
-      el("span", { class: `dot ${session.status}`, title: STATUS_LABELS[session.status] }),
-      el("span", { class: "session-name" }, `Session ${session.number}`),
-      el("span", { class: "session-title" }, sessionTitle(session)));
-    open.addEventListener("click", () => {
-      if (!active) void act(`/api/sessions/${session.id}/activate`);
-    });
-    const close = button("×", "ghost session-close", () => closeSession(session));
-    close.title = `Close session ${session.number}`;
-    close.setAttribute("aria-label", `Close session ${session.number}`);
-    return el("div", { class: `session-tab${active ? " active" : ""}`, role: "tab", "aria-selected": String(active) }, open, close);
-  });
-}
-
-/** Like a VS Code tab: named after what the session is about. */
-function sessionTitle(session: SessionView): string {
-  return session.task ?? session.history[0]?.task ?? "new";
-}
-
-function createSession(project: ProjectView) {
+function createSession(project: ProjectView): Promise<string | undefined> {
   return act(`/api/projects/${encodeURIComponent(project.name)}/sessions`);
 }
 
-function closeSession(session: SessionView) {
-  const warning = `Close session ${session.number}?${isBusy(session) ? " Its worker will be stopped." : ""} Its messages, queue and history are deleted.`;
-  if (confirm(warning)) void act(`/api/sessions/${session.id}/close`);
-}
-
-export function wireComposer() {
-  const form = byId<HTMLFormElement>("composer");
-  const input = byId<HTMLTextAreaElement>("composer-input");
+export function wireComposer(): void {
+  const form = byId("composer", HTMLFormElement);
+  const input = byId("composer-input", HTMLTextAreaElement);
   form.addEventListener("submit", (event) => sendMessage(event, input));
   input.addEventListener("input", () => autoGrow(input));
   input.addEventListener("keydown", (e) => {
@@ -66,7 +40,7 @@ export function wireComposer() {
   });
 }
 
-function sendMessage(event: SubmitEvent, input: HTMLTextAreaElement) {
+function sendMessage(event: SubmitEvent, input: HTMLTextAreaElement): void {
   event.preventDefault();
   const text = input.value.trim();
   if (!text) return;

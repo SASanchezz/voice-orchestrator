@@ -1,0 +1,72 @@
+/* ---------------------------------------------------------------- detail */
+
+.detail-head {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: 6px;
+}
+.detail-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.detail-title h2 {
+  font-size: 16px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.detail-section {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: 8px;
+}
+.section-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.section-row .section-title {
+  margin-bottom: 0;
+}
+.section-row button {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.history-item {
+  display: grid;
+  gap: 2px;
+}
+.history-task {
+  font-weight: 500;
+  word-break: break-word;
+}
+.outcome {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.outcome.done {
+  color: var(--ok);
+}
+.outcome.failed {
+  color: var(--danger);
+}
+.outcome.stopped {
+  color: var(--muted);
+}

@@ -1,0 +1,54 @@
+import { EventEmitter } from "node:events";
+
+/** Who an event is about: the session, and how to name it aloud ("webshop" or "webshop session 2"). */
+export interface EventSubject {
+  project: string;
+  session: string;
+  label: string;
+}
+
+/** Which task ended, so its announcement can name the session and say what it was about. */
+interface TaskSubject {
+  task: string;
+  sessionNumber: number;
+}
+
+/** Events the orchestrator turns into speech. */
+export type AppEvent = EventSubject &
+  (
+    | (TaskSubject & { kind: "task_done"; result: string })
+    | (TaskSubject & { kind: "task_failed"; error: string })
+    | { kind: "usage_limit"; account: string; resetsAt?: string; savedTasks: number }
+    | { kind: "permission"; id: string; description: string; destructiveVerb?: string; reminder?: boolean }
+  );
+
+export type UsageLimitEvent = Extract<AppEvent, { kind: "usage_limit" }>;
+export type PermissionEvent = Extract<AppEvent, { kind: "permission" }>;
+
+/**
+ * What happens to workers and sessions, for whoever turns it into speech, chat lines or UI updates.
+ * Emits "event" with an AppEvent, "session_removed" / "session_cleared" with a session id,
+ * "permission_explained" with a request id and its explanation, and "permission_closed" with a request id.
+ */
+export class AppEvents extends EventEmitter {
+  emitEvent(event: AppEvent): void {
+    this.emit("event", event);
+  }
+
+  emitSessionRemoved(sessionId: string): void {
+    this.emit("session_removed", sessionId);
+  }
+
+  emitSessionCleared(sessionId: string): void {
+    this.emit("session_cleared", sessionId);
+  }
+
+  emitPermissionExplained(requestId: string, explanation: string): void {
+    this.emit("permission_explained", requestId, explanation);
+  }
+
+  /** The request was answered (by voice, click or pop-up) or its worker stopped. */
+  emitPermissionClosed(requestId: string): void {
+    this.emit("permission_closed", requestId);
+  }
+}

@@ -14,7 +14,13 @@ export const STATUS_LABELS: Record<SessionStatus, string> = {
 export const BUSY_STATUSES: SessionStatus[] = ["running", "waiting_permission"];
 
 const SELECTED_PROJECT_KEY = "selectedProject";
-const INITIAL_STATE: UiState = { projects: [], pending: [], permissionMode: "ask", speechMode: "questions", voiceInput: "idle" };
+const INITIAL_STATE: UiState = {
+  projects: [],
+  pending: [],
+  permissionMode: "ask",
+  speechMode: "questions",
+  voiceInput: "idle",
+};
 
 class PageStore {
   private snapshot = INITIAL_STATE;
@@ -75,4 +81,6 @@ export function activeSession(project: ProjectView): SessionView {
   return session;
 }
 
-export const isBusy = (session: SessionView) => BUSY_STATUSES.includes(session.status);
+export function isBusy(session: SessionView): boolean {
+  return BUSY_STATUSES.includes(session.status);
+}

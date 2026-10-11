@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
-import { RESTART_EXIT_CODE, RESTARTED_ENV } from "./restart.js";
+import { RESTART_EXIT_CODE, RESTARTED_ENV } from "./app/restart.js";
 
 /**
  * Runs the app and starts it again whenever it exits asking for a restart.

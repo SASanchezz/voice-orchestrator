@@ -97,23 +97,29 @@ Pressing the key while Claude is speaking cuts it off. Notifications wait until 
 | `config/config.yaml` | accounts, projects, voice, reset interval (local, gitignored; start from `config.example.yaml`) |
 | `config/destructive.yaml` | editable destructive rules (hot-reload) |
 | `config/notes.md` | your notes for the assistant (aliases, project facts); read at every start, and "remember this" adds a line (local, gitignored; start from `notes.example.md`) |
-| `src/orchestrator.ts` | long-lived voice session, tools, hourly handoff |
-| `src/workers.ts` | per-project headless Claude Code sessions |
-| `src/permissions.ts` | permission broker (voice approval, confirm-phrase check) |
-| `src/voice.ts` | push-to-talk, whisper.cpp, `say`; text mode |
-| `src/usage-limit.ts`, `src/todo.ts` | spotting usage-limit failures, one message per limit episode, and the todo folder |
-| `src/utterance-merger.ts` | joins recordings made within `voice.mergeWindowSeconds` of each other into one message |
-| `src/ui/server.ts` | web UI server: live state over server-sent events, actions over POST, token check |
-| `src/ui/feed.ts` | the UI's timeline of conversation, worker events and clicks, behind `state/feed.jsonl` |
-| `src/ui/public/` | the page's HTML and CSS |
+| `src/main.ts`, `src/supervisor.ts` | entry points: the app, and the supervisor that restarts it |
+| `src/app/` | wiring: builds every part from config and passes collaborators in; login check |
+| `src/config/` | `config.yaml` schema and loading, accounts, login status, project names and folder search |
+| `src/registry/` | projects and their sessions, behind `state/registry.json`; task history and status reports |
+| `src/events/` | the app's events (task done/failed, permission, usage limit) |
+| `src/orchestrator/` | the voice operator: its model session (`model/`), system prompt (`prompt/`), input queue and turns (`conversation/`), context resets and restarts (`lifecycle/`), tools (`tools/`, `actions/`), memory and notes (`memory/`) |
+| `src/workers/` | per-project headless Claude Code sessions: starting, queueing, stopping, outcomes, summaries |
+| `src/permissions/` | permission broker (voice approval, confirm-phrase check), plain-language explanations |
+| `src/safety/` | destructive rules (`config/destructive.yaml`) and the confirm phrase |
+| `src/limits/` | spotting usage-limit failures, one message per limit episode, and the todo folder |
+| `src/voice/` | push-to-talk, whisper.cpp, `say`; joining recordings made within `voice.mergeWindowSeconds`; text mode |
+| `src/screen/` | screenshot of the display under the cursor, one-day retention |
+| `src/macos/` | builds the Swift helpers in `native/` |
+| `src/ui/server/` | web UI server: live state over server-sent events, actions over POST, token check |
+| `src/ui/feed.ts`, `src/ui/session-chats.ts` | the assistant's timeline (`state/feed.jsonl`) and each session's chat (`state/chats/`) |
+| `src/ui/public/` | the page's HTML and stylesheets |
 | `src/ui/web/` | the page's TypeScript, compiled into one script (`/app.js`) in memory when the UI server starts; no separate build step |
 | `src/ui/protocol.ts` | the shapes of what the server sends the page, shared by both sides |
-| `src/screen.ts` | screenshot of the display under the cursor, one-day retention |
+| `src/e2e/` | end-to-end test with Claude replaced by scripted fakes; `src/testing/` holds shared test helpers |
 | `state/registry.json` | session ids and statuses (survives restarts) |
 | `state/conversation.json` | orchestrator's recent exchanges and handoff (survives restarts) |
 | `state/todo/` | tasks put aside because their account hit a usage limit, one Markdown file each |
 | `state/feed.jsonl` | the Assistant chat shown in the web UI (survives restarts; emptied only by **Clear**) |
-| `src/memory.ts` | conversation memory behind `state/conversation.json` |
 
 ## Limits
 

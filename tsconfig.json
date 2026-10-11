@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "lib": ["ES2023"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
@@ -8,10 +9,6 @@
     "esModuleInterop": true,
     "noEmit": true
   },
-  "include": [
-    "src"
-  ],
-  "exclude": [
-    "src/ui/web"
-  ]
+  "include": ["src"],
+  "exclude": ["src/ui/web"]
 }

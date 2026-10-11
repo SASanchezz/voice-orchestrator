@@ -1,0 +1,57 @@
+/* ---------------------------------------------------------------- approvals */
+
+.approvals {
+  padding: 16px 16px 4px;
+  border-bottom: 1px solid var(--border);
+  max-height: 40vh;
+  overflow-y: auto;
+}
+.approval-list {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+
+.approval {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--warn);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+  box-shadow: var(--shadow);
+}
+.approval.destructive {
+  border-left-color: var(--danger);
+}
+.approval-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.approval-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.explanation {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.explanation:empty {
+  display: none;
+}
+
+.command {
+  margin: 0;
+  font: 12px/1.5 var(--mono);
+  background: var(--surface-2);
+  border-radius: 6px;
+  padding: 6px 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
