@@ -105,7 +105,9 @@ Pressing the key while Claude is speaking cuts it off. Notifications wait until 
 | `src/utterance-merger.ts` | joins recordings made within `voice.mergeWindowSeconds` of each other into one message |
 | `src/ui/server.ts` | web UI server: live state over server-sent events, actions over POST, token check |
 | `src/ui/feed.ts` | the UI's timeline of conversation, worker events and clicks, behind `state/feed.jsonl` |
-| `src/ui/public/` | the page (plain HTML, CSS and JS, no build step) |
+| `src/ui/public/` | the page's HTML and CSS |
+| `src/ui/web/` | the page's TypeScript, compiled into one script (`/app.js`) in memory when the UI server starts; no separate build step |
+| `src/ui/protocol.ts` | the shapes of what the server sends the page, shared by both sides |
 | `src/screen.ts` | screenshot of the display under the cursor, one-day retention |
 | `state/registry.json` | session ids and statuses (survives restarts) |
 | `state/conversation.json` | orchestrator's recent exchanges and handoff (survives restarts) |

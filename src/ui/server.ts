@@ -11,14 +11,14 @@ import type { PermissionBroker } from "../permissions.js";
 import type { Orchestrator } from "../orchestrator.js";
 import type { Feed, FeedEntry } from "./feed.js";
 import type { SessionChats } from "../chats.js";
+import type { ServerEvents, UiState } from "./protocol.js";
+import { bundleWebApp } from "./web-bundle.js";
 
 const PUBLIC_DIR = resolve(APP_DIR, "src/ui/public");
 const STATIC_FILES: Record<string, string> = {
-  "/app.js": "text/javascript",
-  "/chat.js": "text/javascript",
-  "/dom.js": "text/javascript",
   "/app.css": "text/css",
 };
+const SCRIPT_PATH = "/app.js";
 const TOKEN_PLACEHOLDER = "__UI_TOKEN__";
 const STATE_PUSH_MS = 500;
 const HEARTBEAT_MS = 15_000;
@@ -50,6 +50,8 @@ export class UiServer {
   private lastState = "";
   private token = loadToken();
   private port = 0;
+  /** The page's script, compiled from src/ui/web/ at start. */
+  private script = "";
   private routes: [RegExp, Route][] = [
     [/^\/api\/message$/, (b) => this.sendMessage(b)],
     [/^\/api\/assistant\/clear$/, () => this.clearAssistant()],
@@ -76,6 +78,7 @@ export class UiServer {
 
   /** Starts listening; resolves with the link to open (it carries the token). */
   async start(): Promise<string> {
+    this.script = await bundleWebApp();
     this.server = createServer((req, res) => void this.handle(req, res));
     await new Promise<void>((ok, fail) => {
       this.server!.once("error", fail);
@@ -84,7 +87,7 @@ export class UiServer {
     this.port = (this.server.address() as AddressInfo).port;
     this.feed.on("entry", (e: FeedEntry) => this.broadcast("feed", e));
     this.feed.on("cleared", () => this.broadcast("backlog", []));
-    this.chats.on("message", (m: unknown) => this.broadcast("chat", m));
+    this.chats.on("message", (line: ServerEvents["chat"]) => this.broadcast("chat", line));
     this.chats.on("cleared", (sessionId: string) => this.broadcast("chat_cleared", sessionId));
     setInterval(() => this.pushStateIfChanged(), STATE_PUSH_MS).unref();
     setInterval(() => this.clients.forEach((c) => c.write(": ping\n\n")), HEARTBEAT_MS).unref();
@@ -115,10 +118,16 @@ export class UiServer {
     if (url.pathname === "/api/events") return this.openEventStream(url, res);
     const sessionMessages = url.pathname.match(SESSION_MESSAGES_PATH);
     if (sessionMessages) return this.serveSessionMessages(url, sessionMessages[1], res);
+    if (url.pathname === SCRIPT_PATH) return this.serveScript(res);
     const type = STATIC_FILES[url.pathname];
     if (!type) throw new HttpError(404, "Not found");
     res.writeHead(200, { "content-type": type, "cache-control": "no-store" });
     res.end(readFileSync(resolve(PUBLIC_DIR, url.pathname.slice(1))));
+  }
+
+  private serveScript(res: ServerResponse) {
+    res.writeHead(200, { "content-type": "text/javascript", "cache-control": "no-store" });
+    res.end(this.script);
   }
 
   private servePage(url: URL, res: ServerResponse) {
@@ -248,7 +257,7 @@ export class UiServer {
 
   // ---------------------------------------------------------------- live state
 
-  private state() {
+  private state(): UiState {
     return {
       projects: this.registry.all().map((p) => ({ ...p, sessions: this.registry.sessionsOf(p.name) })),
       pending: this.broker.requests(),
@@ -265,11 +274,11 @@ export class UiServer {
     this.clients.forEach((c) => c.write(`event: state\ndata: ${state}\n\n`));
   }
 
-  private broadcast(event: string, payload: unknown) {
+  private broadcast<K extends keyof ServerEvents>(event: K, payload: ServerEvents[K]) {
     this.clients.forEach((c) => this.write(c, event, payload));
   }
 
-  private write(res: ServerResponse, event: string, payload: unknown) {
+  private write<K extends keyof ServerEvents>(res: ServerResponse, event: K, payload: ServerEvents[K]) {
     res.write(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`);
   }
 

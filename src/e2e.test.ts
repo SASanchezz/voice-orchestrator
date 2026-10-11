@@ -572,6 +572,15 @@ test("ui: the page needs the token from the printed link", async () => {
   assert.equal((await fetch(uiUrl)).status, 200);
 });
 
+test("ui: the page's script is served as JavaScript", async () => {
+  assert.equal((await fetch(new URL("/app.js", uiUrl))).headers.get("content-type"), "text/javascript");
+});
+
+test("ui: the page's script is compiled from TypeScript into one file", async () => {
+  const script = await (await fetch(new URL("/app.js", uiUrl))).text();
+  assert.deepEqual([/new ChatView\(\)/.test(script), /^import /m.test(script), /: HTMLElement\b/.test(script)], [true, false, false]);
+});
+
 test("ui: actions need the token", async () => {
   assert.equal((await uiPost("/api/message", { text: "status" }, "wrong")).status, 401);
 });

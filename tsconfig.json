@@ -8,5 +8,10 @@
     "esModuleInterop": true,
     "noEmit": true
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "src/ui/web"
+  ]
 }

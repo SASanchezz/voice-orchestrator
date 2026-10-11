@@ -1,0 +1,69 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "typescript", "unicorn", "import", "oxc", "node", "promise"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "env": { "node": true, "es2024": true },
+  "ignorePatterns": ["node_modules", "state", "native"],
+  "rules": {
+    "max-lines": ["error", { "max": 200, "skipBlankLines": true, "skipComments": true }],
+    "max-lines-per-function": ["error", { "max": 20, "skipBlankLines": true, "skipComments": true, "IIFEs": true }],
+    "max-params": ["error", { "max": 3 }],
+    "max-depth": ["error", { "max": 3 }],
+    "max-nested-callbacks": ["error", { "max": 3 }],
+    "complexity": ["error", { "max": 10 }],
+    "no-else-return": ["error", { "allowElseIf": false }],
+    "no-nested-ternary": "error",
+    "no-param-reassign": "error",
+    "no-magic-numbers": [
+      "error",
+      { "ignore": [-1, 0, 1, 2], "ignoreArrayIndexes": true, "ignoreDefaultValues": true, "ignoreEnums": true }
+    ],
+    "eqeqeq": ["error", "always", { "null": "ignore" }],
+    "prefer-const": "error",
+
+    "typescript/no-explicit-any": "error",
+    "typescript/no-non-null-assertion": "error",
+    "typescript/ban-ts-comment": "error",
+    "typescript/no-unsafe-type-assertion": "error",
+    "typescript/explicit-module-boundary-types": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/consistent-type-definitions": ["error", "interface"],
+    "typescript/no-floating-promises": [
+      "error",
+      {
+        "allowForKnownSafeCalls": [
+          { "from": "package", "package": "node:test", "name": ["test", "describe", "it", "suite"] }
+        ]
+      }
+    ],
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/only-throw-error": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "typescript/no-unnecessary-type-assertion": "error",
+    "typescript/restrict-template-expressions": "error",
+    "typescript/no-unsafe-argument": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-member-access": "error",
+    "typescript/no-unsafe-return": "error",
+
+    "import/no-cycle": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/ui/web/**"],
+      "env": { "browser": true, "node": false }
+    },
+    {
+      "files": ["**/*.test.ts"],
+      "rules": {
+        "no-magic-numbers": "off",
+        "typescript/no-non-null-assertion": "off"
+      }
+    }
+  ]
+}
