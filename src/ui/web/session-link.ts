@@ -13,8 +13,14 @@ export function sessionLink(session: SessionLinkView): HTMLButtonElement {
   return link;
 }
 
+/** Opens a session known only by its id; a session closed since is skipped. */
+export async function openSessionById(id: string): Promise<void> {
+  const project = store.state.projects.find((p) => p.sessions.some((s) => s.id === id));
+  if (project) await openSession({ project: project.name, id });
+}
+
 /** Selects the project and makes the session its active one; a session closed since is skipped. */
-async function openSession({ project, id }: SessionLinkView): Promise<void> {
+async function openSession({ project, id }: Pick<SessionLinkView, "project" | "id">): Promise<void> {
   const view = store.state.projects.find((p) => p.name === project);
   const isOpen = view?.sessions.some((s) => s.id === id);
   if (isOpen && view?.activeSession !== id) await act(`/api/sessions/${id}/activate`);

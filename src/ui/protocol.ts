@@ -1,5 +1,7 @@
-// What the server sends the web page. No imports, so both the server (Node) and the page (browser) compile it;
-// the server's payloads are typed against it, so the two can't drift apart unnoticed.
+// What the server sends the web page. It imports only types from files that import nothing, so both the server (Node)
+// and the page (browser) compile it; the server's payloads are typed against it, so the two can't drift apart unnoticed.
+
+import type { PageTarget } from "./page-target.js";
 
 export type SessionStatus = "idle" | "running" | "waiting_permission" | "done" | "failed" | "stopped";
 export type PermissionModeName = "auto" | "ask";
@@ -96,6 +98,8 @@ export interface ServerEvents {
   feed: FeedEntryView;
   chat: SessionChatLine;
   chat_cleared: string;
+  /** A notice's button: open pages switch to this view. */
+  navigate: PageTarget;
 }
 
 /** Every POST answers with a message, or an error. */

@@ -1,6 +1,6 @@
 import { sessionLinkOf, type AppEvent, type PermissionEvent } from "../../events/app-events.js";
 import { usageLimitMessage } from "../../limits/usage-limit.js";
-import { spokenGist } from "./gist.js";
+import { taskHeadline } from "./gist.js";
 import type { Input } from "./inputs.js";
 
 /** What an app event becomes for the operator: a notification turn, or for a usage limit a notice said once. */
@@ -31,9 +31,7 @@ function describePermission(e: PermissionEvent): string {
   return `[PERMISSION ${e.id}] ${reminder}${e.label} wants approval for ${e.description}${destructive}`;
 }
 
-/** What's said aloud the moment a task ends, e.g. "acme-web done". */
+/** What's said when a task ends if the model's reply has nothing to say aloud in time, e.g. "acme-web session 2 done: …". */
 function announcementFor(e: AppEvent): string | undefined {
-  if (e.kind === "task_done") return `${e.project} session ${e.sessionNumber} done: ${spokenGist(e.task)}`;
-  if (e.kind === "task_failed") return `${e.project} session ${e.sessionNumber} failed: ${spokenGist(e.task)}`;
-  return undefined;
+  return e.kind === "task_done" || e.kind === "task_failed" ? taskHeadline(e) : undefined;
 }

@@ -1,4 +1,5 @@
 import type { SessionLink } from "../../events/app-events.js";
+import type { SingleVoice } from "./single-voice.js";
 import type { OperatorSession } from "../model/operator-session.js";
 import type { ConversationLine, ConversationLines } from "./conversation-lines.js";
 import { onScreen, SCREEN_MARKER, spokenPart } from "./reply-text.js";
@@ -11,6 +12,8 @@ import type { ReplySpeaker } from "./reply-speaker.js";
 export interface ReplySubject {
   aboutRequest?: string;
   relays?: SessionLink;
+  /** For a task notification: the reply speaks only if the fallback announcement hasn't. */
+  voice?: SingleVoice;
 }
 
 /** Asks the model and shows its reply piece by piece as it arrives, so it is on screen before the tools finish. */
@@ -38,7 +41,8 @@ export class ReplyPresenter {
       if (screenOnly) return;
       screenOnly = text.includes(SCREEN_MARKER);
       const aloud = spokenPart(text);
-      if (aloud) spoken = spoken.then(() => this.speaker.speakWhenQuiet(aloud, subject.aboutRequest));
+      if (aloud && (subject.voice?.replyMaySpeak() ?? true))
+        spoken = spoken.then(() => this.speaker.speakWhenQuiet(aloud, subject.aboutRequest));
     });
     await spoken;
     return reply;

@@ -1,7 +1,8 @@
 import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
 import type { AppConfig } from "../config/app-config.js";
 import { NOTES_PATH } from "../config/paths.js";
-import { MacPermissionDialogs } from "../macos/permission-dialog.js";
+import { MacBrowserPage } from "../macos/mac-browser-page.js";
+import { MacPopups } from "../macos/mac-popups.js";
 import { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../safety/destructive-list.js";
 import { MacScreen } from "../screen/mac-screen.js";
@@ -18,9 +19,10 @@ export async function realAdapters(voice: VoiceIO): Promise<Adapters> {
   const destructive = new DestructiveList();
   destructive.watchForChanges();
   const screen = await MacScreen.create();
-  const popups = await MacPermissionDialogs.create();
+  const popups = await MacPopups.create();
   const notes = new AssistantNotes(NOTES_PATH);
-  return { destructive, voice, screen, notes, query: sdkQuery, explainCommands: true, popups };
+  const devices = { voice, screen, notes, query: sdkQuery, popups, notices: popups, browser: new MacBrowserPage() };
+  return { ...devices, destructive, explainCommands: true };
 }
 
 /** Hold the hotkey to talk; replies are spoken with `say`. */

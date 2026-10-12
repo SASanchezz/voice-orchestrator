@@ -12,6 +12,7 @@ import { buildApp, startOperator } from "../../app/build-app.js";
 import { AssistantNotes } from "../../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../../safety/destructive-list.js";
 import { fakeQuery } from "../../testing/fake-query.js";
+import { TestBrowserPage, TestNotices } from "../../testing/test-notices.js";
 import { TestPopups } from "../../testing/test-popups.js";
 import { connectBrain, fakeOperator } from "./fake-operator.js";
 import { fakeWorker } from "./fake-worker.js";
@@ -36,6 +37,8 @@ export const app = buildApp(cfg, {
   query,
   explainCommands: false,
   popups,
+  notices: new TestNotices(),
+  browser: new TestBrowserPage(),
 });
 connectBrain(app.operator.tools);
 await startOperator(app, voice);

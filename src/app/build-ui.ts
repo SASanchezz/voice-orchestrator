@@ -31,6 +31,8 @@ export interface UiParts {
   chats: SessionChats;
   /** Answers by click, as the web UI's buttons do; pop-ups answer through it too. */
   permissionClicks: PermissionActions;
+  /** The open pages, for messages that aren't about the state or a chat. */
+  clients: LiveClients;
 }
 
 /** The assistant's timeline and the session chats follow the app; the web UI shows them. */
@@ -42,8 +44,9 @@ export function buildUi(core: Core, neighbors: OperatorNeighbors, operator: Oper
   const reporter = new ActionReporter(feed, operator.orchestrator);
   const { answers, views } = neighbors.permissions;
   const permissionClicks = new PermissionActions(answers, views, reporter);
-  const server = uiServer(core, neighbors, { operator, feed, chats, reporter, permissionClicks });
-  return { server, feed, chats, permissionClicks };
+  const clients = new LiveClients();
+  const server = uiServer(core, neighbors, { operator, feed, chats, reporter, permissionClicks, clients });
+  return { server, feed, chats, permissionClicks, clients };
 }
 
 interface UiSources {
@@ -52,13 +55,14 @@ interface UiSources {
   chats: SessionChats;
   reporter: ActionReporter;
   permissionClicks: PermissionActions;
+  clients: LiveClients;
 }
 
 function uiServer(core: Core, { permissions, workers }: OperatorNeighbors, sources: UiSources): UiServer {
   const { orchestrator } = sources.operator;
   const access = new UiAccess();
   const lookup = new UiLookup(core.projects, core.sessions, core.cfg.projects);
-  const clients = new LiveClients();
+  const { clients } = sources;
   relayToClients(clients, sources.feed, sources.chats);
   const publisher = new StatePublisher(clients, new UiStateView(lookup, permissions.views, orchestrator), sources.feed);
   const { reporter } = sources;

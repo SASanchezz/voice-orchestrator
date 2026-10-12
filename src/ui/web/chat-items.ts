@@ -28,6 +28,7 @@ export function feedItem(entry: FeedEntryView): HTMLLIElement {
     action: entry.about ?? "You",
   }[entry.kind];
   const item = chatItem(entry.kind, who, entry);
+  item.dataset.entry = String(entry.id);
   if (entry.detail) item.append(collapsible("Details", markdownView(entry.detail, "more-body")));
   if (entry.session) item.append(sessionLink(entry.session));
   return item;

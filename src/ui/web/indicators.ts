@@ -1,12 +1,11 @@
-// Small status displays: the connection dot, the mode switches, the listening strip, the tab title and corner notices.
+// Small status displays: the connection dot, the mode switches, the listening strip and the tab title.
 
-import type { FeedEntryView, VoiceInputName } from "../protocol.js";
+import type { VoiceInputName } from "../protocol.js";
 import { act } from "./api.js";
-import { byId, el } from "./dom.js";
+import { byId } from "./dom.js";
 import { store } from "./store.js";
 
 const BASE_TITLE = "Orchestrator";
-const NOTICE_MS = 4000;
 const VOICE_INPUT_NOTICE: Record<VoiceInputName, string> = {
   idle: "",
   recording: "Listening…",
@@ -40,16 +39,4 @@ export function setConnected(live: boolean): void {
   const dot = byId("connection", HTMLElement);
   dot.classList.toggle("live", live);
   dot.title = live ? "Connected" : "Disconnected, retrying…";
-}
-
-/** A brief corner notice, matching what's said aloud when a task ends. */
-export function flashTaskOutcome(entry: FeedEntryView): void {
-  if (!entry.taskOutcome) return;
-  const notice = el(
-    "div",
-    { class: `notice ${entry.taskOutcome}`, role: "status" },
-    `${entry.about} ${entry.taskOutcome}`,
-  );
-  document.body.append(notice);
-  setTimeout(() => notice.remove(), NOTICE_MS);
 }

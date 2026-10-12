@@ -2,6 +2,8 @@ import type { AppConfig } from "../config/app-config.js";
 import { CommandExplainer } from "../permissions/command-explainer.js";
 import type { DestructiveList } from "../safety/destructive-list.js";
 import { PermissionPopups, type PopupDevice } from "../ui/permission-popups.js";
+import { PageOpener, type BrowserPage } from "../ui/server/page-opener.js";
+import { TaskNotices, type NoticeDevice } from "../ui/task-notices.js";
 import { buildOperator, type OperatorParts } from "./build-operator.js";
 import { buildPermissions, type PermissionParts } from "./build-permissions.js";
 import { buildUi, type UiParts } from "./build-ui.js";
@@ -16,6 +18,10 @@ export interface Adapters extends OperatorDevices {
   explainCommands: boolean;
   /** Native pop-ups for permission requests. */
   popups: PopupDevice;
+  /** Native notices when a task ends. */
+  notices: NoticeDevice;
+  /** The web UI's page in your browser, brought to the front from a notice. */
+  browser: BrowserPage;
 }
 
 export interface App {
@@ -39,6 +45,8 @@ export function buildApp(cfg: AppConfig, adapters: Adapters): App {
   const operator = buildOperator(core, neighbors);
   const ui = buildUi(core, neighbors, operator);
   new PermissionPopups(adapters.popups, ui.permissionClicks).follow(core.events);
+  const pages = new PageOpener(ui.clients, adapters.browser, () => ui.server.link());
+  new TaskNotices(adapters.notices, (target) => pages.open(target)).follow(core.events);
   return { core, permissions, workers, operator, ui };
 }
 

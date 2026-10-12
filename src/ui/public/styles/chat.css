@@ -152,3 +152,10 @@ details.more summary {
   background: var(--surface);
   align-items: flex-end;
 }
+
+/* An assistant reply opened from a task pop-up. */
+.entry.highlighted .entry-text {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  background: var(--accent-soft);
+}

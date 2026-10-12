@@ -36,7 +36,7 @@ export class SpeechOutput {
 
   speaksAbout(input: EventInput): boolean {
     if (this.isMuted()) return false;
-    if (input.announcement) return true; // only a spoken part before [SCREEN]; the announcement said the rest
+    if (input.announcement) return true; // a task's end is always said once: the reply, or its announcement
     return this.mode === "all" || input.urgent;
   }
 

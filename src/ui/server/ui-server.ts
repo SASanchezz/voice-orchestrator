@@ -21,6 +21,11 @@ export class UiServer {
     this.server = server;
     this.access.listeningOn(await listen(server, port));
     this.publisher.start();
+    return this.link();
+  }
+
+  /** The link to open, once started; it carries the token. */
+  link(): string {
     return this.access.link();
   }
 

@@ -7,6 +7,7 @@ import { accountOf } from "./sandbox.js";
  *   run: <shell command>   -> asks permission like Claude Code does, then really executes it
  *   sleep: <ms>            -> simulates a long step (abortable)
  *   error: <text>          -> ends with an error result, then throws it again, as Claude Code does
+ *   turn: <text>           -> ends a turn and goes on, as Claude Code does while background helpers still run
  * Other lines are ignored. Each call records which CLAUDE_CONFIG_DIR (= which account) it was started with.
  */
 
@@ -19,6 +20,8 @@ export interface WorkerCall {
 }
 
 export const workerCalls: WorkerCall[] = [];
+/** A turn's running total, as Claude Code reports it at a turn's end. */
+const TURN_COST_USD = 0.005;
 export const sessionsByCwd = new Map<string, string>();
 /** Per account: commands allowed "always". */
 const alwaysAllowed = new Map<string, Set<string>>();
@@ -63,22 +66,23 @@ function summaryResult(cwd: string, account: string, sessionId: string): object 
 async function* runStep(line: string, context: StepContext): AsyncGenerator<object> {
   const [kind, ...rest] = line.split(":");
   const arg = rest.join(":").trim();
-  if (kind === "error") {
-    yield {
-      type: "result",
-      subtype: "success",
-      is_error: true,
-      result: arg,
-      total_cost_usd: 0,
-      session_id: context.sessionId,
-    };
-    throw new Error(`Claude Code returned an error result: ${arg}`);
-  }
+  if (kind === "error") yield* failWith(arg, context);
+  if (kind === "turn") yield { ...successResult(arg, TURN_COST_USD), session_id: context.sessionId };
   if (kind === "sleep") {
     await abortableSleep(Number(arg), context.options.abortController!.signal);
     context.done.push(`slept ${arg}`);
   }
   if (kind === "run") yield* runCommand(arg, context);
+}
+
+/** An error result, then the same error thrown, as Claude Code does. */
+async function* failWith(error: string, context: StepContext): AsyncGenerator<object> {
+  yield { ...successResult(error, 0), is_error: true, session_id: context.sessionId };
+  throw new Error(`Claude Code returned an error result: ${error}`);
+}
+
+function successResult(result: string, costUsd: number): object {
+  return { type: "result", subtype: "success", is_error: false, result, total_cost_usd: costUsd };
 }
 
 async function* runCommand(command: string, context: StepContext): AsyncGenerator<object> {

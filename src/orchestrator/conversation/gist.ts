@@ -1,3 +1,5 @@
+import type { TaskEndEvent } from "../../events/app-events.js";
+
 const MAX_GIST_WORDS = 8;
 const FALLBACK_GIST = "its task";
 /** Openers that carry no meaning when read back: "please", "can you", "go ahead and"... */
@@ -15,6 +17,12 @@ export function spokenGist(task: string): string {
   const firstSentence = firstLine.split(SENTENCE_END)[0];
   const words = withoutFiller(firstSentence).split(/\s+/).filter(Boolean).slice(0, MAX_GIST_WORDS);
   return words.join(" ").replace(TRAILING_PUNCTUATION, "") || FALLBACK_GIST;
+}
+
+/** How an ended task is announced, aloud and in the page's pop-up: "acme-web session 3 done: add a countdown". */
+export function taskHeadline(e: TaskEndEvent): string {
+  const outcome = e.kind === "task_done" ? "done" : "failed";
+  return `${e.project} session ${e.sessionNumber} ${outcome}: ${spokenGist(e.task)}`;
 }
 
 function withoutFiller(text: string): string {

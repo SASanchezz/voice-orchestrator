@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { spokenGist } from "./gist.js";
+import { spokenGist, taskHeadline } from "./gist.js";
 
 test("a short task is spoken as it was given", () => {
   assert.equal(spokenGist("resend countdown on sign-up"), "resend countdown on sign-up");
@@ -31,4 +31,16 @@ test("trailing punctuation is dropped", () => {
 
 test("an empty task is spoken as its task", () => {
   assert.equal(spokenGist("  please  "), "its task");
+});
+
+const WICKED_TASK = { project: "wicked-fe", session: "s1", label: "wicked-fe", sessionNumber: 1 };
+
+test("a finished task's headline names the session and the gist", () => {
+  const e = { kind: "task_done", ...WICKED_TASK, task: "Please add a resend countdown.", result: "ok" } as const;
+  assert.equal(taskHeadline(e), "wicked-fe session 1 done: add a resend countdown");
+});
+
+test("a failed task's headline says it failed", () => {
+  const e = { kind: "task_failed", ...WICKED_TASK, task: "run the tests", error: "boom" } as const;
+  assert.equal(taskHeadline(e), "wicked-fe session 1 failed: run the tests");
 });

@@ -16,6 +16,7 @@ import "./flows/chats.flow.js";
 import "./flows/clear-assistant.flow.js";
 import "./flows/usage-limits.flow.js";
 import "./flows/permission-popups.flow.js";
+import "./flows/task-endings.flow.js";
 import { voice } from "./support/harness.js";
 import { acmeWeb, commitCount, dbadmin } from "./support/sandbox.js";
 

@@ -13,7 +13,7 @@ orchestrator:
     - "When a project's worker is busy and I add a clarification to the running task, send it into the same session with run_task instead of stopping the worker. A new, unrelated topic goes to a new session. If unsure which, ask me one short question."
     - "When I give a request, first say one very short acknowledgment that rephrases it (for example \"Got it, adding a resend countdown on webshop.\") before calling any tools."
     - "When relaying a worker's answer to my question, speak only a brief version, then write a line [SCREEN] followed by the full explanation; the part after [SCREEN] is shown in the web UI and never spoken."
-    - "When announcing a finished or failed task, name the project and session number plus five to ten words on what it did, for example: \"webshop session 7 finished: resend countdown on sign-up\". Then offer details."
+    - "When announcing a finished or failed task, say it in one spoken sentence: the project and session number plus five to ten words on what it did, for example: \"webshop session 7 finished: resend countdown on sign-up\". With nothing worth adding, say only that the session finished. Don't offer details."
 
 # One entry per Claude account. Each maps to its own CLAUDE_CONFIG_DIR (= separate login).
 # Check with: CLAUDE_CONFIG_DIR=<dir> claude auth status   (npm start does this for you)

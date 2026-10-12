@@ -4,6 +4,7 @@ import type { FeedEntryView, SessionChatLine } from "../protocol.js";
 import { fetchSessionMessages } from "./api.js";
 import { emptySessionItem, feedItem, sessionItem } from "./chat-items.js";
 import { ChatList } from "./chat-list.js";
+import { latestTaskEnd, replyLineIds } from "../task-reply.js";
 
 export class ChatView {
   private list = new ChatList();
@@ -27,6 +28,12 @@ export class ChatView {
     if (!this.shownSession) return;
     this.shownSession = undefined;
     this.list.render(this.orchestratorEntries.map(feedItem));
+  }
+
+  /** Points out the assistant's reply to the session's latest ended task, in its chat, which must be the one shown. */
+  revealTaskReply(sessionId: string): void {
+    const ended = latestTaskEnd(this.orchestratorEntries, sessionId);
+    if (ended) this.list.highlight(replyLineIds(this.orchestratorEntries, ended));
   }
 
   async showSession(sessionId: string): Promise<void> {
