@@ -1,19 +1,17 @@
 import type { ConversationMemory } from "../memory/conversation-memory.js";
 import type { ConversationLine } from "./conversation-lines.js";
-import type { ReplyPresenter } from "./reply-presenter.js";
+import type { ReplyPresenter, ReplySubject } from "./reply-presenter.js";
 import { onScreen } from "./reply-text.js";
 import type { TurnContext } from "./turn-context.js";
 
 /** One exchange with the model: what it is sent, what is remembered of it, and whether the reply is spoken. */
-export interface Turn {
+export interface Turn extends ReplySubject {
   message: string;
   /** How the exchange is remembered across resets, e.g. "user: run the tests". */
   heard: string;
   /** Your words, for confirm-phrase checks; undefined for notifications. */
   utterance?: string;
   aloud: boolean;
-  /** The permission request a notification asks about; its speech stops once the request is answered. */
-  aboutRequest?: string;
   /** Add "(N more waiting)" when more notifications are queued. */
   mentionWaiting: boolean;
 }
@@ -31,8 +29,8 @@ export class TurnTaker {
     const message = turn.mentionWaiting ? turn.message + this.context.waitingNote() : turn.message;
     const content = [...this.context.takeUiNotes(), message].join("\n");
     const reply = turn.aloud
-      ? await this.presenter.askAloud(content, turn.aboutRequest)
-      : await this.presenter.askShown(content);
+      ? await this.presenter.askAloud(content, turn)
+      : await this.presenter.askShown(content, turn);
     this.context.endTurn();
     if (reply) this.memory.record(turn.heard, onScreen(reply));
     return reply;

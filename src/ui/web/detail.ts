@@ -1,8 +1,10 @@
 // The right panel: the selected project's active session, with its controls and history.
 
+import { shortFolder } from "../folder-path.js";
 import type { ProjectView, SessionView } from "../protocol.js";
 import { act } from "./api.js";
 import { button, byId, collapsible, el, formatTime } from "./dom.js";
+import { markdownView } from "./markdown-view.js";
 import { activeSession, isBusy, STATUS_LABELS, store } from "./store.js";
 
 export function renderDetail(): void {
@@ -31,7 +33,7 @@ function updateDetailHead(project: ProjectView, session: SessionView): void {
 }
 
 function detailHeadContent(project: ProjectView, session: SessionView): HTMLDivElement[] {
-  const lines = [titleLine(project, session), statusLine(session)];
+  const lines = [titleLine(project, session), folderLine(project), statusLine(session)];
   if (session.task && isBusy(session))
     lines.push(el("div", {}, el("span", { class: "muted" }, "Task: "), session.task));
   if (session.status === "failed" && session.lastError)
@@ -46,6 +48,25 @@ function titleLine(project: ProjectView, session: SessionView): HTMLDivElement {
     el("span", { class: `dot ${session.status}` }),
     el("h2", {}, `${project.name} · session ${session.number}`),
     el("span", { class: "badge" }, `${project.profile} account`),
+  );
+}
+
+function folderLine(project: ProjectView): HTMLDivElement {
+  const copy = button("Copy", "ghost", () => copyFolder(project.folder, copy));
+  copy.title = "Copy the full folder path";
+  return el(
+    "div",
+    { class: "section-row detail-folder" },
+    el("code", { class: "folder-path", title: project.folder }, shortFolder(project.folderFromHome)),
+    copy,
+  );
+}
+
+/** The clipboard is only there on localhost or https; elsewhere the button says so. */
+function copyFolder(folder: string, copy: HTMLButtonElement): void {
+  navigator.clipboard.writeText(folder).then(
+    () => (copy.textContent = "Copied"),
+    () => (copy.textContent = "Can't copy"),
   );
 }
 
@@ -89,6 +110,6 @@ function historyItem(h: SessionView["history"][number]): HTMLLIElement {
       el("span", {}, formatTime(h.finishedAt)),
     ),
     el("div", { class: "history-task" }, h.task),
-    collapsible("Result", h.result),
+    collapsible("Result", markdownView(h.result, "more-body")),
   );
 }

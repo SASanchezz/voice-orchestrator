@@ -16,6 +16,7 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/chat.css": "text/css",
   "/styles/detail.css": "text/css",
   "/styles/dialogs.css": "text/css",
+  "/styles/markdown.css": "text/css",
 };
 
 /** The page, its script (compiled from src/ui/web/ at start) and its stylesheets. */

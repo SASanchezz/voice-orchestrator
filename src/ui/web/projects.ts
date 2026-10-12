@@ -1,5 +1,6 @@
 // The left column: the assistant's chat, then one card per project.
 
+import { shortFolder } from "../folder-path.js";
 import type { ProjectView, SessionStatus, SessionView } from "../protocol.js";
 import { act } from "./api.js";
 import { button, byId, el } from "./dom.js";
@@ -49,24 +50,29 @@ async function clearAssistant(): Promise<void> {
 }
 
 function projectCard(project: ProjectView): HTMLButtonElement {
-  const status = projectStatus(project);
-  const sessionCount =
-    project.sessions.length > 1 ? el("span", { class: "badge" }, `${project.sessions.length} sessions`) : "";
   const card = el(
     "button",
     { class: `project${project.name === store.selectedProjectName ? " selected" : ""}` },
-    el(
-      "div",
-      { class: "project-head" },
-      el("span", { class: `dot ${status}`, title: STATUS_LABELS[status] }),
-      el("span", { class: "project-name" }, project.name),
-      sessionCount,
-      el("span", { class: "badge" }, project.profile),
-    ),
+    projectHead(project),
+    el("div", { class: "project-folder", title: project.folder }, shortFolder(project.folderFromHome)),
     el("div", { class: "project-meta" }, sessionSubtitle(activeSession(project))),
   );
   card.addEventListener("click", () => store.select(project.name));
   return card;
+}
+
+function projectHead(project: ProjectView): HTMLDivElement {
+  const status = projectStatus(project);
+  const sessionCount =
+    project.sessions.length > 1 ? el("span", { class: "badge" }, `${project.sessions.length} sessions`) : "";
+  return el(
+    "div",
+    { class: "project-head" },
+    el("span", { class: `dot ${status}`, title: STATUS_LABELS[status] }),
+    el("span", { class: "project-name" }, project.name),
+    sessionCount,
+    el("span", { class: "badge" }, project.profile),
+  );
 }
 
 function projectStatus(project: ProjectView): SessionStatus {

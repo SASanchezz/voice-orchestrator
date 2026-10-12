@@ -23,7 +23,19 @@ export type AppEvent = EventSubject &
   );
 
 export type UsageLimitEvent = Extract<AppEvent, { kind: "usage_limit" }>;
+export type TaskEndEvent = Extract<AppEvent, { kind: "task_done" | "task_failed" }>;
 export type PermissionEvent = Extract<AppEvent, { kind: "permission" }>;
+
+/** A worker session by project, id and number, so the UI can open it. */
+export interface SessionLink {
+  project: string;
+  id: string;
+  number: number;
+}
+
+export function sessionLinkOf(e: TaskEndEvent): SessionLink {
+  return { project: e.project, id: e.session, number: e.sessionNumber };
+}
 
 /**
  * What happens to workers and sessions, for whoever turns it into speech, chat lines or UI updates.

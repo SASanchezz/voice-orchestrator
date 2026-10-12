@@ -1,3 +1,5 @@
+import type { AppConfig } from "../../config/app-config.js";
+import { tildeHome } from "../../config/paths.js";
 import type { Projects } from "../../registry/projects.js";
 import type { SessionState } from "../../registry/registry-schema.js";
 import type { Sessions } from "../../registry/sessions.js";
@@ -9,6 +11,7 @@ export class UiLookup {
   constructor(
     private projects: Projects,
     private sessions: Sessions,
+    private projectConfigs: AppConfig["projects"],
   ) {}
 
   requireProject(name: string): void {
@@ -28,6 +31,9 @@ export class UiLookup {
   }
 
   projectViews(): ProjectView[] {
-    return this.projects.all().map((p) => ({ ...p, sessions: this.sessions.sessionsOf(p.name) }));
+    return this.projects.all().map((p) => {
+      const folder = this.projectConfigs[p.name]?.path ?? "";
+      return { ...p, folder, folderFromHome: tildeHome(folder), sessions: this.sessions.sessionsOf(p.name) };
+    });
   }
 }

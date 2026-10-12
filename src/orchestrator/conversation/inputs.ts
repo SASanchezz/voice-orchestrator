@@ -1,3 +1,5 @@
+import type { SessionLink } from "../../events/app-events.js";
+
 /** Where your words came from. Replies to typed messages are shown in the UI, not spoken. */
 export type InputSource = "voice" | "ui";
 
@@ -11,6 +13,8 @@ export interface EventInput {
   kind: "event";
   text: string;
   permissionId?: string;
+  /** The session whose finished task this is; the model's reply relays its answer. */
+  session?: SessionLink;
   urgent: boolean;
   /** A task's short spoken outcome, said before the model's turn. */
   announcement?: string;

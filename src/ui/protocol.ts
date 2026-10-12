@@ -28,6 +28,10 @@ export interface SessionView {
 export interface ProjectView {
   name: string;
   profile: string;
+  /** The project's folder on this machine. */
+  folder: string;
+  /** The same folder with your home folder written as ~. */
+  folderFromHome: string;
   activeSession: string;
   sessions: SessionView[];
 }
@@ -50,6 +54,13 @@ export interface UiState {
   voiceInput: VoiceInputName;
 }
 
+/** A worker session an assistant's line is about or relays an answer from; the page links to it. */
+export interface SessionLinkView {
+  project: string;
+  id: string;
+  number: number;
+}
+
 /** A line of the assistant's chat. */
 export interface FeedEntryView {
   id: number;
@@ -61,6 +72,7 @@ export interface FeedEntryView {
   failed?: boolean;
   detail?: string;
   taskOutcome?: "done" | "failed";
+  session?: SessionLinkView;
 }
 
 /** A line of one worker session's chat. */

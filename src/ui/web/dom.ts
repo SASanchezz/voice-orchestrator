@@ -23,8 +23,8 @@ export function button(label: string, variant: string, onClick: () => void): HTM
   return node;
 }
 
-export function collapsible(summary: string, text: string): HTMLDetailsElement {
-  return el("details", { class: "more" }, el("summary", {}, summary), el("p", {}, text));
+export function collapsible(summary: string, body: HTMLElement): HTMLDetailsElement {
+  return el("details", { class: "more" }, el("summary", {}, summary), body);
 }
 
 export function formatTime(iso: string): string {

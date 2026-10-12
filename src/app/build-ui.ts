@@ -57,7 +57,7 @@ interface UiSources {
 function uiServer(core: Core, { permissions, workers }: OperatorNeighbors, sources: UiSources): UiServer {
   const { orchestrator } = sources.operator;
   const access = new UiAccess();
-  const lookup = new UiLookup(core.projects, core.sessions);
+  const lookup = new UiLookup(core.projects, core.sessions, core.cfg.projects);
   const clients = new LiveClients();
   relayToClients(clients, sources.feed, sources.chats);
   const publisher = new StatePublisher(clients, new UiStateView(lookup, permissions.views, orchestrator), sources.feed);

@@ -4,6 +4,8 @@ import { appendFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setStateDir } from "../config/paths.js";
+import { AppEvents } from "../events/app-events.js";
+import { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import { Feed } from "./feed.js";
 
 let stateDir = "";
@@ -45,4 +47,22 @@ test("a line cut short by a crash doesn't lose the rest", () => {
     new Feed().recent().map((e) => e.text),
     ["kept"],
   );
+});
+
+const PREWINS_22 = { project: "prewins", id: "s-22", number: 22 };
+
+test("an assistant line relaying a worker's answer links to its session, after a restart too", () => {
+  const lines = new ConversationLines();
+  new Feed().follow(lines, new AppEvents());
+  lines.say({ role: "orchestrator", text: "Tests pass.", session: PREWINS_22 });
+  assert.deepEqual(new Feed().recent()[0].session, PREWINS_22);
+});
+
+test("a finished task's line links to its session", () => {
+  const events = new AppEvents();
+  const feed = new Feed();
+  feed.follow(new ConversationLines(), events);
+  const subject = { project: "prewins", session: "s-22", label: "prewins", task: "run tests", sessionNumber: 22 };
+  events.emitEvent({ kind: "task_done", ...subject, result: "All green." });
+  assert.deepEqual(feed.recent()[0].session, PREWINS_22);
 });

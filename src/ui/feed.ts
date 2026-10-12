@@ -42,7 +42,9 @@ export class Feed extends EventEmitter {
 
   /** Follow the conversation and worker events. */
   follow(lines: ConversationLines, events: AppEvents): void {
-    lines.on("line", (line: ConversationLine) => this.add({ kind: line.role, text: line.text, source: line.source }));
+    lines.on("line", ({ role, text, source, session }: ConversationLine) =>
+      this.add({ kind: role, text, source, session }),
+    );
     events.on("event", (e: AppEvent) => {
       const entry = feedEntryFor(e);
       if (entry) this.add(entry);

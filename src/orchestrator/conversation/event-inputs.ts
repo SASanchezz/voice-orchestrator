@@ -1,4 +1,4 @@
-import type { AppEvent, PermissionEvent } from "../../events/app-events.js";
+import { sessionLinkOf, type AppEvent, type PermissionEvent } from "../../events/app-events.js";
 import { usageLimitMessage } from "../../limits/usage-limit.js";
 import { spokenGist } from "./gist.js";
 import type { Input } from "./inputs.js";
@@ -10,6 +10,7 @@ export function inputFor(e: AppEvent): Input {
     kind: "event",
     text: describeEvent(e),
     permissionId: e.kind === "permission" ? e.id : undefined,
+    session: e.kind === "permission" ? undefined : sessionLinkOf(e),
     urgent: e.kind !== "task_done",
     announcement: announcementFor(e),
   };

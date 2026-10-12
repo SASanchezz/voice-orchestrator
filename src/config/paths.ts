@@ -16,3 +16,9 @@ export function setStateDir(dir: string): void {
 export function expandHome(path: string): string {
   return path.startsWith("~") ? homedir() + path.slice(1) : path;
 }
+
+/** The reverse of expandHome: a folder under your home folder written as ~/… */
+export function tildeHome(path: string): string {
+  const home = homedir();
+  return path === home || path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path;
+}

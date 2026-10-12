@@ -4,6 +4,7 @@
   padding: 16px;
   border-bottom: 1px solid var(--border);
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* a long folder path shortens instead of widening the panel */
   gap: 6px;
 }
 .detail-title {
@@ -69,4 +70,14 @@
 }
 .outcome.stopped {
   color: var(--muted);
+}
+
+.folder-path {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

@@ -20,6 +20,7 @@ export class EventTurns {
       heard: input.text,
       aloud,
       aboutRequest: input.permissionId,
+      relays: input.session,
       mentionWaiting: true,
     };
     const reply = await this.turns.take(turn);
