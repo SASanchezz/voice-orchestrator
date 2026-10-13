@@ -1,19 +1,12 @@
 import type { SessionLink } from "../../events/app-events.js";
-import type { SingleVoice } from "./single-voice.js";
 import type { OperatorSession } from "../model/operator-session.js";
 import type { ConversationLine, ConversationLines } from "./conversation-lines.js";
 import { onScreen, SCREEN_MARKER, spokenPart } from "./reply-text.js";
-import type { ReplySpeaker } from "./reply-speaker.js";
+import type { ReplySpeaker, SpokenSubject } from "./reply-speaker.js";
 
-/**
- * What a reply is about: the permission request it asks (its speech stops once that is answered),
- * and the worker session whose answer it relays (its lines link there).
- */
-export interface ReplySubject {
-  aboutRequest?: string;
+/** What a reply is about: what may quiet its speech, and the worker session whose answer it relays (its lines link there). */
+export interface ReplySubject extends SpokenSubject {
   relays?: SessionLink;
-  /** For a task notification: the reply speaks only if the fallback announcement hasn't. */
-  voice?: SingleVoice;
 }
 
 /** Asks the model and shows its reply piece by piece as it arrives, so it is on screen before the tools finish. */
@@ -42,7 +35,7 @@ export class ReplyPresenter {
       screenOnly = text.includes(SCREEN_MARKER);
       const aloud = spokenPart(text);
       if (aloud && (subject.voice?.replyMaySpeak() ?? true))
-        spoken = spoken.then(() => this.speaker.speakWhenQuiet(aloud, subject.aboutRequest));
+        spoken = spoken.then(() => this.speaker.speakWhenQuiet(aloud, subject));
     });
     await spoken;
     return reply;

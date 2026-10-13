@@ -10,7 +10,7 @@ export class Notices {
   ) {}
 
   async handle(notice: NoticeInput): Promise<void> {
-    if (!this.speech.isMuted()) await this.speech.speakWhenQuiet(notice.spoken);
+    if (!this.speech.isMuted()) await this.speech.speakWhenQuiet(notice.spoken, notice.voice);
     this.context.addUiNote(notice.text);
   }
 }

@@ -1,11 +1,14 @@
 // A small floating panel with buttons: a worker's permission request (Deny / Allow, top-right corner),
+// a worker's question (its options, stacked, and a field for your own answer),
 // or a short notice that a task ended (its own buttons, bottom-right, so it never covers a request).
-// It never activates or takes focus: the app you're in (e.g. the browser) stays in front and keeps the keyboard.
-// Prints the clicked button's answer ("deny" / "allow" by default) and exits; --close-after exits silently after that many seconds.
+// It never activates or takes focus: the app you're in (e.g. the browser) stays in front and keeps the keyboard,
+// until you click into the answer field, which then takes typing without bringing anything else forward.
+// Prints the clicked button's answer ("deny" / "allow" by default), or "text:<your answer>", and exits;
+// --close-after exits silently after that many seconds.
 // Each line on stdin replaces the plain-language explanation; stdin closing (the orchestrator quit) closes the panel.
 // Usage: popup-panel <title> <warning or ""> <detail or ""> <allow label>
-//          [--button <answer> <label>]... [--bottom] [--close-after <seconds>]
-// Buttons given with --button replace Deny and Allow, left to right.
+//          [--button <answer> <label>]... [--stacked] [--text <placeholder>] [--bottom] [--close-after <seconds>]
+// Buttons given with --button replace Deny and Allow, left to right, or top to bottom with --stacked.
 import AppKit
 
 let usageExitCode: Int32 = 64
@@ -43,11 +46,22 @@ func buttonOptions() -> [(answer: String, label: String)] {
 }
 let atBottom = options.contains("--bottom")
 let closeAfterSeconds = option("--close-after").flatMap(Double.init)
+let stacked = options.contains("--stacked")
+let ownAnswerPlaceholder = option("--text")
 
 final class Clicks: NSObject {
   /** Each button carries its answer as its identifier. */
   @objc func clicked(_ button: NSButton) {
     print(button.identifier?.rawValue ?? "")
+    fflush(stdout)
+    exit(0)
+  }
+
+  /** Return in the answer field, or its Send button; an empty answer sends nothing. */
+  @objc func sent(_ sender: Any) {
+    let answer = ownAnswer.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !answer.isEmpty else { return }
+    print("text:" + answer)
     fflush(stdout)
     exit(0)
   }
@@ -62,7 +76,8 @@ func wrappingLabel(_ text: String, font: NSFont, color: NSColor = .labelColor) -
 }
 
 let app = NSApplication.shared
-app.setActivationPolicy(.prohibited)  // never becomes the active app, so it never takes focus
+// never becomes the active app, so it never takes focus; an answer field needs the panel to be able to take typing
+app.setActivationPolicy(ownAnswerPlaceholder == nil ? .prohibited : .accessory)
 let clicks = Clicks()
 
 let explanation = wrappingLabel("", font: .systemFont(ofSize: 13))
@@ -78,11 +93,21 @@ let answerButtons = buttonOptions().map { option -> NSButton in
   button.hasDestructiveAction = option.answer == "allow" && !warning.isEmpty
   return button
 }
-let buttons = NSStackView(views: [NSView()] + answerButtons)
-buttons.orientation = .horizontal
+let buttons = NSStackView(views: stacked ? answerButtons : [NSView()] + answerButtons)
+buttons.orientation = stacked ? .vertical : .horizontal
+buttons.alignment = stacked ? .leading : .centerY
+
+let ownAnswer = NSTextField(string: "")
+ownAnswer.placeholderString = ownAnswerPlaceholder
+ownAnswer.cell?.sendsActionOnEndEditing = false
+ownAnswer.target = clicks
+ownAnswer.action = #selector(Clicks.sent(_:))
+let ownAnswerRow = NSStackView(views: [ownAnswer, NSButton(title: "Send", target: clicks, action: #selector(Clicks.sent(_:)))])
+ownAnswerRow.orientation = .horizontal
+ownAnswerRow.isHidden = ownAnswerPlaceholder == nil
 
 let content = NSStackView(views: [
-  wrappingLabel(title, font: .boldSystemFont(ofSize: 13)), warningLabel, explanation, commandLabel, buttons,
+  wrappingLabel(title, font: .boldSystemFont(ofSize: 13)), warningLabel, explanation, commandLabel, buttons, ownAnswerRow,
 ])
 content.orientation = .vertical
 content.alignment = .leading
@@ -90,6 +115,7 @@ content.spacing = 8
 content.edgeInsets = NSEdgeInsets(top: padding, left: padding, bottom: padding, right: padding)
 content.widthAnchor.constraint(equalToConstant: width).isActive = true
 buttons.widthAnchor.constraint(equalToConstant: width - 2 * padding).isActive = true
+ownAnswerRow.widthAnchor.constraint(equalToConstant: width - 2 * padding).isActive = true
 
 let panel = NSPanel(
   contentRect: NSRect(x: 0, y: 0, width: width, height: 100),

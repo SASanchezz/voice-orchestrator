@@ -52,6 +52,22 @@
   padding: 8px 10px;
   overflow-x: auto;
 }
+.markdown .code-block {
+  position: relative;
+  margin: 0 0 8px;
+}
+.markdown .code-block pre {
+  margin: 0;
+  padding-right: 64px; /* room for the copy button */
+}
+.markdown .code-block .copy-button {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  padding: 1px 8px;
+  font-size: 11px;
+  background: var(--surface);
+}
 .markdown pre code {
   background: none;
   border: none;

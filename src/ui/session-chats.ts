@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import type { AppEvent, AppEvents } from "../events/app-events.js";
 import type { SessionMessage, WorkerChat } from "../workers/worker-chat.js";
 import type { ChatFiles, ChatMessage } from "./chat-files.js";
+import { questionsLine } from "./feed-entry.js";
 
 const MAX_MESSAGES_PER_SESSION = 200;
 const MAX_MESSAGE_CHARS = 8000;
@@ -23,6 +24,7 @@ export class SessionChats extends EventEmitter {
     events.on("event", (e: AppEvent) => {
       if (e.kind === "permission" && !e.reminder)
         this.add({ session: e.session, kind: "permission", text: `asks: ${e.description}` });
+      if (e.kind === "question") this.add({ session: e.session, kind: "question", text: questionsLine(e) });
     });
     events.on("session_removed", (sessionId: string) => this.remove(sessionId));
     events.on("session_cleared", (sessionId: string) => this.clear(sessionId));

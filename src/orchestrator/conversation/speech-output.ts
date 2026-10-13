@@ -2,6 +2,7 @@ import type { SpeechMode } from "../../config/app-config.js";
 import { sleep } from "../../shared/sleep.js";
 import type { VoiceInputState, VoiceIO } from "../../voice/voice-io.js";
 import type { EventInput, UserInput } from "./inputs.js";
+import type { SingleVoice } from "./single-voice.js";
 
 const USER_DONE_POLL_MS = 200;
 
@@ -40,8 +41,10 @@ export class SpeechOutput {
     return this.mode === "all" || input.urgent;
   }
 
-  async speakWhenQuiet(text: string): Promise<void> {
+  /** Not said if its pop-up was clicked while you were talking. */
+  async speakWhenQuiet(text: string, about?: SingleVoice): Promise<void> {
     await untilQuiet(this.voice);
+    if (about?.isSilenced()) return;
     await this.voice.speak(text);
   }
 }

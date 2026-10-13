@@ -22,6 +22,13 @@ export class ChatList {
     if (atBottom) this.wrap.scrollTop = this.wrap.scrollHeight;
   }
 
+  /** Swaps the newest line for a new version of it, e.g. a folded run that grew by one. */
+  replaceLast(item: HTMLLIElement): void {
+    const last = this.list.lastElementChild;
+    if (last) last.replaceWith(item);
+    else this.append(item);
+  }
+
   /** Scrolls to the first of these assistant lines and marks them for a few seconds. */
   highlight(entryIds: number[]): void {
     const items = entryIds.flatMap((id) => [...this.list.querySelectorAll<HTMLElement>(`[data-entry="${id}"]`)]);

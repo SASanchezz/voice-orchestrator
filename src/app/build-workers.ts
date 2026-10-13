@@ -3,7 +3,6 @@ import type { QueryFn } from "../agent/query-fn.js";
 import { STATE_DIR } from "../config/paths.js";
 import { TodoList } from "../limits/todo-list.js";
 import { UsageLimits } from "../limits/usage-limits.js";
-import type { PermissionBroker } from "../permissions/permission-broker.js";
 import { ChangeSummarizer } from "../workers/change-summarizer.js";
 import { LimitParking } from "../workers/limit-parking.js";
 import { SessionControl } from "../workers/session-control.js";
@@ -17,6 +16,7 @@ import { TaskRecorder } from "../workers/task-recorder.js";
 import { TaskRunner } from "../workers/task-runner.js";
 import { TaskStream } from "../workers/task-stream.js";
 import { TodoRunner } from "../workers/todo-runner.js";
+import type { ToolCallGate } from "../workers/tool-call-gate.js";
 import { WorkerActivity } from "../workers/worker-activity.js";
 import { WorkerChat } from "../workers/worker-chat.js";
 import { WorkerDirectory } from "../workers/worker-directory.js";
@@ -42,9 +42,9 @@ interface WorkerKit {
   limits: UsageLimits;
 }
 
-export function buildWorkers(core: Core, broker: PermissionBroker, query: QueryFn): WorkerParts {
+export function buildWorkers(core: Core, gate: ToolCallGate, query: QueryFn): WorkerParts {
   const kit = workerKit(core);
-  const runner = taskRunner(core, kit, new TaskLauncher(kit.options, broker, query));
+  const runner = taskRunner(core, kit, new TaskLauncher(kit.options, gate, query));
   const runs = new SessionRuns(new SessionQueue(core.sessions), kit.directory, runner);
   const intake = new TaskIntake(kit.directory, runs, kit.chat);
   return {

@@ -1,7 +1,9 @@
 import { test, type TestContext } from "node:test";
 import assert from "node:assert/strict";
+import type { TaskEndEvent } from "../../events/app-events.js";
 import { EventTurns, REPLY_WAIT_MS } from "./event-turns.js";
 import type { EventInput } from "./inputs.js";
+import { EventVoices } from "./event-voices.js";
 import type { Turn } from "./turn-taker.js";
 
 const ANNOUNCEMENT = "kaggle session 1 done: retrain the model";
@@ -86,4 +88,53 @@ test("event turns: a permission request has no announcement to fall back to", as
   const { events, spoken } = eventTurns(screenOnly);
   await events.handle(permission);
   assert.deepEqual(spoken, []);
+});
+
+const KAGGLE_DONE: TaskEndEvent = {
+  kind: "task_done",
+  project: "kaggle",
+  session: "s1",
+  label: "kaggle",
+  sessionNumber: 1,
+  task: "Please retrain the model.",
+  result: "ok",
+};
+
+/** The task's voice as its pop-up silences it; `stops` counts speech cut off, as the talk key does. */
+function dismissibleTask() {
+  const stopper = { stops: 0, stopSpeaking: () => void stopper.stops++ };
+  const voices = new EventVoices(stopper);
+  const input: EventInput = { ...TASK_DONE, voice: voices.voiceOf(KAGGLE_DONE) };
+  return { input, stopper, dismiss: () => voices.silence(KAGGLE_DONE) };
+}
+
+/** Says the first part, the pop-up is clicked, then tries to say the second. */
+const dismissedMidway =
+  (dismiss: () => void): ModelReply =>
+  async (turn, say) => {
+    await speaks("First part.")(turn, say);
+    dismiss();
+    return speaks("Second part.")(turn, say);
+  };
+
+test("event turns: a task whose pop-up was clicked while queued is not said at all", async () => {
+  const { input, dismiss } = dismissibleTask();
+  dismiss();
+  const { events, spoken } = eventTurns(screenOnly);
+  await events.handle(input);
+  assert.deepEqual(spoken, []);
+});
+
+test("event turns: clicking the pop-up mid-reply drops the rest, announcement included", async () => {
+  const { input, dismiss } = dismissibleTask();
+  const { events, spoken } = eventTurns(dismissedMidway(dismiss));
+  await events.handle(input);
+  assert.deepEqual(spoken, ["First part."]);
+});
+
+test("event turns: clicking the pop-up mid-reply cuts off what is playing", async () => {
+  const { input, stopper, dismiss } = dismissibleTask();
+  const { events } = eventTurns(dismissedMidway(dismiss));
+  await events.handle(input);
+  assert.equal(stopper.stops, 1);
 });

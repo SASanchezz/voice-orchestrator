@@ -1,4 +1,4 @@
-// "Waiting for you": worker permission requests, answered by click.
+// "Waiting for you": worker permission requests, answered by click. Workers' questions share the section.
 
 import type { PendingRequestView } from "../protocol.js";
 import { act } from "./api.js";
@@ -8,8 +8,8 @@ import { store } from "./store.js";
 type Decision = "once" | "always" | "deny";
 
 export function renderApprovals(): void {
-  const { pending } = store.state;
-  byId("approvals", HTMLElement).hidden = !pending.length;
+  const { pending, questions } = store.state;
+  byId("approvals", HTMLElement).hidden = !pending.length && !questions.length;
   byId("approval-list", HTMLElement).replaceChildren(...pending.map(approvalCard));
 }
 

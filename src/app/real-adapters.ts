@@ -3,6 +3,7 @@ import type { AppConfig } from "../config/app-config.js";
 import { NOTES_PATH } from "../config/paths.js";
 import { MacBrowserPage } from "../macos/mac-browser-page.js";
 import { MacPopups } from "../macos/mac-popups.js";
+import { MacQuestionPanels } from "../macos/mac-question-panels.js";
 import { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../safety/destructive-list.js";
 import { MacScreen } from "../screen/mac-screen.js";
@@ -20,9 +21,10 @@ export async function realAdapters(voice: VoiceIO): Promise<Adapters> {
   destructive.watchForChanges();
   const screen = await MacScreen.create();
   const popups = await MacPopups.create();
+  const questionPanels = await MacQuestionPanels.create(); // after MacPopups: the helper is built by then
   const notes = new AssistantNotes(NOTES_PATH);
   const devices = { voice, screen, notes, query: sdkQuery, popups, notices: popups, browser: new MacBrowserPage() };
-  return { ...devices, destructive, explainCommands: true };
+  return { ...devices, questionPanels, destructive, explainCommands: true };
 }
 
 /** Hold the hotkey to talk; replies are spoken with `say`. */

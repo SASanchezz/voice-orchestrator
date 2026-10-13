@@ -14,6 +14,7 @@ import { DestructiveList } from "../../safety/destructive-list.js";
 import { fakeQuery } from "../../testing/fake-query.js";
 import { TestBrowserPage, TestNotices } from "../../testing/test-notices.js";
 import { TestPopups } from "../../testing/test-popups.js";
+import { TestQuestionPanels } from "../../testing/test-question-panels.js";
 import { connectBrain, fakeOperator } from "./fake-operator.js";
 import { fakeWorker } from "./fake-worker.js";
 import { cfg, notesFile, root, rulesFile } from "./sandbox.js";
@@ -24,6 +25,8 @@ after(() => rmSync(root, { recursive: true, force: true }));
 export const voice = new TestVoice();
 export const screen = new TestScreen();
 export const popups = new TestPopups();
+export const questionPanels = new TestQuestionPanels();
+export const notices = new TestNotices();
 
 const query = fakeQuery(({ prompt, options }) =>
   typeof prompt === "string" ? fakeWorker(prompt, options!) : fakeOperator(prompt, options!),
@@ -37,7 +40,8 @@ export const app = buildApp(cfg, {
   query,
   explainCommands: false,
   popups,
-  notices: new TestNotices(),
+  questionPanels,
+  notices,
   browser: new TestBrowserPage(),
 });
 connectBrain(app.operator.tools);

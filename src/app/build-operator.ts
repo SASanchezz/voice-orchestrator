@@ -2,6 +2,7 @@ import type { AppEvent } from "../events/app-events.js";
 import { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import { inputFor } from "../orchestrator/conversation/event-inputs.js";
 import { EventTurns } from "../orchestrator/conversation/event-turns.js";
+import { EventVoices } from "../orchestrator/conversation/event-voices.js";
 import { InputDispatcher } from "../orchestrator/conversation/input-dispatcher.js";
 import { InputQueue } from "../orchestrator/conversation/input-queue.js";
 import { Notices } from "../orchestrator/conversation/notices.js";
@@ -34,6 +35,8 @@ export interface OperatorParts {
   lines: ConversationLines;
   tools: OperatorTools;
   context: TurnContext;
+  /** The voice of each event with a pop-up, which clicking the pop-up silences. */
+  voices: EventVoices;
 }
 
 /** Builds the operator and has it listen: your key press, your words, and every app event. */
@@ -42,10 +45,12 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   const tools = buildOperatorTools(core, neighbors, kit);
   const session = buildOperatorSession(core, neighbors, { kit, tools });
   const { loop, lifecycle } = operatorLoop(core, neighbors.permissions, { kit, session });
-  listen(core, neighbors.devices, loop);
+  listen(neighbors.devices, loop);
+  core.events.on("event", (e: AppEvent) => loop.enqueue(inputFor(e, kit.voices)));
   core.events.on("permission_closed", (requestId: string) => kit.replies.answered(requestId));
   const orchestrator = new Orchestrator(loop, kit.context, kit.speech);
-  return { orchestrator, session, lifecycle, lines: kit.lines, tools, context: kit.context };
+  const { lines, context, voices } = kit;
+  return { orchestrator, session, lifecycle, lines, tools, context, voices };
 }
 
 function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighbors): ConversationKit {
@@ -61,6 +66,7 @@ function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighb
     context,
     speech,
     replies,
+    voices: new EventVoices(devices.voice),
     lines: new ConversationLines(),
     memory,
     requests: new ResetRequests(),
@@ -85,8 +91,7 @@ function operatorLoop(
   return { loop: new OperatorLoop(kit.queue, dispatcher, lifecycle), lifecycle };
 }
 
-function listen({ events }: Core, { voice, screen }: OperatorDevices, loop: OperatorLoop): void {
+function listen({ voice, screen }: OperatorDevices, loop: OperatorLoop): void {
   voice.onPress(() => screen.capture()); // what you're looking at when you start asking, not seconds later
   voice.onUtterance((text) => loop.enqueue({ kind: "user", text, source: "voice" }));
-  events.on("event", (e: AppEvent) => loop.enqueue(inputFor(e)));
 }

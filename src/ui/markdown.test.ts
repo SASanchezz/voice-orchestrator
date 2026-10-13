@@ -68,3 +68,11 @@ test("markdown: a paragraph ends where a list starts", () => {
     ["paragraph", "list"],
   );
 });
+
+test("markdown: two fenced commands stay two blocks, each copied on its own", () => {
+  assert.deepEqual(parseMarkdown("Run:\n```\nnpm ci\n```\n```bash\nnpm test -- --watch\n```"), [
+    { kind: "paragraph", lines: [[text("Run:")]] },
+    { kind: "code", text: "npm ci" },
+    { kind: "code", text: "npm test -- --watch" },
+  ]);
+});

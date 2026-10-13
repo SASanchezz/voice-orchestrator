@@ -8,6 +8,7 @@ import { accountOf } from "./sandbox.js";
  *   sleep: <ms>            -> simulates a long step (abortable)
  *   error: <text>          -> ends with an error result, then throws it again, as Claude Code does
  *   turn: <text>           -> ends a turn and goes on, as Claude Code does while background helpers still run
+ *   ask: <question>|<a>,<b> -> asks you with AskUserQuestion, like Claude Code does, and notes your answer
  * Other lines are ignored. Each call records which CLAUDE_CONFIG_DIR (= which account) it was started with.
  */
 
@@ -73,6 +74,17 @@ async function* runStep(line: string, context: StepContext): AsyncGenerator<obje
     context.done.push(`slept ${arg}`);
   }
   if (kind === "run") yield* runCommand(arg, context);
+  if (kind === "ask") await askUser(arg, context);
+}
+
+/** "Which database?|Postgres,SQLite": one question with those options, sent through canUseTool as Claude Code does. */
+async function askUser(spec: string, { options, done }: StepContext): Promise<void> {
+  const [question, choices] = spec.split("|");
+  const offered = choices.split(",").map((label) => ({ label, description: `Use ${label}` }));
+  const input = { questions: [{ question, header: "Choice", multiSelect: false, options: offered }] };
+  const signal = options.abortController!.signal;
+  const answer = await options.canUseTool!("AskUserQuestion", input, { signal, toolUseID: "t", requestId: "r" });
+  done.push(answer?.behavior === "allow" ? `answered ${JSON.stringify(answer.updatedInput?.answers)}` : "not answered");
 }
 
 /** An error result, then the same error thrown, as Claude Code does. */

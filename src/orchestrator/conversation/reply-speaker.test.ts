@@ -41,20 +41,20 @@ const settle = () => new Promise((r) => setImmediate(r));
 
 test("reply speaker: a reply about a waiting request is spoken", async () => {
   const { voice, speaker } = speakerWaitingFor("p1");
-  void speaker.speakWhenQuiet("Allow once, always or deny?", "p1");
+  void speaker.speakWhenQuiet("Allow once, always or deny?", { aboutRequest: "p1" });
   await settle();
   assert.deepEqual(voice.spoken, ["Allow once, always or deny?"]);
 });
 
 test("reply speaker: a reply about an answered request is not spoken", async () => {
   const { voice, speaker } = speakerWaitingFor();
-  await speaker.speakWhenQuiet("Allow once, always or deny?", "p1");
+  await speaker.speakWhenQuiet("Allow once, always or deny?", { aboutRequest: "p1" });
   assert.deepEqual(voice.spoken, []);
 });
 
 test("reply speaker: answering the request cuts off its reply mid-sentence", async () => {
   const { voice, speaker } = speakerWaitingFor("p1");
-  const speaking = speaker.speakWhenQuiet("Allow once, always or deny?", "p1");
+  const speaking = speaker.speakWhenQuiet("Allow once, always or deny?", { aboutRequest: "p1" });
   await settle();
   speaker.answered("p1");
   await speaking;
@@ -63,7 +63,7 @@ test("reply speaker: answering the request cuts off its reply mid-sentence", asy
 
 test("reply speaker: answering another request leaves the reply playing", async () => {
   const { voice, speaker } = speakerWaitingFor("p1", "p2");
-  void speaker.speakWhenQuiet("Allow once, always or deny?", "p1");
+  void speaker.speakWhenQuiet("Allow once, always or deny?", { aboutRequest: "p1" });
   await settle();
   speaker.answered("p2");
   assert.equal(voice.stops, 0);

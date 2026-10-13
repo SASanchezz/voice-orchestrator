@@ -1,5 +1,9 @@
 import type { Orchestrator } from "../../orchestrator/orchestrator.js";
+import type { NewFeedEntry } from "../feed-entry.js";
 import type { Feed } from "../feed.js";
+
+/** What an answered request is about: the label it is shown under, and the session the timeline links to. */
+export type AnswerSubject = Pick<NewFeedEntry, "about" | "session">;
 
 /** Shows a click's outcome in the feed and tells the model about it. */
 export class ActionReporter {
@@ -14,8 +18,8 @@ export class ActionReporter {
     return message;
   }
 
-  reportAnswer(about: string | undefined, message: string, requestId: string): string {
-    this.feed.add({ kind: "action", about, text: message });
+  reportAnswer(subject: AnswerSubject, message: string, requestId: string): string {
+    this.feed.add({ kind: "action", ...subject, text: message });
     this.orchestrator.noteUiAction(`${message} (request ${requestId})`);
     return message;
   }

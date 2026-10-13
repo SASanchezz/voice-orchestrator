@@ -2,9 +2,11 @@
 
 import type { FeedEntryView, SessionChatLine } from "../protocol.js";
 import { fetchSessionMessages } from "./api.js";
-import { emptySessionItem, feedItem, sessionItem } from "./chat-items.js";
+import { emptySessionItem, feedItem, feedItems, sessionItem } from "./chat-items.js";
 import { ChatList } from "./chat-list.js";
 import { latestTaskEnd, replyLineIds } from "../task-reply.js";
+import { chatRows, joinsPermissionRow } from "../permission-lines.js";
+import { permissionRowItem } from "./permission-items.js";
 
 export class ChatView {
   private list = new ChatList();
@@ -16,18 +18,23 @@ export class ChatView {
   /** The orchestrator's timeline as the server had it when the page connected. */
   setOrchestratorBacklog(entries: FeedEntryView[]): void {
     this.orchestratorEntries = entries;
-    if (!this.shownSession) this.list.render(entries.map(feedItem));
+    if (!this.shownSession) this.list.render(feedItems(entries));
   }
 
+  /** A permission answer right after another about the same session joins its folded line. */
   addOrchestratorEntry(entry: FeedEntryView): void {
+    const joins = joinsPermissionRow(this.orchestratorEntries.at(-1), entry);
     this.orchestratorEntries.push(entry);
-    if (!this.shownSession) this.list.append(feedItem(entry));
+    if (this.shownSession) return;
+    if (!joins) return this.list.append(feedItem(entry));
+    const row = chatRows(this.orchestratorEntries).at(-1) ?? [entry];
+    this.list.replaceLast(permissionRowItem(row));
   }
 
   showOrchestrator(): void {
     if (!this.shownSession) return;
     this.shownSession = undefined;
-    this.list.render(this.orchestratorEntries.map(feedItem));
+    this.list.render(feedItems(this.orchestratorEntries));
   }
 
   /** Points out the assistant's reply to the session's latest ended task, in its chat, which must be the one shown. */

@@ -18,9 +18,14 @@ function noticesFor(...events: AppEvent[]) {
   const appEvents = new AppEvents();
   const notices = new TestNotices();
   const opened: PageTarget[] = [];
-  new TaskNotices(notices, async (target) => void opened.push(target)).follow(appEvents);
+  const silenced: AppEvent[] = [];
+  const actions = {
+    openPage: async (target: PageTarget) => void opened.push(target),
+    silence: (event: AppEvent) => void silenced.push(event),
+  };
+  new TaskNotices(notices, actions).follow(appEvents);
   events.forEach((e) => appEvents.emitEvent(e));
-  return { notices, opened };
+  return { notices, opened, silenced };
 }
 
 test("task notices: a finished task says so, with the session and the gist", () => {
@@ -64,6 +69,18 @@ test("task notices: Close opens nothing", () => {
   const { notices, opened } = noticesFor(TASK_DONE);
   notices.shown[0].click("close");
   assert.deepEqual(opened, []);
+});
+
+for (const answer of ["close", "assistant", "session"]) {
+  test(`task notices: clicking ${answer} silences that task's spoken announcement`, () => {
+    const { notices, silenced } = noticesFor(TASK_DONE);
+    notices.shown[0].click(answer);
+    assert.deepEqual(silenced, [TASK_DONE]);
+  });
+}
+
+test("task notices: a notice nobody clicked leaves the task's voice alone", () => {
+  assert.deepEqual(noticesFor(TASK_DONE).silenced, []);
 });
 
 test("task notices: a permission request is not a task notice", () => {

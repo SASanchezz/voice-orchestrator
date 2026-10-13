@@ -48,7 +48,7 @@ export class MacVoice implements VoiceIO {
 
   private keyDown(): void {
     if (this.ptt.state() === "recording") return;
-    this.speaker.stop(); // pressing the key interrupts Claude mid-sentence
+    this.stopSpeaking(); // pressing the key interrupts Claude mid-sentence, as clicking a pop-up does
     this.pressed();
     this.ptt.begin();
   }

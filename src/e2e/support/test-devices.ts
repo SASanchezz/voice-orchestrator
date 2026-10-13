@@ -7,6 +7,8 @@ const DEFAULT_WAIT_MS = 4000;
 /** A fake mic and speaker: tests say things and check what was spoken. */
 export class TestVoice implements VoiceIO {
   spoken: string[] = [];
+  /** How often speech was cut off, by the talk key or a pop-up's click. */
+  stops = 0;
   listening = false;
   private heardCallback: (text: string) => void = () => {};
   private pressCallback: () => void = () => {};
@@ -33,7 +35,9 @@ export class TestVoice implements VoiceIO {
     this.spoken.push(text);
   }
 
-  stopSpeaking(): void {}
+  stopSpeaking(): void {
+    this.stops++;
+  }
 
   say(text: string): void {
     this.pressCallback();

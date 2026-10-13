@@ -4,6 +4,8 @@
 type Child = Node | string;
 
 const MINUTE_MS = 60_000;
+/** How long a copy button says "Copied" before it reads "Copy" again. */
+const COPIED_MS = 1500;
 const MAX_COMPOSER_HEIGHT_PX = 200;
 
 export function el<K extends keyof HTMLElementTagNameMap>(
@@ -21,6 +23,26 @@ export function button(label: string, variant: string, onClick: () => void): HTM
   const node = el("button", { type: "button", class: variant }, label);
   node.addEventListener("click", onClick);
   return node;
+}
+
+/**
+ * Copies `text` when clicked and says whether it worked. The clipboard is only there on localhost or https;
+ * elsewhere the button says so.
+ */
+export function copyButton(text: string, title: string): HTMLButtonElement {
+  const copy = button("Copy", "ghost copy-button", () => {
+    navigator.clipboard.writeText(text).then(
+      () => showBriefly(copy, "Copied"),
+      () => showBriefly(copy, "Can't copy"),
+    );
+  });
+  copy.title = title;
+  return copy;
+}
+
+function showBriefly(copy: HTMLButtonElement, label: string): void {
+  copy.textContent = label;
+  setTimeout(() => (copy.textContent = "Copy"), COPIED_MS);
 }
 
 export function collapsible(summary: string, body: HTMLElement): HTMLDetailsElement {

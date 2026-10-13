@@ -20,3 +20,23 @@ test("single voice: the fallback is said only once", () => {
 test("single voice: nothing has been said until someone speaks", () => {
   assert.equal(new SingleVoice().hasSpoken(), false);
 });
+
+test("single voice: once silenced, neither the reply nor the fallback may speak", () => {
+  const voice = new SingleVoice();
+  voice.silence();
+  assert.deepEqual([voice.replyMaySpeak(), voice.claimForFallback()], [false, false]);
+});
+
+test("single voice: silencing it while it speaks stops the speech", () => {
+  let stops = 0;
+  const voice = new SingleVoice(() => stops++);
+  voice.replyMaySpeak();
+  voice.silence();
+  assert.equal(stops, 1);
+});
+
+test("single voice: silencing it stops whatever is playing, as the talk key does, even before its turn", () => {
+  let stops = 0;
+  new SingleVoice(() => stops++).silence();
+  assert.equal(stops, 1);
+});

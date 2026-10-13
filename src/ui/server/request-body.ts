@@ -7,6 +7,7 @@ const MAX_BODY_BYTES = 65_536; // 64 KiB
 
 export const messageBody = z.object({ text: z.string().trim().min(1) });
 export const decisionBody = z.object({ decision: z.enum(["once", "always", "deny"]) });
+export const answersBody = z.object({ answers: z.record(z.string(), z.string()) });
 export const permissionModeBody = z.object({ mode: z.enum(PERMISSION_MODES) });
 export const speechModeBody = z.object({ mode: z.enum(SPEECH_MODES) });
 export const taskBody = z.object({ instruction: z.string().trim().min(1) });

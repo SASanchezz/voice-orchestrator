@@ -25,7 +25,7 @@ export class WorkerOptions {
     };
   }
 
-  /** A task resumes its session's conversation, and asks you through canUseTool. */
+  /** A task resumes its session's conversation, and asks you (permissions and questions) through canUseTool. */
   forTask(task: RunningTask, abortController: AbortController, canUseTool: CanUseTool): Options {
     return {
       ...this.forProject(task.project),

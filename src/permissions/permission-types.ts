@@ -44,6 +44,7 @@ export interface PendingRequest {
   id: string;
   project: string;
   session: string;
+  sessionNumber: number;
   /** How the UI names the asker: the project, plus the session number when it has several. */
   label: string;
   description: string;

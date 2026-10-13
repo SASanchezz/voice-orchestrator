@@ -1,0 +1,53 @@
+/* Clicked permission answers in the assistant's chat: one quiet line each, runs folded into one. */
+.entry.permission {
+  color: var(--muted);
+  font-size: 12px;
+}
+.permission-line,
+.permission-row > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 4px;
+}
+.permission-row > summary {
+  cursor: pointer;
+}
+.permission-row > .permission-line {
+  padding-left: 16px;
+}
+.permission-time {
+  font-size: 11px;
+  margin-right: 4px;
+}
+button.permission-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-size: inherit;
+}
+button.permission-link:hover {
+  background: none;
+  text-decoration: underline;
+}
+.permission-line code {
+  font-size: 11px;
+  margin-left: 6px;
+}
+.permission-command > summary {
+  cursor: pointer;
+  list-style: none;
+}
+.permission-command > summary::-webkit-details-marker {
+  display: none;
+}
+.permission-command[open] > summary {
+  display: none;
+}
+.permission-command pre {
+  margin: 4px 0 0 6px;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

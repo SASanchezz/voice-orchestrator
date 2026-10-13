@@ -6,6 +6,7 @@ import { ChatView } from "./chat.js";
 import { renderIndicators, wireSegment, setConnected } from "./indicators.js";
 import { renderProjects } from "./projects.js";
 import { renderApprovals } from "./approvals.js";
+import { renderQuestions } from "./questions.js";
 import { renderConversation, wireComposer } from "./conversation.js";
 import { renderDetail } from "./detail.js";
 import { navigate, navigateFromLink } from "./navigation.js";
@@ -16,6 +17,7 @@ function renderPage(): void {
   renderIndicators();
   renderProjects();
   renderApprovals();
+  renderQuestions();
   renderConversation(chat);
   renderDetail();
 }

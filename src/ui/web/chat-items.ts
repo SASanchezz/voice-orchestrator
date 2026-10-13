@@ -1,8 +1,10 @@
 // The lines of the center chat: the assistant's timeline, or one worker session's messages.
 
 import type { ChatMessageView, FeedEntryView } from "../protocol.js";
+import { chatRows, permissionAnswerOf } from "../permission-lines.js";
 import { collapsible, el, formatTime } from "./dom.js";
 import { markdownView } from "./markdown-view.js";
+import { permissionItem, permissionRowItem } from "./permission-items.js";
 import { sessionLink } from "./session-link.js";
 
 const SESSION_WHO: Record<ChatMessageView["kind"], string> = {
@@ -11,6 +13,7 @@ const SESSION_WHO: Record<ChatMessageView["kind"], string> = {
   tool: "Step",
   status: "Status",
   permission: "Approval",
+  question: "Question",
 };
 const SESSION_KIND_CLASS: Record<ChatMessageView["kind"], string> = {
   task: "user",
@@ -18,9 +21,17 @@ const SESSION_KIND_CLASS: Record<ChatMessageView["kind"], string> = {
   tool: "event",
   status: "event",
   permission: "event",
+  question: "event",
 };
 
+/** The assistant's timeline, with permission answers in a row about the same session folded into one line. */
+export function feedItems(entries: FeedEntryView[]): HTMLLIElement[] {
+  return chatRows(entries).map((row) => (row.length > 1 ? permissionRowItem(row) : feedItem(row[0])));
+}
+
 export function feedItem(entry: FeedEntryView): HTMLLIElement {
+  const answer = permissionAnswerOf(entry);
+  if (answer) return permissionItem(entry, answer);
   const who = {
     user: entry.source === "voice" ? "You (voice)" : "You",
     orchestrator: "Assistant",

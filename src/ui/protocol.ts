@@ -48,9 +48,35 @@ export interface PendingRequestView {
   createdAt: number;
 }
 
+export interface QuestionOptionView {
+  label: string;
+  /** What picking it means. */
+  description: string;
+}
+
+/** One question a worker asks, with its proposed answers; you may also answer in your own words. */
+export interface QuestionView {
+  question: string;
+  /** A short chip such as "Database". */
+  header: string;
+  /** True when several options may be picked. */
+  multiSelect: boolean;
+  options: QuestionOptionView[];
+}
+
+/** A worker's questions, waiting for your answers; it continues once they're sent. */
+export interface PendingQuestionView {
+  id: string;
+  session: string;
+  label: string;
+  questions: QuestionView[];
+  createdAt: number;
+}
+
 export interface UiState {
   projects: ProjectView[];
   pending: PendingRequestView[];
+  questions: PendingQuestionView[];
   permissionMode: PermissionModeName;
   speechMode: SpeechModeName;
   voiceInput: VoiceInputName;
@@ -81,7 +107,7 @@ export interface FeedEntryView {
 export interface ChatMessageView {
   id: number;
   at: string;
-  kind: "task" | "reply" | "tool" | "status" | "permission";
+  kind: "task" | "reply" | "tool" | "status" | "permission" | "question";
   text: string;
   failed?: boolean;
 }

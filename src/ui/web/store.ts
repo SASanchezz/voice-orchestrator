@@ -17,6 +17,7 @@ const SELECTED_PROJECT_KEY = "selectedProject";
 const INITIAL_STATE: UiState = {
   projects: [],
   pending: [],
+  questions: [],
   permissionMode: "ask",
   speechMode: "questions",
   voiceInput: "idle",

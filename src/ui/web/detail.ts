@@ -3,7 +3,7 @@
 import { shortFolder } from "../folder-path.js";
 import type { ProjectView, SessionView } from "../protocol.js";
 import { act } from "./api.js";
-import { button, byId, collapsible, el, formatTime } from "./dom.js";
+import { button, byId, collapsible, copyButton, el, formatTime } from "./dom.js";
 import { markdownView } from "./markdown-view.js";
 import { activeSession, isBusy, STATUS_LABELS, store } from "./store.js";
 
@@ -52,21 +52,12 @@ function titleLine(project: ProjectView, session: SessionView): HTMLDivElement {
 }
 
 function folderLine(project: ProjectView): HTMLDivElement {
-  const copy = button("Copy", "ghost", () => copyFolder(project.folder, copy));
-  copy.title = "Copy the full folder path";
+  const copy = copyButton(project.folder, "Copy the full folder path");
   return el(
     "div",
     { class: "section-row detail-folder" },
     el("code", { class: "folder-path", title: project.folder }, shortFolder(project.folderFromHome)),
     copy,
-  );
-}
-
-/** The clipboard is only there on localhost or https; elsewhere the button says so. */
-function copyFolder(folder: string, copy: HTMLButtonElement): void {
-  navigator.clipboard.writeText(folder).then(
-    () => (copy.textContent = "Copied"),
-    () => (copy.textContent = "Can't copy"),
   );
 }
 

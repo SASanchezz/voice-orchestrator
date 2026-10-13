@@ -1,7 +1,7 @@
 import type { PermissionAnswers } from "../../permissions/permission-answers.js";
-import type { Decision } from "../../permissions/permission-types.js";
+import type { Decision, PendingRequest } from "../../permissions/permission-types.js";
 import type { PermissionViews } from "../../permissions/permission-views.js";
-import type { ActionReporter } from "./action-reporter.js";
+import type { ActionReporter, AnswerSubject } from "./action-reporter.js";
 import type { ClickAnswers } from "../permission-popups.js";
 import { decisionBody } from "./request-body.js";
 
@@ -19,8 +19,15 @@ export class PermissionActions implements ClickAnswers {
 
   /** Shown in the timeline and told to the model, like every click. */
   answerByClick(id: string, decision: Decision): string {
-    const about = this.views.requests().find((r) => r.id === id)?.label;
+    const request = this.views.requests().find((r) => r.id === id);
     const message = this.answers.answerByClick(id, decision);
-    return this.reporter.reportAnswer(about, message, id);
+    return this.reporter.reportAnswer(answerSubject(request), message, id);
   }
+}
+
+/** Shown under the asker's label, linking to its session; a request gone meanwhile has neither. */
+function answerSubject(request: PendingRequest | undefined): AnswerSubject {
+  if (!request) return {};
+  const { label, project, session, sessionNumber } = request;
+  return { about: label, session: { project, id: session, number: sessionNumber } };
 }

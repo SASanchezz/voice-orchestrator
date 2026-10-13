@@ -1,6 +1,7 @@
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
 import type { AssistantActions } from "./assistant-actions.js";
 import type { PermissionActions } from "./permission-actions.js";
+import type { QuestionActions } from "./question-actions.js";
 import { permissionModeBody } from "./request-body.js";
 import type { SessionActions } from "./session-actions.js";
 import type { TabActions } from "./tab-actions.js";
@@ -13,6 +14,7 @@ export interface RouteHandlers {
   assistant: AssistantActions;
   policy: PermissionPolicy;
   permissions: PermissionActions;
+  questions: QuestionActions;
   tabs: TabActions;
   tasks: TaskActions;
   sessions: SessionActions;
@@ -27,6 +29,8 @@ export class RouteTable {
       [/^\/api\/message$/, (b) => h.assistant.sendMessage(b)],
       [/^\/api\/assistant\/clear$/, () => h.assistant.clearAssistant()],
       [/^\/api\/permissions\/(\w+)$/, (b, m) => h.permissions.answer(m[1], b)],
+      [/^\/api\/questions\/(\w+)\/answer$/, (b, m) => h.questions.answer(m[1], b)],
+      [/^\/api\/questions\/(\w+)\/skip$/, (_b, m) => h.questions.skip(m[1])],
       [/^\/api\/permission-mode$/, (b) => h.policy.setMode(permissionModeBody.parse(b).mode)],
       [/^\/api\/speech-mode$/, (b) => h.assistant.setSpeechMode(b)],
       [/^\/api\/projects\/([^/]+)\/sessions$/, (_b, m) => h.tabs.createSession(decodeURIComponent(m[1]))],

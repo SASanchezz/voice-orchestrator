@@ -1,0 +1,71 @@
+/* ---------------------------------------------------------------- worker questions */
+
+.question-card {
+  border-left-color: var(--accent);
+}
+
+.question {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.question legend {
+  padding: 0 0 6px;
+  font-weight: 600;
+}
+
+.question-chip {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.question-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: baseline;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.question-option:hover,
+.question-option:has(input:checked) {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+.question-option .option-description {
+  grid-column: 2;
+  font-size: 13px;
+}
+
+.question-other {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-top: 2px;
+}
+.question-other:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.question-problem {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+.question-problem:empty {
+  display: none;
+}

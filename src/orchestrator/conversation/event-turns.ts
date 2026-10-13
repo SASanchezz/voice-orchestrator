@@ -22,7 +22,7 @@ export class EventTurns {
   async handle(input: EventInput): Promise<void> {
     if (this.gate.isAlreadyAnswered(input)) return;
     const aloud = this.speech.speaksAbout(input);
-    const voice = new SingleVoice();
+    const voice = input.voice ?? new SingleVoice();
     const turn: Turn = {
       message: input.text,
       heard: input.text,
@@ -40,7 +40,7 @@ export class EventTurns {
   /** The announcement is said if the reply hasn't started speaking in time, or ends without a spoken part. */
   private async takeWithFallback(turn: Turn, voice: SingleVoice, announcement: string): Promise<void> {
     const sayAnnouncement = () =>
-      voice.claimForFallback() ? this.speech.speakWhenQuiet(announcement) : Promise.resolve();
+      voice.claimForFallback() ? this.speech.speakWhenQuiet(announcement, voice) : Promise.resolve();
     let late = Promise.resolve();
     const timer = setTimeout(() => {
       late = sayAnnouncement();
