@@ -11,8 +11,8 @@ test("sessions: a new session is active and starts its own worker conversation",
   const i = mark();
   voice.say("new session dbadmin");
   await voice.heard(/Opened dbadmin session 2; it is now active/, i);
-  voice.say("in dbadmin do:\nrun: echo second");
-  await voice.heard(/dbadmin session 2 wants approval for Bash: echo second/, i);
+  voice.say("in dbadmin do:\nrun: mkdir -p tmp/second");
+  await voice.heard(/dbadmin session 2 wants approval for Bash: mkdir -p tmp\/second/, i);
   assert.equal(workerCalls.filter((c) => c.cwd === dbadmin && !c.summary).at(-1)!.resume, undefined);
 });
 

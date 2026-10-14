@@ -22,6 +22,13 @@ const DANGEROUS: [string, string][] = [
   ["git -c user.name=x -c user.email=y commit -m z", "commit"],
   ["git --no-pager -C 'my repo' reset --hard", "reset"],
   ["cd api && git push --force", "push"],
+  ["npm run deploy", "deploy"],
+  ["cd infra && ./scripts/deploy.sh", "deploy"],
+  ["git status; git push", "push"],
+  ["psql <<'SQL'\nDROP TABLE users;\nSQL", "drop"],
+  ['sh -c "git push origin main"', "push"],
+  ["echo $(git push)", "push"],
+  [`git log --oneline ${"src/feature/".repeat(40)} && git push`, "push"],
 ];
 const SAFE = [
   "git add -A",
@@ -32,10 +39,26 @@ const SAFE = [
   "git checkout -b feature",
   "git -C repo status",
   "git log --grep push",
+  "ls -la deploy/",
+  "cat deploy/config.yml && grep -rn deploy src | head",
+  "git diff -- deploy/app.yaml",
+  "grep -rn 'git push' docs",
+  "find . -path './deploy/*' -name '*.sql'",
+  "sed -n '1,40p' scripts/deploy.sh",
+  'echo "delete me" > notes.txt',
+  "mkdir -p deploy/staging",
 ];
 
 test("shipped rules flag dangerous commands with their confirm verb", () => {
   for (const [command, verb] of DANGEROUS) assert.equal(list.matchText(command)?.verb, verb, command);
+});
+
+test("a destructive verb is found in the whole command, however long", () => {
+  assert.equal(list.matchText(`ls ${"x".repeat(500)} && git push`)?.verb, "push");
+});
+
+test("a cut-off command with an open quote is judged on its whole text", () => {
+  assert.equal(list.matchText("git push origin 'main")?.verb, "push");
 });
 
 test("shipped rules pass safe commands", () => {

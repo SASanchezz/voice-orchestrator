@@ -1,6 +1,7 @@
 import type { SessionPatch } from "../registry/registry-schema.js";
 import type { Sessions } from "../registry/sessions.js";
 import type { TaskHistory } from "../registry/task-history.js";
+import type { SpendLedger } from "../budget/spend-ledger.js";
 import type { RunningTask } from "./running-task.js";
 
 const now = (): string => new Date().toISOString();
@@ -10,25 +11,22 @@ export class TaskRecorder {
   constructor(
     private sessions: Sessions,
     private history: TaskHistory,
+    private ledger: SpendLedger,
   ) {}
 
   started(task: RunningTask): void {
     this.sessions.updateSession(task.sessionId, startedPatch(task));
   }
 
-  succeeded(task: RunningTask, result: string, costUsd: number): void {
-    const costSoFar = this.costWith(task, costUsd);
-    this.sessions.updateSession(task.sessionId, {
-      status: "done",
-      lastResult: result,
-      finishedAt: now(),
-      costUsd: costSoFar,
-    });
+  /** `runningTotalUsd` is the SDK's cost total for the whole conversation so far, not just this task's. */
+  succeeded(task: RunningTask, result: string, runningTotalUsd: number): void {
+    this.ledger.charge(task.sessionId, runningTotalUsd);
+    this.sessions.updateSession(task.sessionId, { status: "done", lastResult: result, finishedAt: now() });
     this.history.record(task.sessionId, { task: task.instruction, outcome: "done", result });
   }
 
-  addCost(task: RunningTask, costUsd: number): void {
-    this.sessions.updateSession(task.sessionId, { costUsd: this.costWith(task, costUsd) });
+  addCost(task: RunningTask, runningTotalUsd: number): void {
+    this.ledger.charge(task.sessionId, runningTotalUsd);
   }
 
   /** The failure is kept in history only when it isn't parked in todo (see TaskOutcomes). */
@@ -43,10 +41,6 @@ export class TaskRecorder {
   stopped(task: RunningTask): void {
     this.sessions.updateSession(task.sessionId, { status: "stopped", finishedAt: now() });
     this.history.record(task.sessionId, { task: task.instruction, outcome: "stopped", result: "Stopped by the user." });
-  }
-
-  private costWith(task: RunningTask, costUsd: number): number {
-    return this.sessions.session(task.sessionId).costUsd + costUsd;
   }
 }
 

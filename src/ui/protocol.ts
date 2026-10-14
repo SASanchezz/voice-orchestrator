@@ -24,7 +24,20 @@ export interface SessionView {
   lastActivity?: string;
   lastError?: string;
   costUsd: number;
+  /** Tokens the worker's latest call read: how full its context is. */
+  contextTokens?: number;
+  /** Its model's context window, once a result reported it. */
+  contextWindow?: number;
   history: TaskRecordView[];
+}
+
+/** The limits from config.yaml's budget, and what all sessions spent today. */
+export interface BudgetView {
+  contextWarnPercent: number;
+  contextCriticalPercent: number;
+  sessionCostUsd: number;
+  dailyCostUsd: number;
+  spentTodayUsd: number;
 }
 
 export interface ProjectView {
@@ -87,6 +100,7 @@ export interface UiState {
   speechMode: SpeechModeName;
   voiceInput: VoiceInputName;
   voiceOffer?: VoiceOfferView;
+  budget: BudgetView;
 }
 
 /** A worker session an assistant's line is about or relays an answer from; the page links to it. */
@@ -117,6 +131,10 @@ export interface ChatMessageView {
   kind: "task" | "reply" | "tool" | "status" | "permission" | "question";
   text: string;
   failed?: boolean;
+  /** A tool call's own id, so a sub-agent it started can point at it. */
+  toolUseId?: string;
+  /** Set on a sub-agent's lines: the tool call that started it. */
+  parentToolUseId?: string;
 }
 
 export interface SessionChatLine {

@@ -14,7 +14,8 @@ export class TaskStream {
 
   handle(task: RunningTask, msg: SDKMessage): void {
     this.rememberConversation(task.sessionId, msg);
-    if (msg.type === "assistant") this.activity.record(task.sessionId, msg.message.content);
+    if (msg.type === "assistant")
+      this.activity.record(task.sessionId, msg.message.content, msg.parent_tool_use_id ?? undefined);
   }
 
   /** The next task resumes this conversation. */

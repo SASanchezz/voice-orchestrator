@@ -9,12 +9,20 @@ export interface SessionMessage {
   kind: ChatKind;
   text: string;
   failed?: boolean;
+  /** A tool call's own id, so a sub-agent it started can point at it. */
+  toolUseId?: string;
+  /** Set on a sub-agent's lines: the tool call that started it. */
+  parentToolUseId?: string;
 }
 
 /** The lines workers add to their sessions' chats. Emits "message" with each SessionMessage. */
 export class WorkerChat extends EventEmitter {
   say(session: string, kind: ChatKind, text: string): void {
-    const message: SessionMessage = { session, kind, text };
+    this.post({ session, kind, text });
+  }
+
+  /** A line with more to it than its text, such as a sub-agent's step. */
+  post(message: SessionMessage): void {
     this.emit("message", message);
   }
 

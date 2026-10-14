@@ -4,6 +4,7 @@ import { shortFolder } from "../folder-path.js";
 import type { ProjectView, SessionView } from "../protocol.js";
 import { isBusy } from "../running-tasks.js";
 import { act } from "./api.js";
+import { budgetLines } from "./budget-panel.js";
 import { button, byId, collapsible, copyButton, el, formatTime } from "./dom.js";
 import { markdownView } from "./markdown-view.js";
 import { activeSession, STATUS_LABELS, store } from "./store.js";
@@ -34,7 +35,7 @@ function updateDetailHead(project: ProjectView, session: SessionView): void {
 }
 
 function detailHeadContent(project: ProjectView, session: SessionView): HTMLDivElement[] {
-  const lines = [titleLine(project, session), folderLine(project), statusLine(session)];
+  const lines = [titleLine(project, session), folderLine(project), statusLine(session), ...budgetLines(session)];
   if (session.task && isBusy(session))
     lines.push(el("div", {}, el("span", { class: "muted" }, "Task: "), session.task));
   if (session.status === "failed" && session.lastError)

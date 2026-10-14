@@ -45,7 +45,9 @@ export class WorkerDirectory {
   }
 
   newTask(sessionId: string, instruction: string): RunningTask {
-    const { project, number: sessionNumber, claudeSessionId: resume } = this.sessions.session(sessionId);
-    return { sessionId, project, sessionNumber, instruction, account: this.accountOf(project), resume };
+    const { project, number: sessionNumber, claudeSessionId: resume, handoff } = this.sessions.session(sessionId);
+    const account = this.accountOf(project);
+    // once the conversation exists, the handoff is already in it
+    return { sessionId, project, sessionNumber, instruction, account, resume, handoff: resume ? undefined : handoff };
   }
 }

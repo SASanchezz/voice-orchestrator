@@ -20,6 +20,14 @@ const INITIAL_STATE: UiState = {
   permissionMode: "ask",
   speechMode: "questions",
   voiceInput: "idle",
+  // nothing is marked until the server's first state brings the real limits
+  budget: {
+    contextWarnPercent: Number.POSITIVE_INFINITY,
+    contextCriticalPercent: Number.POSITIVE_INFINITY,
+    sessionCostUsd: Number.POSITIVE_INFINITY,
+    dailyCostUsd: Number.POSITIVE_INFINITY,
+    spentTodayUsd: 0,
+  },
 };
 
 class PageStore {

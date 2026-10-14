@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="/styles/dialogs.css" />
     <link rel="stylesheet" href="/styles/markdown.css" />
     <link rel="stylesheet" href="/styles/attachments.css" />
+    <link rel="stylesheet" href="/styles/budget.css" />
   </head>
   <body>
     <header class="topbar">
@@ -39,10 +40,15 @@
         <div class="control">
           <span class="control-label">Permissions</span>
           <div class="segmented" id="permission-mode" role="radiogroup" aria-label="Permission mode">
-            <button data-value="auto" title="Workers run everything except destructive commands without asking">
+            <button
+              data-value="auto"
+              title="Workers run everything without asking, except destructive commands and reading secrets"
+            >
               Auto
             </button>
-            <button data-value="ask" title="Every permission request comes to you">Ask</button>
+            <button data-value="ask" title="Every permission request comes to you, except read-only commands">
+              Ask
+            </button>
           </div>
         </div>
         <div class="control">

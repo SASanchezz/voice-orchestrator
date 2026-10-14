@@ -1,10 +1,14 @@
-// One worker session's chat in the center: its lines, with the worker's steps folded into blocks you can open.
+// One worker session's chat in the center: its lines, with the worker's steps folded into blocks you can open
+// and the permission requests they raised under each block's summary.
 
-import type { ChatMessageView } from "../protocol.js";
+import type { ChatMessageView, PendingRequestView } from "../protocol.js";
 import { type SessionRow, sessionRows, type StepsRow, stepsSummary, unchangedRowCount } from "../session-steps.js";
+import { allSteps } from "../step-tree.js";
 import { emptySessionItem, sessionItem } from "./chat-items.js";
 import type { ChatList } from "./chat-list.js";
 import { el, formatTime } from "./dom.js";
+import { approvalLines, markPendingApprovals, stepItem } from "./step-items.js";
+import { store } from "./store.js";
 
 export class SessionFeed {
   private sessionId = "";
@@ -47,6 +51,11 @@ export class SessionFeed {
       rows.slice(unchanged).map((row) => this.rowItem(row)),
     );
     this.shownRows = rows;
+    this.showPendingApprovals(store.state.pending);
+  }
+
+  showPendingApprovals(pending: PendingRequestView[]): void {
+    markPendingApprovals(this.list.findAll(".step-approval"), pending);
   }
 
   private rowItem(row: SessionRow): HTMLLIElement {
@@ -59,11 +68,11 @@ export class SessionFeed {
       "details",
       { class: "more steps" },
       el("summary", {}, stepsSummary(row.steps)),
-      el("ol", { class: "steps-list" }, ...row.steps.map(sessionItem)),
+      el("ol", { class: "steps-list" }, ...row.steps.map(stepItem)),
     );
     details.open = this.openBlocks.has(block);
     details.addEventListener("toggle", () => this.remember(block, details.open));
-    return el("li", { class: "entry event steps-entry" }, stepsMeta(row), details);
+    return el("li", { class: "entry event steps-entry" }, stepsMeta(row), details, ...approvalLines(row.steps));
   }
 
   private remember(block: string, open: boolean): void {
@@ -73,7 +82,7 @@ export class SessionFeed {
 }
 
 function stepsMeta(row: StepsRow): HTMLDivElement {
-  const latest = row.steps.at(-1);
+  const latest = allSteps(row.steps).at(-1)?.message;
   return el(
     "div",
     { class: "entry-meta" },

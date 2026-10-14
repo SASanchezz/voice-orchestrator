@@ -22,6 +22,7 @@
   padding: 16px;
   border-bottom: 1px solid var(--border);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 .section-row {
@@ -47,10 +48,12 @@
   margin: 0;
   padding: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
 }
 .history-item {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2px;
 }
 .history-task {

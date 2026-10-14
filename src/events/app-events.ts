@@ -22,12 +22,14 @@ export type AppEvent = EventSubject &
     | { kind: "usage_limit"; account: string; resetsAt?: string; savedTasks: number }
     | { kind: "permission"; id: string; description: string; destructiveVerb?: string; reminder?: boolean }
     | { kind: "question"; id: string; questions: WorkerQuestion[] }
+    | { kind: "context_full"; sessionNumber: number; percent: number }
   );
 
 export type UsageLimitEvent = Extract<AppEvent, { kind: "usage_limit" }>;
 export type TaskEndEvent = Extract<AppEvent, { kind: "task_done" | "task_failed" }>;
 export type PermissionEvent = Extract<AppEvent, { kind: "permission" }>;
 export type QuestionEvent = Extract<AppEvent, { kind: "question" }>;
+export type ContextFullEvent = Extract<AppEvent, { kind: "context_full" }>;
 
 /** A worker session by project, id and number, so the UI can open it. */
 export interface SessionLink {

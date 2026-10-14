@@ -8,4 +8,6 @@ export interface RunningTask {
   account: string;
   /** Claude Code's own session id, if the session has talked before. */
   resume?: string;
+  /** The summary a fresh session took over from an earlier one; its first task starts with it. */
+  handoff?: string;
 }

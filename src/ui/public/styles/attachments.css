@@ -93,6 +93,7 @@
   padding: 8px 12px 12px;
   max-width: 92vw;
   max-height: 92vh;
+  overflow-x: hidden;
 }
 .image-viewer::backdrop {
   background: rgb(0 0 0 / 70%);

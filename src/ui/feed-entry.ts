@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { sessionLinkOf, type AppEvent, type QuestionEvent, type TaskEndEvent } from "../events/app-events.js";
+import {
+  sessionLinkOf,
+  type AppEvent,
+  type ContextFullEvent,
+  type QuestionEvent,
+  type TaskEndEvent,
+} from "../events/app-events.js";
 import { usageLimitMessage } from "../limits/usage-limit.js";
 
 const feedEntrySchema = z.object({
@@ -40,12 +46,24 @@ export function feedEntryFor(e: AppEvent): NewFeedEntry | undefined {
     return { ...endedTask(e), text: "failed", detail: e.error, failed: true, taskOutcome: "failed" };
   if (e.kind === "usage_limit") return { kind: "event", about: e.label, text: usageLimitMessage(e), failed: true };
   if (e.kind === "question") return { kind: "event", about: e.label, text: questionsLine(e) };
+  if (e.kind === "context_full") return contextFullEntry(e);
   return e.reminder ? undefined : { kind: "event", about: e.label, text: `asks: ${e.description}` };
 }
 
 /** "asks: Which database? / Which port?" */
 export function questionsLine(e: QuestionEvent): string {
   return `asks: ${e.questions.map(({ question }) => question).join(" / ")}`;
+}
+
+function contextFullEntry(e: ContextFullEvent): NewFeedEntry {
+  const text = `context is ${e.percent}% full; hand it off to a new session to keep costs down`;
+  return {
+    kind: "event",
+    about: e.label,
+    text,
+    failed: true,
+    session: { project: e.project, id: e.session, number: e.sessionNumber },
+  };
 }
 
 function endedTask(e: TaskEndEvent): Pick<NewFeedEntry, "kind" | "about" | "session"> {

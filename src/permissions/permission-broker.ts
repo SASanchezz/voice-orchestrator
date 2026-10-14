@@ -18,10 +18,10 @@ export class PermissionBroker {
     private explanations?: PermissionExplanations,
   ) {}
 
-  /** Called from a worker's canUseTool. Resolves at once in auto mode, otherwise when you answer. */
+  /** Called from a worker's canUseTool. Resolves at once when the policy allows the call, otherwise when you answer. */
   request(sessionId: string, call: ToolCall, context: RequestContext): Promise<PermissionResult> {
     const destructive = this.policy.ruleFor(call);
-    if (this.policy.allowsWithoutAsking(destructive)) return Promise.resolve({ behavior: "allow" });
+    if (this.policy.allowsWithoutAsking(call, destructive)) return Promise.resolve({ behavior: "allow" });
     const id = `p${++this.seq}`;
     const explaining = Boolean(this.explanations);
     const { suggestions, signal } = context;

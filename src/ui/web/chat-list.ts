@@ -33,6 +33,10 @@ export class ChatList {
     this.growing(() => this.list.querySelector(`[data-entry="${entryId}"]`)?.append(node));
   }
 
+  findAll(selector: string): HTMLElement[] {
+    return [...this.list.querySelectorAll<HTMLElement>(selector)];
+  }
+
   removeAll(selector: string): void {
     this.list.querySelectorAll(selector).forEach((node) => node.remove());
   }

@@ -2,7 +2,8 @@ import { watchFile } from "node:fs";
 import { DESTRUCTIVE_PATH } from "../config/paths.js";
 import { errorMessage } from "../shared/errors.js";
 import { readRules, writeRules, type DestructiveRule } from "./destructive-rules-file.js";
-import { describeToolCall, normalizeCommand } from "./tool-calls.js";
+import { destructiveCandidates } from "./command-verbs.js";
+import { describeToolCall } from "./tool-calls.js";
 
 const WATCH_INTERVAL_MS = 1000;
 
@@ -68,8 +69,9 @@ function compile(rule: DestructiveRule): CompiledRule {
   return { rule, re: new RegExp(rule.pattern, "i") };
 }
 
+/** A shell command is judged by its whole text, part by part, on its programs and options only (see command-verbs.ts). */
 function findRule(compiled: CompiledRule[], text: string, toolName: string): CompiledRule | undefined {
-  const candidates = toolName === "Bash" ? [text, normalizeCommand(text)] : [text];
+  const candidates = toolName === "Bash" ? destructiveCandidates(text) : [text];
   return compiled.find(
     ({ rule, re }) => (rule.tools ?? ["Bash"]).includes(toolName) && candidates.some((t) => re.test(t)),
   );

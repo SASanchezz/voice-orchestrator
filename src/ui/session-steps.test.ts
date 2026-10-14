@@ -2,13 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { ChatMessageView } from "./protocol.js";
 import { sessionRows, stepsSummary, unchangedRowCount } from "./session-steps.js";
+import { newStep } from "./step-tree.js";
 
 let nextId = 1;
 function line(kind: ChatMessageView["kind"], text: string): ChatMessageView {
   return { id: nextId++, at: "2026-10-14T09:00:00.000Z", kind, text };
 }
 const shape = (messages: ChatMessageView[]) =>
-  sessionRows(messages).map((row) => (row.kind === "line" ? row.message.text : row.steps.map((s) => s.text)));
+  sessionRows(messages).map((row) => (row.kind === "line" ? row.message.text : row.steps.map((s) => s.message.text)));
 
 test("session steps: tool calls in a row fold into one block between the task and the answer", () => {
   const messages = [
@@ -46,13 +47,34 @@ test("session steps: a later run's tool calls don't fold the previous answer", (
   assert.deepEqual(shape(messages), ["Done.", "Finished.", "again", ["Bash ls"]]);
 });
 
-test("session steps: questions and permission requests split the steps around them", () => {
+test("session steps: questions split the steps around them", () => {
+  const messages = [line("tool", "Bash ls"), line("question", "asks: Which port?"), line("tool", "Bash pwd")];
+  assert.deepEqual(shape(messages), [["Bash ls"], "asks: Which port?", ["Bash pwd"]]);
+});
+
+test("session steps: a permission request joins the block of the step that raised it", () => {
   const messages = [
-    line("tool", "Bash ls"),
-    line("permission", "asks: Bash rm -rf tmp"),
     line("tool", "Bash rm -rf tmp"),
+    line("permission", "asks: Bash: rm -rf tmp"),
+    line("tool", "Bash ls"),
   ];
-  assert.deepEqual(shape(messages), [["Bash ls"], "asks: Bash rm -rf tmp", ["Bash rm -rf tmp"]]);
+  assert.deepEqual(shape(messages), [["Bash rm -rf tmp", "Bash ls"]]);
+});
+
+test("session steps: a permission request with no step before it stays a line", () => {
+  const messages = [line("task", "go"), line("permission", "asks: Bash: rm -rf tmp")];
+  assert.deepEqual(shape(messages), ["go", "asks: Bash: rm -rf tmp"]);
+});
+
+test("session steps: a sub-agent's comments are steps, not the answer", () => {
+  const messages = [{ ...line("reply", "Found it."), parentToolUseId: "agent-1" }];
+  assert.deepEqual(shape(messages), [["Found it."]]);
+});
+
+test("session steps: a block that gains a permission request is drawn again", () => {
+  const step = line("tool", "Bash rm -rf tmp");
+  const before = sessionRows([step]);
+  assert.equal(unchangedRowCount(before, sessionRows([step, line("permission", "asks: Bash: rm -rf tmp")])), 0);
 });
 
 test("session steps: a block keeps the key of its first step as it grows", () => {
@@ -63,17 +85,17 @@ test("session steps: a block keeps the key of its first step as it grows", () =>
 });
 
 test("session steps: the summary counts the steps and names the latest", () => {
-  const steps = [line("tool", "Read a.ts"), line("tool", "Bash grep -rn foo src")];
+  const steps = [line("tool", "Read a.ts"), line("tool", "Bash grep -rn foo src")].map(newStep);
   assert.equal(stepsSummary(steps), "2 steps, last: Bash grep -rn foo src");
 });
 
 test("session steps: a single step is named on its own", () => {
-  assert.equal(stepsSummary([line("tool", "Edit src/app.ts")]), "1 step: Edit src/app.ts");
+  assert.equal(stepsSummary([newStep(line("tool", "Edit src/app.ts"))]), "1 step: Edit src/app.ts");
 });
 
 test("session steps: the summary shows only the first line of a long comment, shortened", () => {
   const comment = `${"x".repeat(100)}\nsecond line`;
-  assert.equal(stepsSummary([line("reply", comment)]), `1 step: ${"x".repeat(80)}…`);
+  assert.equal(stepsSummary([newStep(line("reply", comment))]), `1 step: ${"x".repeat(80)}…`);
 });
 
 test("session steps: rows before a grown block are unchanged", () => {

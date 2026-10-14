@@ -69,8 +69,8 @@ test("hourly context reset carries a handoff into the new session", async () => 
 test("two permission requests are asked one at a time", async () => {
   const i = mark();
   voice.listening = true; // both arrive while the user is talking
-  workers.intake.run("dbadmin", "run: echo a");
-  workers.intake.run("acme-web", "run: echo b");
+  workers.intake.run("dbadmin", "run: mkdir -p tmp/a");
+  workers.intake.run("acme-web", "run: mkdir -p tmp/b");
   while (permissions.views.list().length < 2) await pause(20);
   voice.listening = false;
   assert.match(await voice.heard(/wants approval/, i), /\(1 more waiting\)/);

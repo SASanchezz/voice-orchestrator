@@ -2,6 +2,7 @@ import {
   sessionLinkOf,
   type AppEvent,
   type PermissionEvent,
+  type ContextFullEvent,
   type QuestionEvent,
   type TaskEndEvent,
 } from "../../events/app-events.js";
@@ -16,6 +17,7 @@ import type { EventVoices } from "./event-voices.js";
  */
 export function inputFor(e: AppEvent, voices: Pick<EventVoices, "voiceOf">): Input {
   if (e.kind === "usage_limit") return { kind: "notice", text: describeEvent(e), spoken: usageLimitMessage(e) };
+  if (e.kind === "context_full") return { kind: "notice", text: describeEvent(e), spoken: contextAnnouncement(e) };
   if (e.kind === "question")
     return { kind: "notice", text: describeEvent(e), spoken: questionAnnouncement(e), voice: voices.voiceOf(e) };
   const ended = taskEndOf(e);
@@ -37,6 +39,7 @@ function describeEvent(e: AppEvent): string {
     return `[EVENT] ${e.label} failed: ${e.error}\nTask (session ${e.sessionNumber}): ${e.task}`;
   if (e.kind === "permission") return describePermission(e);
   if (e.kind === "question") return describeQuestions(e);
+  if (e.kind === "context_full") return describeContext(e);
   return `[NOTICE] ${usageLimitMessage(e)}. Later limit failures on this account are saved to todo without notice.`;
 }
 
@@ -49,6 +52,14 @@ function describePermission(e: PermissionEvent): string {
 function describeQuestions(e: QuestionEvent): string {
   const asked = e.questions.map(({ question }) => `"${question}"`).join(" ");
   return `[NOTICE] ${e.label} asks: ${asked} The user answers in the web UI or its pop-up; you can't answer for them.`;
+}
+
+function describeContext(e: ContextFullEvent): string {
+  return `[NOTICE] ${e.label}'s context is ${e.percent}% full, so each further turn there costs much more. The user can hand it off to a new session with a summary from the web UI.`;
+}
+
+function contextAnnouncement(e: ContextFullEvent): string {
+  return `${e.label} is at ${e.percent} percent of its context; consider handing it off to a new session`;
 }
 
 /** Only a short line is said; the questions and their options are shown on screen. */

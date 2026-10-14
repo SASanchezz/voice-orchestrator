@@ -50,7 +50,6 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 8px 10px;
-  overflow-x: auto;
 }
 .markdown .code-block {
   position: relative;
@@ -72,7 +71,7 @@
   background: none;
   border: none;
   padding: 0;
-  white-space: pre;
+  white-space: pre-wrap;
 }
 .markdown blockquote {
   border-left: 3px solid var(--border);
@@ -82,10 +81,8 @@
 .markdown a {
   color: var(--accent);
 }
-.markdown .table-wrap {
-  overflow-x: auto;
-}
 .markdown table {
+  max-width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }

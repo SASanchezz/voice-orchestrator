@@ -8,6 +8,8 @@ const chatMessageSchema = z.object({
   kind: z.enum(["task", "reply", "tool", "status", "permission", "question"]),
   text: z.string(),
   failed: z.boolean().optional(),
+  toolUseId: z.string().optional(),
+  parentToolUseId: z.string().optional(),
 });
 export type ChatMessage = z.infer<typeof chatMessageSchema>;
 const chatSchema = z.array(chatMessageSchema);

@@ -68,3 +68,11 @@ permissions:
   mode: auto                 # auto: workers run everything except destructive commands without asking | ask: every request goes to you. Switch by voice: "ask mode" / "auto mode"
   reminderMinutes: 5         # re-announce unanswered permission requests
   alwaysDestination: localSettings  # where "always allow" is saved: localSettings (project's .claude/settings.local.json) | projectSettings | userSettings | session
+
+# When a session counts as large or expensive. Context: percent of the model's context window
+# (amber badge from warn, red badge plus one spoken notice and a handoff offer from critical). Costs in USD.
+budget:
+  contextWarnPercent: 60
+  contextCriticalPercent: 80
+  sessionCostUsd: 5          # one session's total
+  dailyCostUsd: 25           # all sessions together, per day

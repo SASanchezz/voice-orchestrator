@@ -1,5 +1,6 @@
 import type { Query } from "@anthropic-ai/claude-agent-sdk";
 import type { QueryFn } from "../agent/query-fn.js";
+import { withHandoff } from "./handoff-prompt.js";
 import type { RunningTask } from "./running-task.js";
 import type { ToolCallGate } from "./tool-call-gate.js";
 import type { WorkerOptions } from "./worker-options.js";
@@ -17,7 +18,7 @@ export class TaskLauncher {
 
   launch(task: RunningTask, abort: AbortController): Query {
     return this.query({
-      prompt: task.instruction + HEADLESS_NOTE,
+      prompt: withHandoff(task.instruction, task.handoff) + HEADLESS_NOTE,
       options: this.options.forTask(task, abort, this.gate.forSession(task.sessionId)),
     });
   }

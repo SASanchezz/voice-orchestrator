@@ -61,6 +61,11 @@ export class WaitingRequests {
 
 function toPending(request: NewRequest, project: string, reminder: NodeJS.Timeout): Pending {
   const { call, ...rest } = request;
-  const description = `${call.toolName}: ${describeToolCall(call.toolName, call.input).slice(0, DESCRIPTION_CHARS)}`;
+  const description = `${call.toolName}: ${shortened(describeToolCall(call.toolName, call.input))}`;
   return { ...rest, project, description, createdAt: Date.now(), reminder };
+}
+
+/** Only for showing and saying it; every check reads the whole command. */
+function shortened(text: string): string {
+  return text.length > DESCRIPTION_CHARS ? `${text.slice(0, DESCRIPTION_CHARS)}…` : text;
 }

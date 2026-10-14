@@ -72,6 +72,7 @@
 
 .projects,
 .detail {
+  overflow-x: hidden;
   overflow-y: auto;
   padding: 16px;
   background: var(--surface);
@@ -106,6 +107,7 @@
   .layout {
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
     overflow-y: auto;
   }
   .layout > * {

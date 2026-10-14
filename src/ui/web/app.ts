@@ -26,6 +26,7 @@ function renderPage(): void {
   renderApprovals();
   renderQuestions();
   renderConversation(chat);
+  chat.showPendingApprovals(store.state.pending);
   renderDetail();
   renderVoiceOffer(tray);
 }

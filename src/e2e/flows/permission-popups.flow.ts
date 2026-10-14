@@ -8,7 +8,7 @@ const { permissions, workers } = app;
 test("a request answered in its pop-up closes it and is never asked aloud", async () => {
   const i = mark();
   voice.listening = true; // the question waits until the user stops talking
-  workers.intake.run("dbadmin", "run: echo popup");
+  workers.intake.run("dbadmin", "run: mkdir -p tmp/popup");
   while (!permissions.views.list().length) await pause(20);
   popups.latest().click(true);
   voice.listening = false;

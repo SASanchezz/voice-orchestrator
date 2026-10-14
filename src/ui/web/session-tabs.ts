@@ -3,6 +3,7 @@
 import type { ProjectView, SessionView } from "../protocol.js";
 import { isBusy } from "../running-tasks.js";
 import { act } from "./api.js";
+import { budgetBadge } from "./budget-badge.js";
 import { button, el } from "./dom.js";
 import { STATUS_LABELS } from "./store.js";
 
@@ -21,6 +22,7 @@ function openButton(session: SessionView, active: boolean): HTMLButtonElement {
     el("span", { class: `dot ${session.status}`, title: STATUS_LABELS[session.status] }),
     el("span", { class: "session-name" }, `Session ${session.number}`),
     el("span", { class: "session-title" }, sessionTitle(session)),
+    budgetBadge(session),
   );
   open.addEventListener("click", () => {
     if (!active) void act(`/api/sessions/${session.id}/activate`);

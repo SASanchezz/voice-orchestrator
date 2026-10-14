@@ -18,6 +18,7 @@ import "./flows/attachments.flow.js";
 import "./flows/voice-attachments.flow.js";
 import "./flows/usage-limits.flow.js";
 import "./flows/permission-popups.flow.js";
+import "./flows/read-only-commands.flow.js";
 import "./flows/task-endings.flow.js";
 import "./flows/worker-questions.flow.js";
 import "./flows/project-removal.flow.js";

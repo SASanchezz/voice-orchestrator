@@ -4,7 +4,10 @@
 # To approve, you must SAY the confirm phrase: "confirm <verb>" (e.g. "confirm push").
 #
 #   pattern: case-insensitive regex, tested against the command text
-#            (Bash: the command; other tools: "<Tool> <file path or input>")
+#            (Bash: each part of the whole command that could change something, between &&, ;, | and line breaks,
+#            with paths, file names and quoted text left out unless the part runs text as code: sh, ssh, psql,
+#            python, ...; read-only parts such as "ls deploy/" or "grep -rn push" are never tested;
+#            other tools: "<Tool> <file path or input>")
 #   verb:    the word you have to say after "confirm"
 #   tools:   optional, which tools the rule applies to (default: Bash); workers' tools or the operator's own
 

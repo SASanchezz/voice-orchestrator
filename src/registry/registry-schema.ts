@@ -34,6 +34,14 @@ const sessionStateSchema = z.object({
   /** Last tool the worker used, for "what is it doing" questions. */
   lastActivity: z.string().optional(),
   costUsd: z.number(),
+  /** The SDK's running cost total for the current Claude conversation, as last reported; a resumed one continues it. */
+  conversationCostUsd: z.number().optional(),
+  /** Tokens the worker's latest call read: how full its context is. */
+  contextTokens: z.number().optional(),
+  /** The context window its model reported. */
+  contextWindow: z.number().optional(),
+  /** The summary of the session this one took over from; its first task starts with it. */
+  handoff: z.string().optional(),
   history: z.array(taskRecordSchema),
 });
 export type SessionState = z.infer<typeof sessionStateSchema>;

@@ -46,9 +46,11 @@
   box-sizing: border-box;
 }
 
+/* The page scrolls only vertically: long content wraps or shortens instead of widening it. */
 html,
 body {
   height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -63,6 +65,7 @@ body {
     sans-serif;
   display: flex;
   flex-direction: column;
+  overflow-wrap: break-word;
 }
 
 h1,

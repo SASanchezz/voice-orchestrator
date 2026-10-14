@@ -8,10 +8,13 @@
   border: 0;
   margin: 0;
   padding: 0;
+  min-width: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 4px;
 }
 .question legend {
+  overflow-wrap: anywhere;
   padding: 0 0 6px;
   font-weight: 600;
 }
@@ -29,7 +32,7 @@
 
 .question-option {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   column-gap: 8px;
   align-items: baseline;
   padding: 6px 8px;

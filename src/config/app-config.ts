@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { budgetSchema } from "./budget-config.js";
 import { expandHome } from "./paths.js";
+import { numberOr } from "./yaml-values.js";
 
 export const PERMISSION_MODES = ["auto", "ask"] as const;
 export const SPEECH_MODES = ["all", "questions", "muted"] as const;
@@ -19,11 +21,6 @@ const DEFAULT_PERMISSIONS = { mode: "ask", reminderMinutes: 5, alwaysDestination
 
 // A key left empty in YAML reads as null; like a missing key, it gets the default.
 const optionalString = z.preprocess((value) => value ?? undefined, z.string().optional());
-const numberOr = (fallback: number) =>
-  z
-    .number()
-    .nullish()
-    .transform((value) => value ?? fallback);
 
 export const projectSchema = z.object({ path: z.string(), profile: z.string(), model: optionalString });
 export type ProjectConfig = z.infer<typeof projectSchema>;
@@ -98,6 +95,7 @@ export const configFileSchema = z.object({
   voice: voiceSchema,
   ui: uiSchema,
   permissions: permissionsSchema,
+  budget: budgetSchema,
 });
 
 export type AppConfig = z.infer<typeof configFileSchema>;

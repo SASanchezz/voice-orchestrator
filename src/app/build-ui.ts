@@ -7,9 +7,11 @@ import { ApiRoutes } from "../ui/server/api-routes.js";
 import { AppActions } from "../ui/server/app-actions.js";
 import { AssistantActions } from "../ui/server/assistant-actions.js";
 import { AttachedText } from "../ui/server/attached-text.js";
+import { HandoffActions } from "../ui/server/handoff-actions.js";
 import { LiveClients } from "../ui/server/live-clients.js";
 import { relayToClients } from "../ui/server/live-relay.js";
 import { PageFiles } from "../ui/server/page-files.js";
+import { PageStateView } from "../ui/server/page-state-view.js";
 import { PermissionActions } from "../ui/server/permission-actions.js";
 import { QuestionActions } from "../ui/server/question-actions.js";
 import { ReadRoutes, SessionChatReader } from "../ui/server/read-routes.js";
@@ -77,7 +79,8 @@ function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources):
   const access = new UiAccess();
   const { clients, lookup } = sources;
   relayToClients(clients, sources.feed, sources.chats);
-  const view = new UiStateView(lookup, sources.waiting, new VoiceViews(orchestrator, voiceHold));
+  const live = new UiStateView(lookup, sources.waiting, new VoiceViews(orchestrator, voiceHold));
+  const view = new PageStateView(live, core.cfg.budget, neighbors.workers.spend);
   const publisher = new StatePublisher(clients, view, sources.feed);
   const table = routeTable(core, neighbors, sources);
   const reads = new ReadRoutes(access, publisher, new SessionChatReader(lookup, sources.chats));
@@ -92,6 +95,7 @@ function routeTable(core: Core, { permissions, workers }: OperatorNeighbors, sou
     app: new AppActions(sources.operator.lifecycle),
     assistant: new AssistantActions(sources.operator.orchestrator, sources.feed),
     attached: new AttachedText(core.attachments),
+    handoffs: new HandoffActions(workers.handoff, lookup, reporter),
     policy: permissions.policy,
     permissions: sources.permissionClicks,
     questions: sources.questionClicks,

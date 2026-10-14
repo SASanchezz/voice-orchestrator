@@ -11,7 +11,8 @@ export class UiStateView {
     private voice: VoiceViews,
   ) {}
 
-  state(): UiState {
+  /** Everything but the budget, which PageStateView adds. */
+  state(): Omit<UiState, "budget"> {
     return {
       projects: this.lookup.projectViews(),
       pending: this.waiting.requests(),

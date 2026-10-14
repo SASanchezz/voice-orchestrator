@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { QuestionEvent } from "../../events/app-events.js";
+import type { ContextFullEvent, QuestionEvent } from "../../events/app-events.js";
 import { inputFor } from "./event-inputs.js";
 import { EventVoices } from "./event-voices.js";
 
@@ -39,4 +39,21 @@ test("event inputs: a worker's question has a voice its pop-up can silence", () 
   const input = inputFor(ASKED, voices);
   voices.silence(ASKED);
   assert.equal(input.kind === "notice" && input.voice?.isSilenced(), true);
+});
+
+const FULL: ContextFullEvent = {
+  kind: "context_full",
+  project: "webshop",
+  session: "s1",
+  label: "webshop session 2",
+  sessionNumber: 2,
+  percent: 82,
+};
+
+test("event inputs: a full context is said once, suggesting a handoff", () => {
+  const input = inputFor(FULL, voices);
+  assert.equal(
+    input.kind === "notice" ? input.spoken : "",
+    "webshop session 2 is at 82 percent of its context; consider handing it off to a new session",
+  );
 });

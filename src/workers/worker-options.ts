@@ -2,6 +2,7 @@ import type { CanUseTool, HookCallback, Options } from "@anthropic-ai/claude-age
 import { envForProfile } from "../config/accounts.js";
 import type { AppConfig } from "../config/app-config.js";
 import type { DestructiveList } from "../safety/destructive-list.js";
+import { readsSecrets } from "../safety/call-safety.js";
 import { toolInput } from "../safety/tool-calls.js";
 import type { RunningTask } from "./running-task.js";
 import type { WorkerDirectory } from "./worker-directory.js";
@@ -37,14 +38,19 @@ export class WorkerOptions {
     };
   }
 
-  /** Destructive commands always go to a voice prompt, even if an allow rule would pass them. */
+  /** Destructive commands and reading secrets always go to a voice prompt, even if an allow rule would pass them. */
   private forceAsk: HookCallback = async (input) => {
     if (input.hook_event_name !== "PreToolUse") return {};
-    const rule = this.destructive.match(input.tool_name, toolInput(input.tool_input));
-    if (!rule) return {};
-    const reason = `destructive (${rule.verb})`;
+    const reason = this.askReason(input.tool_name, toolInput(input.tool_input));
+    if (!reason) return {};
     return {
       hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "ask", permissionDecisionReason: reason },
     };
   };
+
+  private askReason(toolName: string, input: Record<string, unknown>): string | undefined {
+    const rule = this.destructive.match(toolName, input);
+    if (rule) return `destructive (${rule.verb})`;
+    return readsSecrets(toolName, input) ? "reads a secret file" : undefined;
+  }
 }

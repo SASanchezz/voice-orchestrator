@@ -1,6 +1,6 @@
 // The center chat: the orchestrator's conversation, or one worker session's own message history.
 
-import type { FeedEntryView, SessionChatLine } from "../protocol.js";
+import type { FeedEntryView, PendingRequestView, SessionChatLine } from "../protocol.js";
 import { fetchSessionMessages } from "./api.js";
 import { feedItem, feedItems } from "./chat-items.js";
 import { ChatList } from "./chat-list.js";
@@ -63,6 +63,11 @@ export class ChatView {
   /** A session's chat was wiped on the server; its message ids start over. */
   clearSession(sessionId: string): void {
     if (sessionId === this.shownSession) this.sessionFeed.clear();
+  }
+
+  /** Marks which of the shown session's permission requests still wait for an answer. */
+  showPendingApprovals(pending: PendingRequestView[]): void {
+    if (this.shownSession) this.sessionFeed.showPendingApprovals(pending);
   }
 
   /** A live line from any session; shown only if that session is open. */

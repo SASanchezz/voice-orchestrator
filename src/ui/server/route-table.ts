@@ -2,6 +2,7 @@ import type { PermissionPolicy } from "../../permissions/permission-policy.js";
 import type { AppActions } from "./app-actions.js";
 import type { AssistantActions } from "./assistant-actions.js";
 import type { AttachedText } from "./attached-text.js";
+import type { HandoffActions } from "./handoff-actions.js";
 import { MAX_ATTACHED_BODY_BYTES } from "./attachment-body.js";
 import type { PermissionActions } from "./permission-actions.js";
 import type { QuestionActions } from "./question-actions.js";
@@ -26,6 +27,7 @@ export interface RouteHandlers {
   assistant: AssistantActions;
   /** Saves the files attached to a message or task and lists them after its text. */
   attached: AttachedText;
+  handoffs: HandoffActions;
   policy: PermissionPolicy;
   permissions: PermissionActions;
   questions: QuestionActions;
@@ -84,5 +86,6 @@ function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
     [/^\/api\/sessions\/([\w-]+)\/close$/, (_b, m) => h.sessions.closeSession(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/clear$/, (_b, m) => h.sessions.clearSession(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/stop$/, (_b, m) => h.sessions.stopTask(m[1])],
+    [/^\/api\/sessions\/([\w-]+)\/handoff$/, (_b, m) => h.handoffs.handOff(m[1])],
   ];
 }
