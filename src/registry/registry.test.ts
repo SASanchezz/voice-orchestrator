@@ -135,3 +135,23 @@ test("a registry saved before sessions becomes one session per project", () => {
   const session = reopen().registry.activeSession("webshop");
   assert.deepEqual([session.claudeSessionId, session.status, session.costUsd], ["abc", "done", 1]);
 });
+
+test("removing a project forgets it and all its sessions, also after a restart", () => {
+  const { registry, projects } = freshRegistry();
+  registry.createSession("webshop");
+  registry.removeProject("webshop");
+  const { sessions } = openRegistry({}, new AppEvents());
+  assert.deepEqual([projects.has("webshop"), sessions.sessionsOf("webshop").length], [false, 0]);
+});
+
+test("removing a project announces each of its sessions as removed, so their chats are deleted", () => {
+  freshStateDir();
+  const events = new AppEvents();
+  const removed: string[] = [];
+  events.on("session_removed", (id: string) => removed.push(id));
+  const { registry, sessions } = openRegistry({ webshop: "personal" }, events);
+  registry.createSession("webshop");
+  const ids = sessions.sessionsOf("webshop").map((s) => s.id);
+  registry.removeProject("webshop");
+  assert.deepEqual(removed, ids);
+});

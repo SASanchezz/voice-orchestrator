@@ -45,6 +45,17 @@ function showBriefly(copy: HTMLButtonElement, label: string): void {
   setTimeout(() => (copy.textContent = "Copy"), COPIED_MS);
 }
 
+/** Opens a dialog from index.html; `onConfirm` runs once if it closes with its "confirm" button. */
+export function confirmInDialog(dialog: HTMLDialogElement, onConfirm: () => void): void {
+  dialog.returnValue = "";
+  const onClose = (): void => {
+    if (dialog.returnValue === "confirm") onConfirm();
+  };
+  dialog.addEventListener("close", onClose, { once: true });
+  dialog.showModal();
+  dialog.querySelector<HTMLButtonElement>(".ghost")?.focus(); // Enter must not confirm by accident
+}
+
 export function collapsible(summary: string, body: HTMLElement): HTMLDetailsElement {
   return el("details", { class: "more" }, el("summary", {}, summary), body);
 }

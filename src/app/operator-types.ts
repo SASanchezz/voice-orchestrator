@@ -15,12 +15,14 @@ import type { PermissionParts } from "./build-permissions.js";
 import type { QuestionParts } from "./build-questions.js";
 import type { WorkerParts } from "./build-workers.js";
 
-/** The outside world the operator talks through: your voice and screen, your notes, and the model. */
+/** The outside world the operator talks through: your voice and screen, your notes and config, and the model. */
 export interface OperatorDevices {
   voice: VoiceIO;
   screen: ScreenSource;
   notes: AssistantNotes;
   query: QueryFn;
+  /** config/config.yaml, which a removed project is taken out of. */
+  configFile: string;
 }
 
 /** The parts of the app that work together with the operator. */

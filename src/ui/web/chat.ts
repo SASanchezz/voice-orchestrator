@@ -2,23 +2,25 @@
 
 import type { FeedEntryView, SessionChatLine } from "../protocol.js";
 import { fetchSessionMessages } from "./api.js";
-import { emptySessionItem, feedItem, feedItems, sessionItem } from "./chat-items.js";
+import { feedItem, feedItems } from "./chat-items.js";
 import { ChatList } from "./chat-list.js";
+import { showConfirmButtons } from "./confirm-buttons.js";
 import { latestTaskEnd, replyLineIds } from "../task-reply.js";
 import { chatRows, joinsPermissionRow } from "../permission-lines.js";
 import { permissionRowItem } from "./permission-items.js";
+import { SessionFeed } from "./session-feed.js";
 
 export class ChatView {
   private list = new ChatList();
   private orchestratorEntries: FeedEntryView[] = [];
   /** undefined: the orchestrator's chat is shown */
   private shownSession?: string;
-  private lastMessageId = 0;
+  private sessionFeed = new SessionFeed(this.list);
 
   /** The orchestrator's timeline as the server had it when the page connected. */
   setOrchestratorBacklog(entries: FeedEntryView[]): void {
     this.orchestratorEntries = entries;
-    if (!this.shownSession) this.list.render(feedItems(entries));
+    if (!this.shownSession) this.renderOrchestrator();
   }
 
   /** A permission answer right after another about the same session joins its folded line. */
@@ -26,15 +28,20 @@ export class ChatView {
     const joins = joinsPermissionRow(this.orchestratorEntries.at(-1), entry);
     this.orchestratorEntries.push(entry);
     if (this.shownSession) return;
-    if (!joins) return this.list.append(feedItem(entry));
-    const row = chatRows(this.orchestratorEntries).at(-1) ?? [entry];
-    this.list.replaceLast(permissionRowItem(row));
+    if (joins) this.list.replaceLast(permissionRowItem(chatRows(this.orchestratorEntries).at(-1) ?? [entry]));
+    else this.list.append(feedItem(entry));
+    showConfirmButtons(this.list, this.orchestratorEntries);
   }
 
   showOrchestrator(): void {
     if (!this.shownSession) return;
     this.shownSession = undefined;
+    this.renderOrchestrator();
+  }
+
+  private renderOrchestrator(): void {
     this.list.render(feedItems(this.orchestratorEntries));
+    showConfirmButtons(this.list, this.orchestratorEntries);
   }
 
   /** Points out the assistant's reply to the session's latest ended task, in its chat, which must be the one shown. */
@@ -46,26 +53,20 @@ export class ChatView {
   async showSession(sessionId: string): Promise<void> {
     if (this.shownSession === sessionId) return;
     this.shownSession = sessionId;
-    this.lastMessageId = 0;
-    this.list.render([]);
+    this.sessionFeed.start(sessionId);
     const messages = await fetchSessionMessages(sessionId);
     if (this.shownSession !== sessionId) return; // switched again while loading
-    messages.forEach((message) => this.addSessionMessage({ session: sessionId, message }));
-    if (!messages.length) this.list.render([emptySessionItem()]);
+    messages.forEach((message) => this.sessionFeed.add(message));
+    if (!messages.length) this.sessionFeed.showEmpty();
   }
 
   /** A session's chat was wiped on the server; its message ids start over. */
   clearSession(sessionId: string): void {
-    if (sessionId !== this.shownSession) return;
-    this.lastMessageId = 0;
-    this.list.render([emptySessionItem()]);
+    if (sessionId === this.shownSession) this.sessionFeed.clear();
   }
 
   /** A live line from any session; shown only if that session is open. */
   addSessionMessage({ session, message }: SessionChatLine): void {
-    if (session !== this.shownSession || message.id <= this.lastMessageId) return;
-    if (this.lastMessageId === 0) this.list.render([]);
-    this.lastMessageId = message.id;
-    this.list.append(sessionItem(message));
+    if (session === this.shownSession) this.sessionFeed.add(message);
   }
 }

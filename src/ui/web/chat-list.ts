@@ -17,9 +17,24 @@ export class ChatList {
   }
 
   append(item: HTMLLIElement): void {
-    const atBottom = this.wrap.scrollHeight - this.wrap.scrollTop - this.wrap.clientHeight < STICK_TO_BOTTOM_PX;
-    this.list.append(item);
-    if (atBottom) this.wrap.scrollTop = this.wrap.scrollHeight;
+    this.growing(() => this.list.append(item));
+  }
+
+  /** Keeps the first `count` lines and puts `items` after them. */
+  replaceAfter(count: number, items: HTMLLIElement[]): void {
+    this.growing(() => {
+      [...this.list.children].slice(count).forEach((node) => node.remove());
+      this.list.append(...items);
+    });
+  }
+
+  /** Adds `node` at the end of the line `entryId`, if that line is shown. */
+  appendToEntry(entryId: number, node: HTMLElement): void {
+    this.growing(() => this.list.querySelector(`[data-entry="${entryId}"]`)?.append(node));
+  }
+
+  removeAll(selector: string): void {
+    this.list.querySelectorAll(selector).forEach((node) => node.remove());
   }
 
   /** Swaps the newest line for a new version of it, e.g. a folded run that grew by one. */
@@ -37,5 +52,12 @@ export class ChatList {
       item.classList.add("highlighted");
       setTimeout(() => item.classList.remove("highlighted"), HIGHLIGHT_MS);
     }
+  }
+
+  /** Keeps the newest lines in view while the list grows, if you were reading them. */
+  private growing(grow: () => void): void {
+    const atBottom = this.wrap.scrollHeight - this.wrap.scrollTop - this.wrap.clientHeight < STICK_TO_BOTTOM_PX;
+    grow();
+    if (atBottom) this.wrap.scrollTop = this.wrap.scrollHeight;
   }
 }

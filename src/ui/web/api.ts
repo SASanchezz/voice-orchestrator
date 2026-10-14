@@ -30,6 +30,21 @@ export async function fetchSessionMessages(sessionId: string): Promise<ChatMessa
   return res.ok ? fromServer<ChatMessageView[]>(await res.json()) : [];
 }
 
+/** A report the page makes on its own, which may outlive the page; a failure is not yours to see. */
+export function report(path: string, body: object): void {
+  void fetch(path, {
+    method: "POST",
+    keepalive: true,
+    headers: { "content-type": "application/json", "x-token": token },
+    body: JSON.stringify(body),
+  }).catch(() => undefined);
+}
+
+/** Where the page loads an attached image from. */
+export function attachedImageUrl(path: string): string {
+  return `/api/attachments?path=${encodeURIComponent(path)}&token=${encodeURIComponent(token)}`;
+}
+
 export function openEvents(): EventSource {
   return new EventSource(`/api/events?token=${encodeURIComponent(token)}`);
 }

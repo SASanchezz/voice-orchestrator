@@ -52,6 +52,8 @@ const USER_RULES: Rule[] = [
   [/^explain (.+)$/, (m) => `Briefly: ${m[1]}.\n[SCREEN]\nIn detail: ${m[1]} works step by step.`],
   [/^open (.+) on (\w+)$/, (m) => call("open_project", { name: m[1], profile: m[2] })],
   [/^in (\S+) do:\n([\s\S]+)$/, (m) => call("run_task", { project: m[1], instruction: m[2] })],
+  [/^remove (\S+)(, confirm remove)?$/, (m) => call("remove_project", { project: m[1] })],
+  [/^stop and remove (\S+), confirm remove$/, (m) => call("remove_project", { project: m[1], stopRunning: true })],
   [/^(once|yes|confirm \w+)$/i, () => call("answer_permission", { id: brain.lastPermission, decision: "once" })],
   [/^always$/i, () => call("answer_permission", { id: brain.lastPermission, decision: "always" })],
   [/^(deny|no)$/i, () => call("answer_permission", { id: brain.lastPermission, decision: "deny" })],
@@ -68,6 +70,7 @@ const USER_RULES: Rule[] = [
   [/^reset context (notes|nothing)$/, (m) => call("reset_context", { keep: m[1] })],
   [/^restart yourself$/, () => call("restart_orchestrator")],
   [/^what's on my screen$/, () => call("look_at_screen")],
+  [/^read this\n\nAttached files:\n- (\S+)/, (m) => call("read_attachment", { path: m[1] })],
   [/^list todo$/, () => call("list_todo")],
   [/^run todo (\S+)$/, (m) => call("run_todo", { id: m[1] })],
 ];

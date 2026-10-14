@@ -11,7 +11,6 @@ export const STATUS_LABELS: Record<SessionStatus, string> = {
   failed: "failed",
   stopped: "stopped",
 };
-export const BUSY_STATUSES: SessionStatus[] = ["running", "waiting_permission"];
 
 const SELECTED_PROJECT_KEY = "selectedProject";
 const INITIAL_STATE: UiState = {
@@ -80,8 +79,4 @@ export function activeSession(project: ProjectView): SessionView {
   const session = project.sessions.find((s) => s.id === project.activeSession);
   if (!session) throw new Error(`${project.name} has no active session`);
   return session;
-}
-
-export function isBusy(session: SessionView): boolean {
-  return BUSY_STATUSES.includes(session.status);
 }

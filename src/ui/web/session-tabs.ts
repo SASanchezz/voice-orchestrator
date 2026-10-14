@@ -1,9 +1,10 @@
 // A project's sessions as tabs above the chat, like VS Code's.
 
 import type { ProjectView, SessionView } from "../protocol.js";
+import { isBusy } from "../running-tasks.js";
 import { act } from "./api.js";
 import { button, el } from "./dom.js";
-import { isBusy, STATUS_LABELS } from "./store.js";
+import { STATUS_LABELS } from "./store.js";
 
 export function sessionTabs(project: ProjectView): HTMLDivElement[] {
   return project.sessions.map((session) => {

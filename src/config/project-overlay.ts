@@ -18,8 +18,19 @@ export function readProjectOverlay(): Record<string, ProjectConfig> {
 /** Remember a project added by voice, in the running config and for the next start. */
 export function saveProject(cfg: AppConfig, name: string, project: ProjectConfig): void {
   cfg.projects[name] = project;
-  mkdirSync(STATE_DIR, { recursive: true });
   const overlay = readProjectOverlay();
   overlay[name] = project;
+  writeOverlay(overlay);
+}
+
+/** Forget a project added by voice, for the next start. */
+export function forgetSavedProject(name: string): void {
+  const overlay = readProjectOverlay();
+  if (!(name in overlay)) return;
+  writeOverlay(Object.fromEntries(Object.entries(overlay).filter(([saved]) => saved !== name)));
+}
+
+function writeOverlay(overlay: Record<string, ProjectConfig>): void {
+  mkdirSync(STATE_DIR, { recursive: true });
   writeFileSync(overlayPath(), JSON.stringify(overlay, null, 2));
 }

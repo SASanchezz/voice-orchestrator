@@ -73,6 +73,12 @@ export interface PendingQuestionView {
   createdAt: number;
 }
 
+/** Your voice message, waiting while you choose whether the files in the draft go with it. */
+export interface VoiceOfferView {
+  id: string;
+  text: string;
+}
+
 export interface UiState {
   projects: ProjectView[];
   pending: PendingRequestView[];
@@ -80,6 +86,7 @@ export interface UiState {
   permissionMode: PermissionModeName;
   speechMode: SpeechModeName;
   voiceInput: VoiceInputName;
+  voiceOffer?: VoiceOfferView;
 }
 
 /** A worker session an assistant's line is about or relays an answer from; the page links to it. */

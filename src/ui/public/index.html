@@ -19,12 +19,21 @@
     <link rel="stylesheet" href="/styles/detail.css" />
     <link rel="stylesheet" href="/styles/dialogs.css" />
     <link rel="stylesheet" href="/styles/markdown.css" />
+    <link rel="stylesheet" href="/styles/attachments.css" />
   </head>
   <body>
     <header class="topbar">
       <div class="brand">
         <span class="connection" id="connection" title="Disconnected"></span>
         <h1>Orchestrator</h1>
+        <button
+          type="button"
+          id="restart-button"
+          class="ghost"
+          title="Restart the whole orchestrator app; projects, sessions, history and notes are kept"
+        >
+          Restart
+        </button>
       </div>
       <div class="controls">
         <div class="control">
@@ -75,7 +84,18 @@
 
         <p id="voice-status" class="voice-status" aria-live="polite" hidden></p>
 
+        <ul id="attachment-list" class="attachment-list" aria-label="Attached files" hidden></ul>
+
         <form id="composer" class="composer">
+          <button
+            type="button"
+            id="attach-button"
+            class="ghost attach-button"
+            title="Attach files (up to 10, 10 MB each), or drop them on the chat"
+          >
+            Attach
+          </button>
+          <input type="file" id="attach-input" multiple hidden />
           <textarea
             id="composer-input"
             rows="1"
@@ -103,6 +123,37 @@
           <button value="confirm" class="danger" id="confirm-button">Allow once</button>
         </div>
       </form>
+    </dialog>
+
+    <dialog id="restart-dialog" class="confirm-dialog">
+      <form method="dialog">
+        <h2>Restart the orchestrator?</h2>
+        <p id="restart-warning" class="explanation"></p>
+        <div class="dialog-actions">
+          <button value="cancel" class="ghost">Cancel</button>
+          <button value="confirm" class="danger">Restart</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="voice-offer-dialog" class="confirm-dialog">
+      <form method="dialog">
+        <h2>Send the attached files with your voice message?</h2>
+        <p id="voice-offer-text" class="explanation"></p>
+        <p id="voice-offer-files" class="muted"></p>
+        <div class="dialog-actions">
+          <button value="keep" class="ghost">Keep in draft</button>
+          <button value="confirm" class="primary">Send with message</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="image-viewer" class="image-viewer" aria-label="Attached image">
+      <form method="dialog">
+        <button class="ghost image-viewer-close" title="Close" aria-label="Close">×</button>
+      </form>
+      <img id="image-viewer-image" alt="" />
+      <p id="image-viewer-name" class="muted"></p>
     </dialog>
 
     <script src="/app.js" type="module"></script>

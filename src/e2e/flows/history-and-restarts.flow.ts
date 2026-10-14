@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { decisionOf, preToolUse } from "../support/fake-worker.js";
 import { operatorSessions } from "../support/fake-operator.js";
 import { app, voice } from "../support/harness.js";
-import { mark, nextOperatorSession, pause } from "../support/helpers.js";
+import { mark, nextOperatorSession, pause, uiPost } from "../support/helpers.js";
 
 const { operator } = app;
 
@@ -31,6 +31,13 @@ test("asking for a restart speaks the confirmation first, then asks the app to r
   voice.say("restart yourself");
   const spokenWhenRestarted = await restarted;
   assert.match(voice.spoken.slice(i, spokenWhenRestarted).join(" "), /will restart/);
+});
+
+test("ui: the Restart button asks the app to restart, after answering the page", async () => {
+  const restarted = new Promise<void>((r) => operator.lifecycle.once("restart", () => r()));
+  const reply = await uiPost("/api/restart", {});
+  await restarted;
+  assert.equal(reply.status, 200);
 });
 
 /** What the operator's own PreToolUse hooks decide for a calendar call made while the user said `utterance`. */

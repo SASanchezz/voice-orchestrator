@@ -30,6 +30,11 @@ export class SessionControl {
     this.runs.stopAll();
   }
 
+  /** Stops every one of the project's sessions and waits for their workers to exit. */
+  async stopProjectAndWait(project: string): Promise<void> {
+    await Promise.all(this.directory.sessionIdsOf(project).map((id) => this.runs.stopAndWait(id)));
+  }
+
   /** Stops the session's worker, waits for it to exit, then forgets the session entirely. */
   async closeSession(sessionId: string): Promise<string> {
     const label = this.directory.labelOf(sessionId);

@@ -2,10 +2,11 @@
 
 import { shortFolder } from "../folder-path.js";
 import type { ProjectView, SessionView } from "../protocol.js";
+import { isBusy } from "../running-tasks.js";
 import { act } from "./api.js";
 import { button, byId, collapsible, copyButton, el, formatTime } from "./dom.js";
 import { markdownView } from "./markdown-view.js";
-import { activeSession, isBusy, STATUS_LABELS, store } from "./store.js";
+import { activeSession, STATUS_LABELS, store } from "./store.js";
 
 export function renderDetail(): void {
   const panel = byId("detail", HTMLElement);

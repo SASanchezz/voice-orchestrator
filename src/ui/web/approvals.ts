@@ -2,7 +2,7 @@
 
 import type { PendingRequestView } from "../protocol.js";
 import { act } from "./api.js";
-import { button, byId, el, timeAgo } from "./dom.js";
+import { button, byId, confirmInDialog, el, timeAgo } from "./dom.js";
 import { store } from "./store.js";
 
 type Decision = "once" | "always" | "deny";
@@ -59,16 +59,9 @@ function answer(id: string, decision: Decision): Promise<string | undefined> {
 }
 
 function confirmDestructive(request: PendingRequestView): void {
-  const dialog = byId("confirm-dialog", HTMLDialogElement);
   byId("confirm-title", HTMLElement).textContent = `Allow ${request.destructiveVerb}?`;
   byId("confirm-project", HTMLElement).textContent = `${request.label} wants to run:`;
   byId("confirm-explanation", HTMLElement).textContent = request.explanation ?? "";
   byId("confirm-command", HTMLElement).textContent = request.description;
-  dialog.returnValue = "";
-  const onClose = (): void => {
-    if (dialog.returnValue === "confirm") void answer(request.id, "once");
-  };
-  dialog.addEventListener("close", onClose, { once: true });
-  dialog.showModal();
-  dialog.querySelector<HTMLButtonElement>(".ghost")?.focus(); // Enter must not approve by accident
+  confirmInDialog(byId("confirm-dialog", HTMLDialogElement), () => void answer(request.id, "once"));
 }

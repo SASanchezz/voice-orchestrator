@@ -2,8 +2,11 @@ import { z } from "zod";
 import type { AppConfig } from "../../config/app-config.js";
 import type { StatusReport } from "../../registry/status-report.js";
 import type { TaskHistory } from "../../registry/task-history.js";
+import { utteranceConfirms } from "../../safety/confirm-phrase.js";
 import type { AccountSwitch } from "../actions/account-switch.js";
 import type { ProjectOpener } from "../actions/project-opener.js";
+import type { ProjectRemover } from "../actions/project-remover.js";
+import type { TurnContext } from "../conversation/turn-context.js";
 import { accountArg, defineTool, needProject, projectArg, text, type OperatorTool } from "./tool-kit.js";
 
 export function listProjects(status: StatusReport): OperatorTool {
@@ -25,6 +28,36 @@ export function openProject(opener: ProjectOpener, cfg: AppConfig): OperatorTool
     },
     run: ({ name, profile }) => text(opener.open(name, profile)),
   });
+}
+
+/** The verb in "confirm remove". */
+const REMOVE_VERB = "remove";
+
+export function removeProject(remover: ProjectRemover, context: TurnContext, cfg: AppConfig): OperatorTool {
+  return defineTool({
+    name: "remove_project",
+    description:
+      "Unregister a project: stops its workers, deletes its sessions, queues and history, and takes it out of the config. " +
+      "Never deletes its folder. Needs the user to say 'confirm remove'.",
+    args: {
+      project: projectArg,
+      stopRunning: z.boolean().optional().describe("Only once the user agreed to stop the project's running task"),
+    },
+    run: async ({ project, stopRunning }) => {
+      const name = needProject(cfg, project);
+      if (remover.isBusy(name) && !stopRunning) return text(stopFirst(name));
+      if (!utteranceConfirms(context.currentUtterance, REMOVE_VERB)) return text(confirmFirst(name));
+      return text(await remover.remove(name));
+    },
+  });
+}
+
+function stopFirst(name: string): string {
+  return `Not removed: ${name} has a running task. Ask the user whether to stop it and remove ${name}.`;
+}
+
+function confirmFirst(name: string): string {
+  return `Not removed. Tell the user ${name}'s sessions and history will be deleted (its folder stays), and ask them to say "confirm remove".`;
 }
 
 export function projectStatus(status: StatusReport, cfg: AppConfig): OperatorTool {

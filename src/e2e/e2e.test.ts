@@ -14,10 +14,13 @@ import "./flows/history-and-restarts.flow.js";
 import "./flows/sessions.flow.js";
 import "./flows/chats.flow.js";
 import "./flows/clear-assistant.flow.js";
+import "./flows/attachments.flow.js";
+import "./flows/voice-attachments.flow.js";
 import "./flows/usage-limits.flow.js";
 import "./flows/permission-popups.flow.js";
 import "./flows/task-endings.flow.js";
 import "./flows/worker-questions.flow.js";
+import "./flows/project-removal.flow.js";
 import { voice } from "./support/harness.js";
 import { acmeWeb, commitCount, dbadmin } from "./support/sandbox.js";
 

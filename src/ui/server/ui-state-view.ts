@@ -1,6 +1,6 @@
-import type { Orchestrator } from "../../orchestrator/orchestrator.js";
 import type { UiState } from "../protocol.js";
 import type { UiLookup } from "./ui-lookup.js";
+import type { VoiceViews } from "./voice-views.js";
 import type { WaitingViews } from "./waiting-views.js";
 
 /** Everything the page shows that can change at any moment. */
@@ -8,7 +8,7 @@ export class UiStateView {
   constructor(
     private lookup: UiLookup,
     private waiting: WaitingViews,
-    private orchestrator: Orchestrator,
+    private voice: VoiceViews,
   ) {}
 
   state(): UiState {
@@ -17,8 +17,9 @@ export class UiStateView {
       pending: this.waiting.requests(),
       questions: this.waiting.questionsAsked(),
       permissionMode: this.waiting.permissionMode,
-      speechMode: this.orchestrator.speechMode,
-      voiceInput: this.orchestrator.voiceInput,
+      speechMode: this.voice.speechMode,
+      voiceInput: this.voice.voiceInput,
+      voiceOffer: this.voice.offer(),
     };
   }
 }

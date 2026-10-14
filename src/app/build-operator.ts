@@ -1,3 +1,4 @@
+import { VOICE_MESSAGE_WAIT_MS } from "../attachments/attachment-limits.js";
 import type { AppEvent } from "../events/app-events.js";
 import { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import { inputFor } from "../orchestrator/conversation/event-inputs.js";
@@ -14,6 +15,7 @@ import { SpeechOutput } from "../orchestrator/conversation/speech-output.js";
 import { TurnContext } from "../orchestrator/conversation/turn-context.js";
 import { TurnTaker } from "../orchestrator/conversation/turn-taker.js";
 import { UserTurns } from "../orchestrator/conversation/user-turns.js";
+import { VoiceHold } from "../orchestrator/conversation/voice-hold.js";
 import { ContextReset } from "../orchestrator/lifecycle/context-reset.js";
 import { ResetRequests } from "../orchestrator/lifecycle/reset-requests.js";
 import { ResetSchedule } from "../orchestrator/lifecycle/reset-schedule.js";
@@ -37,6 +39,8 @@ export interface OperatorParts {
   context: TurnContext;
   /** The voice of each event with a pop-up, which clicking the pop-up silences. */
   voices: EventVoices;
+  /** Your spoken messages, each waiting while a page asks whether the files in its draft go with it. */
+  voiceHold: VoiceHold;
 }
 
 /** Builds the operator and has it listen: your key press, your words, and every app event. */
@@ -45,12 +49,13 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   const tools = buildOperatorTools(core, neighbors, kit);
   const session = buildOperatorSession(core, neighbors, { kit, tools });
   const { loop, lifecycle } = operatorLoop(core, neighbors.permissions, { kit, session });
-  listen(neighbors.devices, loop);
+  const voiceHold = new VoiceHold(loop, VOICE_MESSAGE_WAIT_MS);
+  listen(neighbors.devices, voiceHold);
   core.events.on("event", (e: AppEvent) => loop.enqueue(inputFor(e, kit.voices)));
   core.events.on("permission_closed", (requestId: string) => kit.replies.answered(requestId));
   const orchestrator = new Orchestrator(loop, kit.context, kit.speech);
   const { lines, context, voices } = kit;
-  return { orchestrator, session, lifecycle, lines, tools, context, voices };
+  return { orchestrator, session, lifecycle, lines, tools, context, voices, voiceHold };
 }
 
 function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighbors): ConversationKit {
@@ -91,7 +96,7 @@ function operatorLoop(
   return { loop: new OperatorLoop(kit.queue, dispatcher, lifecycle), lifecycle };
 }
 
-function listen({ voice, screen }: OperatorDevices, loop: OperatorLoop): void {
+function listen({ voice, screen }: OperatorDevices, voiceHold: VoiceHold): void {
   voice.onPress(() => screen.capture()); // what you're looking at when you start asking, not seconds later
-  voice.onUtterance((text) => loop.enqueue({ kind: "user", text, source: "voice" }));
+  voice.onUtterance((text) => voiceHold.receive(text));
 }

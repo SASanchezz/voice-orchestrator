@@ -52,6 +52,15 @@ export class Registry {
     this.events.emitSessionRemoved(sessionId);
   }
 
+  /** Forgets a project, its sessions and everything recorded about them. */
+  removeProject(name: string): void {
+    for (const { id } of this.sessions.sessionsOf(name)) {
+      this.sessions.remove(id);
+      this.events.emitSessionRemoved(id);
+    }
+    this.projects.remove(name);
+  }
+
   /** Wipes everything recorded about a session but keeps it open, under the same number. */
   clearSession(sessionId: string): void {
     this.sessions.reset(sessionId);

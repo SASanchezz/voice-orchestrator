@@ -17,7 +17,7 @@ export class ApiRoutes {
     this.access.requireToken(req.headers["x-token"], "Bad token");
     const found = this.table.find(url.pathname);
     if (!found) throw new HttpError(HTTP_STATUS.notFound, "Not found");
-    const message = await found.route(await readJson(req), found.match);
+    const message = await found.route(await readJson(req, found.maxBodyBytes), found.match);
     this.publisher.pushIfChanged();
     res.writeHead(HTTP_STATUS.ok, { "content-type": "application/json" });
     res.end(JSON.stringify({ message }));

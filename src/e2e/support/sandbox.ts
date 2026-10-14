@@ -14,6 +14,8 @@ export const dbadmin = join(home, "code", "dbadmin");
 export const acmeWeb = join(home, "acme", "acme-web");
 export const rulesFile = join(root, "destructive.yaml");
 export const notesFile = join(root, "notes.md");
+export const configFile = join(root, "config.yaml");
+export const scratchpad = join(home, "code", "scratchpad");
 
 function gitInit(dir: string): void {
   mkdirSync(dir, { recursive: true });
@@ -27,6 +29,11 @@ gitInit(join(home, "acme", "acme-api")); // a decoy, to check "acme-web" picks t
 mkdirSync(personalDir);
 mkdirSync(workDir);
 setStateDir(join(root, "state"));
+gitInit(scratchpad); // opened and then removed again
+writeFileSync(
+  configFile,
+  "projects:\n  scratchpad: # a throwaway\n    path: ~/code/scratchpad\n    profile: personal\n  keepme:\n    path: ~/code/keepme\n    profile: personal\n",
+);
 copyFileSync(DESTRUCTIVE_PATH, rulesFile);
 writeFileSync(notesFile, "# Assistant notes\n\n## Aliases\n\n- dbadmin is also called database admin.\n");
 

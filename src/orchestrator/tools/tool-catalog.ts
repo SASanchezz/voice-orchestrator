@@ -1,3 +1,4 @@
+import type { AttachmentFiles } from "../../attachments/attachment-files.js";
 import type { AppConfig } from "../../config/app-config.js";
 import type { PermissionAnswers } from "../../permissions/permission-answers.js";
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
@@ -14,13 +15,22 @@ import type { TodoRunner } from "../../workers/todo-runner.js";
 import type { AccountSwitch } from "../actions/account-switch.js";
 import type { GitCommands } from "../actions/git-commands.js";
 import type { ProjectOpener } from "../actions/project-opener.js";
+import type { ProjectRemover } from "../actions/project-remover.js";
 import type { TurnContext } from "../conversation/turn-context.js";
 import type { ResetRequests } from "../lifecycle/reset-requests.js";
 import type { AssistantNotes } from "../memory/assistant-notes.js";
 import { lookAtScreen, remember, resetContext, restartOrchestrator } from "./assistant-tools.js";
+import { readAttachment } from "./attachment-tools.js";
 import { destructiveAdd, destructiveRemove, destructiveRules } from "./destructive-tools.js";
 import { answerPermission, listPendingPermissions, setPermissionMode } from "./permission-tools.js";
-import { listProjects, openProject, projectHistory, projectStatus, setProjectAccount } from "./project-tools.js";
+import {
+  listProjects,
+  openProject,
+  projectHistory,
+  projectStatus,
+  removeProject,
+  setProjectAccount,
+} from "./project-tools.js";
 import { closeSession, listSessions, newSession, switchSession } from "./session-tools.js";
 import { git, runTask, stopTask, summarizeChanges } from "./task-tools.js";
 import { discardTodo, listTodo, runTodo } from "./todo-tools.js";
@@ -33,6 +43,7 @@ export interface ToolServices {
   status: StatusReport;
   history: TaskHistory;
   opener: ProjectOpener;
+  remover: ProjectRemover;
   accounts: AccountSwitch;
   intake: TaskIntake;
   control: SessionControl;
@@ -46,6 +57,7 @@ export interface ToolServices {
   views: PermissionViews;
   context: TurnContext;
   screen: ScreenSource;
+  attachments: AttachmentFiles;
   destructive: DestructiveList;
 }
 
@@ -53,6 +65,7 @@ export interface ToolServices {
 const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => listProjects(s.status),
   (s) => openProject(s.opener, s.cfg),
+  (s) => removeProject(s.remover, s.context, s.cfg),
   (s) => projectStatus(s.status, s.cfg),
   (s) => listSessions(s.status, s.cfg),
   (s) => newSession(s.registry, s.cfg),
@@ -74,6 +87,7 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => answerPermission(s.answers, s.context),
   (s) => setProjectAccount(s.accounts, s.cfg),
   (s) => lookAtScreen(s.screen),
+  (s) => readAttachment(s.attachments),
   (s) => destructiveRules(s.destructive),
   (s) => destructiveAdd(s.destructive, s.context),
   (s) => destructiveRemove(s.destructive, s.context),

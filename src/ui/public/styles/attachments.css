@@ -1,0 +1,133 @@
+/* ---------------------------------------------------------------- attachments */
+
+.attachment-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 16px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.attachment-list[hidden] {
+  display: none;
+}
+.attachment-list + .composer {
+  border-top: none;
+}
+
+.attachment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+  padding: 3px 4px 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 12px;
+}
+.attachment-thumb {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+.attachment-preview {
+  padding: 0;
+  border: none;
+  background: none;
+  line-height: 0;
+  cursor: zoom-in;
+}
+.attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attachment-size {
+  color: var(--muted);
+  white-space: nowrap;
+}
+.attachment-remove {
+  border: none;
+  padding: 0 6px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--muted);
+}
+
+/* Files in a sent message's bubble. */
+.sent-files {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.sent-files .attachment {
+  padding: 4px 9px;
+}
+.sent-image {
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  line-height: 0;
+  cursor: zoom-in;
+}
+.sent-thumb {
+  display: block;
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+}
+
+.image-viewer {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 12px 12px;
+  max-width: 92vw;
+  max-height: 92vh;
+}
+.image-viewer::backdrop {
+  background: rgb(0 0 0 / 70%);
+}
+.image-viewer form {
+  display: flex;
+  justify-content: flex-end;
+}
+.image-viewer-close {
+  border: none;
+  padding: 0 8px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--muted);
+}
+.image-viewer img {
+  display: block;
+  max-width: calc(92vw - 26px);
+  max-height: calc(92vh - 90px);
+  object-fit: contain;
+  margin: 0 auto;
+}
+.image-viewer p {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 12px;
+}
+
+.attach-button {
+  flex-shrink: 0;
+}
+
+/* Files dragged over the chat. */
+.center.dropping {
+  outline: 2px dashed var(--accent);
+  outline-offset: -6px;
+  background: var(--accent-soft);
+}

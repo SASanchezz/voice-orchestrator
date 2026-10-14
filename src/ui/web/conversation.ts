@@ -2,6 +2,8 @@
 
 import type { ProjectView } from "../protocol.js";
 import { act } from "./api.js";
+import { wireAttachmentInput } from "./attachment-input.js";
+import { type AttachmentTray, encodeForSending } from "./attachments.js";
 import type { ChatView } from "./chat.js";
 import { autoGrow, button, byId } from "./dom.js";
 import { sessionTabs } from "./session-tabs.js";
@@ -28,10 +30,14 @@ function createSession(project: ProjectView): Promise<string | undefined> {
   return act(`/api/projects/${encodeURIComponent(project.name)}/sessions`);
 }
 
-export function wireComposer(): void {
+export function wireComposer(tray: AttachmentTray): void {
   const form = byId("composer", HTMLFormElement);
   const input = byId("composer-input", HTMLTextAreaElement);
-  form.addEventListener("submit", (event) => sendMessage(event, input));
+  wireAttachmentInput(tray);
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void sendMessage(input, tray);
+  });
   input.addEventListener("input", () => autoGrow(input));
   input.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" || e.shiftKey || e.isComposing) return;
@@ -40,13 +46,24 @@ export function wireComposer(): void {
   });
 }
 
-function sendMessage(event: SubmitEvent, input: HTMLTextAreaElement): void {
-  event.preventDefault();
+/** What you typed and attached goes to the selected project's session, or else to the assistant; kept if sending fails. */
+async function sendMessage(input: HTMLTextAreaElement, tray: AttachmentTray): Promise<void> {
   const text = input.value.trim();
-  if (!text) return;
+  const files = tray.attached;
+  if (!text && !files.length) return;
   input.value = "";
   autoGrow(input);
+  tray.clear();
+  if ((await send(text, files)) !== undefined) return;
+  input.value = text;
+  autoGrow(input);
+  tray.add(files);
+}
+
+async function send(text: string, files: File[]): Promise<string | undefined> {
+  const attachments = await encodeForSending(files);
+  if (!attachments) return undefined;
   const project = store.selectedProject();
-  if (project) void act(`/api/sessions/${project.activeSession}/tasks`, { instruction: text });
-  else void act("/api/message", { text });
+  if (project) return act(`/api/sessions/${project.activeSession}/tasks`, { instruction: text, attachments });
+  return act("/api/message", { text, attachments });
 }

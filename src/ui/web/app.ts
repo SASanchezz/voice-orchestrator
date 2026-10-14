@@ -10,8 +10,15 @@ import { renderQuestions } from "./questions.js";
 import { renderConversation, wireComposer } from "./conversation.js";
 import { renderDetail } from "./detail.js";
 import { navigate, navigateFromLink } from "./navigation.js";
+import { reloadIfRestarted, wireRestart } from "./restart.js";
+import { AttachmentTray } from "./attachments.js";
+import { byId } from "./dom.js";
+import { reportDraft, reportDraftWhileShown } from "./draft-report.js";
+import { wireImageViewer } from "./image-viewer.js";
+import { renderVoiceOffer } from "./voice-offer.js";
 
 const chat = new ChatView();
+const tray = new AttachmentTray(byId("attachment-list", HTMLElement), reportDraft);
 
 function renderPage(): void {
   renderIndicators();
@@ -20,11 +27,14 @@ function renderPage(): void {
   renderQuestions();
   renderConversation(chat);
   renderDetail();
+  renderVoiceOffer(tray);
 }
 
 function connect(): void {
   const events = openEvents();
   events.addEventListener("open", () => setConnected(true));
+  events.addEventListener("open", reloadIfRestarted);
+  events.addEventListener("open", () => reportDraft(tray.count)); // a restarted server knows of no draft
   events.addEventListener("error", () => setConnected(false)); // EventSource reconnects by itself
   onServerEvent(events, "state", (state) => store.receive(state));
   onServerEvent(events, "backlog", (entries) => {
@@ -40,5 +50,8 @@ function connect(): void {
 store.onChange(renderPage);
 wireSegment("permission-mode", "/api/permission-mode");
 wireSegment("speech-mode", "/api/speech-mode");
-wireComposer();
+wireComposer(tray);
+reportDraftWhileShown(() => tray.count);
+wireImageViewer();
+wireRestart();
 connect();

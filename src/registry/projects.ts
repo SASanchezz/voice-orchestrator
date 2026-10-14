@@ -26,6 +26,11 @@ export class Projects {
     this.byName.set(project.name, project);
   }
 
+  remove(name: string): void {
+    this.byName.delete(name);
+    this.save();
+  }
+
   update(name: string, patch: ProjectPatch): void {
     Object.assign(this.get(name), patch);
     this.save();

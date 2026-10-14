@@ -1,6 +1,6 @@
 import type { Orchestrator } from "../../orchestrator/orchestrator.js";
 import type { Feed } from "../feed.js";
-import { messageBody, speechModeBody } from "./request-body.js";
+import { speechModeBody } from "./request-body.js";
 
 /** The assistant's chat and voice, from the page. */
 export class AssistantActions {
@@ -9,8 +9,8 @@ export class AssistantActions {
     private feed: Feed,
   ) {}
 
-  sendMessage(body: unknown): string {
-    this.orchestrator.receiveTyped(messageBody.parse(body).text);
+  sendMessage(text: string): string {
+    this.orchestrator.receiveTyped(text);
     return "Sent.";
   }
 

@@ -123,10 +123,32 @@
   color: var(--danger);
 }
 
+/* Confirm and Cancel under the assistant's request for a confirm phrase. */
+.confirm-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
 details.more summary {
   cursor: pointer;
   color: var(--muted);
   font-size: 12px;
+}
+
+/* A worker's steps between the lines you read, folded into one block. */
+details.steps summary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.steps-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0 0 0 10px;
+  border-left: 2px solid var(--border);
+  display: grid;
+  gap: 6px;
 }
 
 .voice-status {

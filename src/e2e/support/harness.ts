@@ -17,7 +17,7 @@ import { TestPopups } from "../../testing/test-popups.js";
 import { TestQuestionPanels } from "../../testing/test-question-panels.js";
 import { connectBrain, fakeOperator } from "./fake-operator.js";
 import { fakeWorker } from "./fake-worker.js";
-import { cfg, notesFile, root, rulesFile } from "./sandbox.js";
+import { cfg, configFile, notesFile, root, rulesFile } from "./sandbox.js";
 import { TestScreen, TestVoice } from "./test-devices.js";
 
 after(() => rmSync(root, { recursive: true, force: true }));
@@ -36,6 +36,7 @@ export const app = buildApp(cfg, {
   voice,
   screen,
   notes: new AssistantNotes(notesFile),
+  configFile,
   destructive: new DestructiveList(rulesFile),
   query,
   explainCommands: false,
