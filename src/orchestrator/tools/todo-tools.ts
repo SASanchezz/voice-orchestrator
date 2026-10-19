@@ -10,7 +10,7 @@ export function listTodo(todos: TodoRunner): OperatorTool {
   return defineTool({
     name: "list_todo",
     description:
-      "Tasks saved to the todo list because their account hit a usage limit: id, project, session, account, when saved, when the limit resets, and the task.",
+      "Tasks saved to the todo list because their account hit a usage limit: id, project, session, account, when saved, when the limit resets, and the task. Not the user's personal to-do list (list_todo_items).",
     args: {},
     run: () => text(todoListing(todos.saved())),
   });

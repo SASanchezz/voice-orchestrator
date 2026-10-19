@@ -1,5 +1,5 @@
 // A small markdown reader for workers' and the assistant's answers: headings, lists, tables, code, quotes,
-// bold, italic, inline code and http(s) links. No imports, so the page bundles it and Node tests it.
+// bold, italic, inline code, http(s) links and bare http(s) URLs. No imports, so the page bundles it and Node tests it.
 // It yields plain data, never HTML; the page builds elements from it with text nodes only.
 
 export type Inline =
@@ -24,7 +24,10 @@ const NUMBERED = /^\s*\d{1,9}[.)]\s+(.*)$/;
 const QUOTE = /^\s*>\s?(.*)$/;
 const TABLE_ROW = /^\s*\|.*\|\s*$/;
 const TABLE_DIVIDER = /^\s*\|?(\s*:?-{3,}:?\s*\|)+(\s*:?-{3,}:?\s*)?$/;
-const INLINE = /`([^`]+)`|\*\*(.+?)\*\*|__(.+?)__|\*([^*\s](?:[^*]*[^*\s])?)\*|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+const MARKUP = /`([^`]+)`|\*\*(.+?)\*\*|__(.+?)__|\*([^*\s](?:[^*]*[^*\s])?)\*|\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/;
+/** A bare http(s) URL. It never ends on punctuation, so "(see https://x.dev/a)." links only the URL. */
+const BARE_URL = /(https?:\/\/[^\s<>]*[^\s<>.,;:!?'"()[\]*_])/;
+const INLINE = new RegExp(`${MARKUP.source}|${BARE_URL.source}`, "g");
 
 /** Where a reader stopped: the block it read and the index of the first line after it. */
 type Read = [Block, number];
@@ -120,8 +123,9 @@ export function parseInline(text: string): Inline[] {
 }
 
 function inlineFor(match: RegExpMatchArray): Inline {
-  const [, code, bold, underscoreBold, italic, linkText, href] = match;
+  const [, code, bold, underscoreBold, italic, linkText, href, bareUrl] = match;
   if (code !== undefined) return { kind: "code", text: code };
+  if (bareUrl !== undefined) return { kind: "link", text: bareUrl, href: bareUrl };
   const strong = bold ?? underscoreBold;
   if (strong !== undefined) return { kind: "bold", content: parseInline(strong) };
   if (italic !== undefined) return { kind: "italic", content: parseInline(italic) };

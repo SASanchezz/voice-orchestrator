@@ -6,6 +6,8 @@ export class TurnContext {
   private uiNotes: string[] = [];
   /** Transcript of the utterance currently being handled; undefined during event turns. */
   private utterance?: string;
+  private turnStartedAt = 0;
+  private turnEndListeners: ((startedAt: number) => void)[] = [];
 
   constructor(private queue: InputQueue) {}
 
@@ -24,10 +26,17 @@ export class TurnContext {
 
   beginTurn(utterance: string | undefined): void {
     this.utterance = utterance;
+    this.turnStartedAt = Date.now();
   }
 
   endTurn(): void {
     this.utterance = undefined;
+    this.turnEndListeners.forEach((listener) => listener(this.turnStartedAt));
+  }
+
+  /** Hears when the model's reply to a turn is finished, with the time that turn began. */
+  onTurnEnd(listener: (startedAt: number) => void): void {
+    this.turnEndListeners.push(listener);
   }
 
   /** " (2 more waiting)" when more notifications are queued. */

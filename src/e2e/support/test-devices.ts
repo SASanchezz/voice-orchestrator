@@ -29,6 +29,10 @@ export class TestVoice implements VoiceIO {
     return this.listening ? "recording" : "idle";
   }
 
+  discardInput(): void {
+    this.listening = false;
+  }
+
   async start(): Promise<void> {}
 
   async speak(text: string): Promise<void> {
@@ -56,9 +60,10 @@ export class TestVoice implements VoiceIO {
   }
 }
 
-/** A fake screen that counts snapshots. */
+/** A fake screen that counts snapshots and remembers when ended turns released them. */
 export class TestScreen implements ScreenSource {
   captures = 0;
+  releases: number[] = [];
 
   capture(): void {
     this.captures++;
@@ -66,5 +71,9 @@ export class TestScreen implements ScreenSource {
 
   async latest(): Promise<Screenshot> {
     return { data: "ZmFrZQ==", mimeType: "image/jpeg" };
+  }
+
+  releaseShotsBefore(time: number): void {
+    this.releases.push(time);
   }
 }

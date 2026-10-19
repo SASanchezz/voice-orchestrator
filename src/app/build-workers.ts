@@ -10,6 +10,7 @@ import { HandoffWriter } from "../workers/handoff-writer.js";
 import { LimitParking } from "../workers/limit-parking.js";
 import { SessionControl } from "../workers/session-control.js";
 import { SessionHandoff } from "../workers/session-handoff.js";
+import { QueuedTasks } from "../workers/queued-tasks.js";
 import { SessionQueue } from "../workers/session-queue.js";
 import { SessionRuns } from "../workers/session-runs.js";
 import { SessionSuccessor } from "../workers/session-successor.js";
@@ -33,6 +34,8 @@ export interface WorkerParts {
   chat: WorkerChat;
   intake: TaskIntake;
   control: SessionControl;
+  /** Sessions' queued instructions, to list them or drop one. */
+  queuedTasks: QueuedTasks;
   todos: TodoRunner;
   summarizer: ChangeSummarizer;
   handoff: SessionHandoff;
@@ -55,7 +58,8 @@ interface WorkerKit {
 export function buildWorkers(core: Core, gate: ToolCallGate, query: QueryFn): WorkerParts {
   const kit = workerKit(core);
   const runner = taskRunner(core, kit, new TaskLauncher(kit.options, gate, query));
-  const runs = new SessionRuns(new SessionQueue(core.sessions), kit.directory, runner);
+  const queue = new SessionQueue(core.sessions);
+  const runs = new SessionRuns(queue, kit.directory, runner);
   const intake = new TaskIntake(kit.directory, runs, kit.chat);
   const writer = new HandoffWriter(kit.options, query, kit.budget.ledger);
   const successor = new SessionSuccessor(core.registry, core.sessions, kit.chat);
@@ -63,6 +67,7 @@ export function buildWorkers(core: Core, gate: ToolCallGate, query: QueryFn): Wo
     chat: kit.chat,
     intake,
     control: new SessionControl(core.registry, kit.directory, runs),
+    queuedTasks: new QueuedTasks(queue, kit.directory, kit.chat),
     todos: new TodoRunner(kit.todo, kit.limits, intake),
     summarizer: new ChangeSummarizer(kit.options, kit.directory, query),
     handoff: new SessionHandoff(writer, runs, successor),

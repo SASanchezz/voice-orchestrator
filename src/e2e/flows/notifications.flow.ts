@@ -51,6 +51,16 @@ test("look_at_screen hands the screenshot to the model", async () => {
   assert.match(await voice.heard(/screen when they started speaking/, i), /\[image\]/);
 });
 
+test("a finished reply releases the screenshots taken before its turn", async () => {
+  const before = screen.releases.length;
+  const i = mark();
+  voice.say("status");
+  await voice.heard(/dbadmin/, i);
+  const end = Date.now() + 3000;
+  while (screen.releases.length === before && Date.now() < end) await pause(10);
+  assert.ok(screen.releases.length > before);
+});
+
 test("hourly context reset carries a handoff into the new session", async () => {
   cfg.orchestrator.resetMinutes = 0;
   const before = operatorSessions.length;

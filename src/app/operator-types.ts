@@ -13,6 +13,7 @@ import type { ScreenSource } from "../screen/screen-source.js";
 import type { VoiceIO } from "../voice/voice-io.js";
 import type { PermissionParts } from "./build-permissions.js";
 import type { QuestionParts } from "./build-questions.js";
+import type { TodoParts } from "./build-todo.js";
 import type { WorkerParts } from "./build-workers.js";
 
 /** The outside world the operator talks through: your voice and screen, your notes and config, and the model. */
@@ -30,6 +31,7 @@ export interface OperatorNeighbors {
   permissions: PermissionParts;
   questions: QuestionParts;
   workers: WorkerParts;
+  todo: TodoParts;
   devices: OperatorDevices;
 }
 

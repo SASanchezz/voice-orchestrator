@@ -10,5 +10,7 @@ export interface VoiceIO {
   /** True from key press until your words are sent: events wait so Claude never talks over you or answers ahead of you. */
   isListening(): boolean;
   inputState(): VoiceInputState;
+  /** Drops what you're saying, or your words held before they're sent: nothing is transcribed or sent. */
+  discardInput(): void;
   start(): Promise<void>;
 }

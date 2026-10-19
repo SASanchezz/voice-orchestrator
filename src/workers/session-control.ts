@@ -2,7 +2,7 @@ import type { Registry } from "../registry/registry.js";
 import type { SessionRuns } from "./session-runs.js";
 import type { WorkerDirectory } from "./worker-directory.js";
 
-/** Stopping, closing and clearing sessions. Methods taking a project act on its active session. */
+/** Stopping, closing and clearing sessions. */
 export class SessionControl {
   constructor(
     private registry: Registry,
@@ -13,10 +13,6 @@ export class SessionControl {
   /** Whether any of the project's sessions is working. */
   isBusy(project: string): boolean {
     return this.directory.sessionIdsOf(project).some((id) => this.runs.isRunning(id));
-  }
-
-  stop(project: string): string {
-    return this.stopSession(this.directory.activeSession(project).id);
   }
 
   stopSession(sessionId: string): string {

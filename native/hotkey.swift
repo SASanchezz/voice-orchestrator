@@ -1,4 +1,5 @@
-// Watches one key system-wide and prints "ready", then "down" / "up" lines, to stdout.
+// Watches one key system-wide and prints "ready", then "down" / "up" lines, to stdout,
+// and "cancel" when Escape is pressed while that key is held.
 // Usage: hotkey <mac virtual keycode>. Exits when stdin closes (the parent process is gone).
 // The event tap runs on this process's own main run loop, which is what macOS requires.
 import CoreGraphics
@@ -50,6 +51,12 @@ enum WatchedKey {
     fflush(stdout)
   }
 
+  static func reportCancel() {
+    guard isDown else { return }
+    print("cancel")
+    fflush(stdout)
+  }
+
   /// Reports "up" if the key is no longer held but its release never reached the tap
   /// (the tap was disabled for a moment, or a secure input field swallowed the event).
   static func releaseIfMissed() {
@@ -71,6 +78,7 @@ enum WatchedKey {
   }
 }
 WatchedKey.keycode = keycodeArgument
+let escapeKeycode: Int64 = 53
 
 let eventMask = (1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue) | (1 << CGEventType.flagsChanged.rawValue)
 let tap = CGEvent.tapCreate(
@@ -82,6 +90,8 @@ let tap = CGEvent.tapCreate(
       WatchedKey.releaseIfMissed()
     } else if event.getIntegerValueField(.keyboardEventKeycode) == WatchedKey.keycode {
       WatchedKey.report(WatchedKey.isPressed(type, event))
+    } else if type == .keyDown && event.getIntegerValueField(.keyboardEventKeycode) == escapeKeycode {
+      WatchedKey.reportCancel()
     }
     return Unmanaged.passUnretained(event)
   },

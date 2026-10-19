@@ -6,7 +6,7 @@ import { type SessionRow, sessionRows, type StepsRow, stepsSummary, unchangedRow
 import { allSteps } from "../step-tree.js";
 import { emptySessionItem, sessionItem } from "./chat-items.js";
 import type { ChatList } from "./chat-list.js";
-import { el, formatTime } from "./dom.js";
+import { el, formatWhen } from "./dom.js";
 import { approvalLines, markPendingApprovals, stepItem } from "./step-items.js";
 import { store } from "./store.js";
 
@@ -87,6 +87,6 @@ function stepsMeta(row: StepsRow): HTMLDivElement {
     "div",
     { class: "entry-meta" },
     el("span", {}, "Steps"),
-    el("span", {}, latest ? formatTime(latest.at) : ""),
+    el("span", {}, latest ? formatWhen(latest.at) : ""),
   );
 }

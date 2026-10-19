@@ -13,6 +13,7 @@ import { relayToClients } from "../ui/server/live-relay.js";
 import { PageFiles } from "../ui/server/page-files.js";
 import { PageStateView } from "../ui/server/page-state-view.js";
 import { PermissionActions } from "../ui/server/permission-actions.js";
+import { QueueActions } from "../ui/server/queue-actions.js";
 import { QuestionActions } from "../ui/server/question-actions.js";
 import { ReadRoutes, SessionChatReader } from "../ui/server/read-routes.js";
 import { RouteTable } from "../ui/server/route-table.js";
@@ -27,9 +28,11 @@ import { UiServer } from "../ui/server/ui-server.js";
 import { UiStateView } from "../ui/server/ui-state-view.js";
 import { VoiceOfferActions } from "../ui/server/voice-offer-actions.js";
 import { VoiceViews } from "../ui/server/voice-views.js";
+import { TodayBudget } from "../ui/server/today-budget.js";
 import { WaitingViews } from "../ui/server/waiting-views.js";
 import { SessionChats } from "../ui/session-chats.js";
 import type { OperatorParts } from "./build-operator.js";
+import { todoItemHandlers, todoItemViews } from "./build-todo.js";
 import type { Core } from "./core.js";
 import type { OperatorNeighbors } from "./operator-types.js";
 
@@ -75,12 +78,13 @@ interface UiSources {
 }
 
 function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources): UiServer {
-  const { orchestrator, voiceHold } = sources.operator;
+  const { orchestrator, voiceHold, voiceCancel } = sources.operator;
   const access = new UiAccess();
   const { clients, lookup } = sources;
   relayToClients(clients, sources.feed, sources.chats);
-  const live = new UiStateView(lookup, sources.waiting, new VoiceViews(orchestrator, voiceHold));
-  const view = new PageStateView(live, core.cfg.budget, neighbors.workers.spend);
+  const live = new UiStateView(lookup, sources.waiting, new VoiceViews(orchestrator, voiceHold, voiceCancel));
+  const budget = new TodayBudget(core.cfg.budget, neighbors.workers.spend);
+  const view = new PageStateView(live, budget, todoItemViews(neighbors.todo));
   const publisher = new StatePublisher(clients, view, sources.feed);
   const table = routeTable(core, neighbors, sources);
   const reads = new ReadRoutes(access, publisher, new SessionChatReader(lookup, sources.chats));
@@ -89,7 +93,7 @@ function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources):
 }
 
 /** What each of the page's actions acts on. */
-function routeTable(core: Core, { permissions, workers }: OperatorNeighbors, sources: UiSources): RouteTable {
+function routeTable(core: Core, { permissions, workers, todo }: OperatorNeighbors, sources: UiSources): RouteTable {
   const { reporter, lookup } = sources;
   return new RouteTable({
     app: new AppActions(sources.operator.lifecycle),
@@ -99,9 +103,12 @@ function routeTable(core: Core, { permissions, workers }: OperatorNeighbors, sou
     policy: permissions.policy,
     permissions: sources.permissionClicks,
     questions: sources.questionClicks,
+    queue: new QueueActions(workers.queuedTasks, lookup, reporter),
     tabs: new TabActions(core.registry, lookup, reporter),
     tasks: new TaskActions(workers.intake, lookup, reporter),
+    todoItems: todoItemHandlers(todo, lookup, reporter),
     sessions: new SessionActions(workers.control, lookup, reporter),
+    voice: sources.operator.voiceCancel,
     voiceOffers: new VoiceOfferActions(sources.operator.voiceHold),
   });
 }

@@ -15,6 +15,7 @@ import { SpeechOutput } from "../orchestrator/conversation/speech-output.js";
 import { TurnContext } from "../orchestrator/conversation/turn-context.js";
 import { TurnTaker } from "../orchestrator/conversation/turn-taker.js";
 import { UserTurns } from "../orchestrator/conversation/user-turns.js";
+import { VoiceCancel } from "../orchestrator/conversation/voice-cancel.js";
 import { VoiceHold } from "../orchestrator/conversation/voice-hold.js";
 import { ContextReset } from "../orchestrator/lifecycle/context-reset.js";
 import { ResetRequests } from "../orchestrator/lifecycle/reset-requests.js";
@@ -41,6 +42,8 @@ export interface OperatorParts {
   voices: EventVoices;
   /** Your spoken messages, each waiting while a page asks whether the files in its draft go with it. */
   voiceHold: VoiceHold;
+  /** Takes back your newest voice message before the operator starts on it. */
+  voiceCancel: VoiceCancel;
 }
 
 /** Builds the operator and has it listen: your key press, your words, and every app event. */
@@ -50,12 +53,13 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   const session = buildOperatorSession(core, neighbors, { kit, tools });
   const { loop, lifecycle } = operatorLoop(core, neighbors.permissions, { kit, session });
   const voiceHold = new VoiceHold(loop, VOICE_MESSAGE_WAIT_MS);
-  listen(neighbors.devices, voiceHold);
+  const voiceCancel = new VoiceCancel(neighbors.devices.voice, voiceHold, kit.queue);
+  listen(neighbors.devices, voiceHold, kit.context);
   core.events.on("event", (e: AppEvent) => loop.enqueue(inputFor(e, kit.voices)));
   core.events.on("permission_closed", (requestId: string) => kit.replies.answered(requestId));
   const orchestrator = new Orchestrator(loop, kit.context, kit.speech);
   const { lines, context, voices } = kit;
-  return { orchestrator, session, lifecycle, lines, tools, context, voices, voiceHold };
+  return { orchestrator, session, lifecycle, lines, tools, context, voices, voiceHold, voiceCancel };
 }
 
 function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighbors): ConversationKit {
@@ -96,7 +100,8 @@ function operatorLoop(
   return { loop: new OperatorLoop(kit.queue, dispatcher, lifecycle), lifecycle };
 }
 
-function listen({ voice, screen }: OperatorDevices, voiceHold: VoiceHold): void {
+function listen({ voice, screen }: OperatorDevices, voiceHold: VoiceHold, context: TurnContext): void {
   voice.onPress(() => screen.capture()); // what you're looking at when you start asking, not seconds later
+  context.onTurnEnd((startedAt) => screen.releaseShotsBefore(startedAt)); // the reply is done with them
   voice.onUtterance((text) => voiceHold.receive(text));
 }

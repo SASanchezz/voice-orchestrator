@@ -11,6 +11,7 @@ import { ToolCallGate } from "../workers/tool-call-gate.js";
 import { buildOperator, type OperatorParts } from "./build-operator.js";
 import { buildPermissions, type PermissionParts } from "./build-permissions.js";
 import { buildQuestions, type QuestionParts } from "./build-questions.js";
+import { buildTodo, type TodoParts } from "./build-todo.js";
 import { buildUi, type UiParts } from "./build-ui.js";
 import { buildWorkers, type WorkerParts } from "./build-workers.js";
 import { buildCore, type Core } from "./core.js";
@@ -36,6 +37,7 @@ export interface App {
   permissions: PermissionParts;
   questions: QuestionParts;
   workers: WorkerParts;
+  todo: TodoParts;
   operator: OperatorParts;
   ui: UiParts;
 }
@@ -46,10 +48,11 @@ export function buildApp(cfg: AppConfig, adapters: Adapters): App {
   const permissions = buildPermissions(core, commandExplanations(core, adapters));
   const questions = buildQuestions(core);
   const workers = buildWorkers(core, new ToolCallGate(permissions.broker, questions.broker), adapters.query);
-  const neighbors = { permissions, questions, workers, devices: adapters };
+  const todo = buildTodo(workers.intake);
+  const neighbors = { permissions, questions, workers, todo, devices: adapters };
   const operator = buildOperator(core, neighbors);
   const ui = buildUi(core, neighbors, operator);
-  const app = { core, permissions, questions, workers, operator, ui };
+  const app = { core, permissions, questions, workers, todo, operator, ui };
   showNatively(app, adapters);
   return app;
 }

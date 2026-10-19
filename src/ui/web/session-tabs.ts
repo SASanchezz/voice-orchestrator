@@ -11,8 +11,17 @@ export function sessionTabs(project: ProjectView): HTMLDivElement[] {
   return project.sessions.map((session) => {
     const active = session.id === project.activeSession;
     const attrs = { class: `session-tab${active ? " active" : ""}`, role: "tab", "aria-selected": String(active) };
-    return el("div", attrs, openButton(session, active), closeButton(session));
+    return el("div", attrs, openButton(session, active), ...stopButtons(session), closeButton(session));
   });
+}
+
+/** A busy session can be stopped from its tab, whether or not it is the active one; only its own queue is cleared. */
+function stopButtons(session: SessionView): HTMLButtonElement[] {
+  if (!isBusy(session)) return [];
+  const stop = button("■", "ghost session-stop", () => void act(`/api/sessions/${session.id}/stop`));
+  stop.title = `Stop session ${session.number}; its queue is cleared, other sessions keep running`;
+  stop.setAttribute("aria-label", `Stop session ${session.number}`);
+  return [stop];
 }
 
 function openButton(session: SessionView, active: boolean): HTMLButtonElement {

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { AppConfig } from "../../config/app-config.js";
 import { resolveProject } from "../../config/project-names.js";
+import type { Registry } from "../../registry/registry.js";
+import type { SessionState } from "../../registry/registry-schema.js";
 import { errorMessage } from "../../shared/errors.js";
 
 type ToolContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
@@ -49,6 +51,15 @@ export const sessionNumberArg = z
   .int()
   .positive()
   .describe("Session number within the project, as in 'session 2'");
+
+export const optionalSessionArg = sessionNumberArg
+  .optional()
+  .describe("Session number; the active session if left out");
+
+/** The session a tool means: the one with this number, or the project's active one when no number was said. */
+export function sessionOf(registry: Registry, project: string, number: number | undefined): SessionState {
+  return number === undefined ? registry.activeSession(project) : registry.sessionByNumber(project, number);
+}
 
 export function accountArg(cfg: AppConfig): z.ZodString {
   return z.string().describe(`Account: ${Object.keys(cfg.profiles).join(" | ")}`);

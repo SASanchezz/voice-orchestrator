@@ -7,7 +7,7 @@ import {
   permissionRowSummary,
   type PermissionAnswer,
 } from "../permission-lines.js";
-import { button, el, formatTime } from "./dom.js";
+import { button, el, formatWhen } from "./dom.js";
 import { openSessionById } from "./session-link.js";
 
 /** "Allowed once: database play, Bash  cd … && python3 - <<'EOF'…", the command expanding on click. */
@@ -63,5 +63,5 @@ function commandView(command: string): HTMLElement {
 }
 
 function timeOf(entry: FeedEntryView): HTMLSpanElement {
-  return el("span", { class: "permission-time" }, formatTime(entry.at));
+  return el("span", { class: "permission-time" }, formatWhen(entry.at));
 }

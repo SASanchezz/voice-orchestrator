@@ -17,6 +17,7 @@ class PlayingVoice implements VoiceIO {
   inputState(): VoiceInputState {
     return "idle";
   }
+  discardInput(): void {}
   async start(): Promise<void> {}
 
   speak(text: string): Promise<void> {

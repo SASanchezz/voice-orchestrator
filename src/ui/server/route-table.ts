@@ -1,3 +1,4 @@
+import type { VoiceCancel } from "../../orchestrator/conversation/voice-cancel.js";
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
 import type { AppActions } from "./app-actions.js";
 import type { AssistantActions } from "./assistant-actions.js";
@@ -6,13 +7,15 @@ import type { HandoffActions } from "./handoff-actions.js";
 import { MAX_ATTACHED_BODY_BYTES } from "./attachment-body.js";
 import type { PermissionActions } from "./permission-actions.js";
 import type { QuestionActions } from "./question-actions.js";
+import type { QueueActions } from "./queue-actions.js";
 import { MAX_BODY_BYTES, permissionModeBody } from "./request-body.js";
 import type { SessionActions } from "./session-actions.js";
 import type { TabActions } from "./tab-actions.js";
 import type { TaskActions } from "./task-actions.js";
+import { todoItemRoutes, type TodoItemHandlers } from "./todo-item-routes.js";
 import type { VoiceOfferActions } from "./voice-offer-actions.js";
 
-type Route = (body: unknown, match: RegExpMatchArray) => string | Promise<string>;
+export type Route = (body: unknown, match: RegExpMatchArray) => string | Promise<string>;
 
 /** A route found for a path, with the largest body it takes. */
 export interface FoundRoute {
@@ -31,9 +34,12 @@ export interface RouteHandlers {
   policy: PermissionPolicy;
   permissions: PermissionActions;
   questions: QuestionActions;
+  queue: QueueActions;
   tabs: TabActions;
   tasks: TaskActions;
+  todoItems: TodoItemHandlers;
   sessions: SessionActions;
+  voice: VoiceCancel;
   voiceOffers: VoiceOfferActions;
 }
 
@@ -53,6 +59,7 @@ export class RouteTable {
       [/^\/api\/sessions\/([\w-]+)\/tasks$/, runTask],
       [/^\/api\/voice-offers\/(\w+)\/attach$/, attachToVoice],
       ...fileFreeRoutes(h),
+      ...todoItemRoutes(h.todoItems),
     ];
   }
 
@@ -73,8 +80,6 @@ export class RouteTable {
 function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
   return [
     [/^\/api\/restart$/, () => h.app.restartApp()],
-    [/^\/api\/draft$/, (b) => h.voiceOffers.draftChanged(b)],
-    [/^\/api\/voice-offers\/(\w+)\/keep$/, (_b, m) => h.voiceOffers.keepInDraft(m[1])],
     [/^\/api\/assistant\/clear$/, () => h.assistant.clearAssistant()],
     [/^\/api\/permissions\/(\w+)$/, (b, m) => h.permissions.answer(m[1], b)],
     [/^\/api\/questions\/(\w+)\/answer$/, (b, m) => h.questions.answer(m[1], b)],
@@ -86,6 +91,18 @@ function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
     [/^\/api\/sessions\/([\w-]+)\/close$/, (_b, m) => h.sessions.closeSession(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/clear$/, (_b, m) => h.sessions.clearSession(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/stop$/, (_b, m) => h.sessions.stopTask(m[1])],
+    [/^\/api\/sessions\/([\w-]+)\/queue\/remove$/, (b, m) => h.queue.removeQueued(m[1], b)],
     [/^\/api\/sessions\/([\w-]+)\/handoff$/, (_b, m) => h.handoffs.handOff(m[1])],
+    ...voiceRoutes(h),
+  ];
+}
+
+/** Discarding your voice message, and whether one waiting goes with the draft's files. */
+function voiceRoutes(h: RouteHandlers): [RegExp, Route][] {
+  return [
+    [/^\/api\/voice\/discard$/, () => h.voice.discardLatest()],
+    [/^\/api\/draft$/, (b) => h.voiceOffers.draftChanged(b)],
+    [/^\/api\/voice-offers\/(\w+)\/keep$/, (_b, m) => h.voiceOffers.keepInDraft(m[1])],
+    [/^\/api\/voice-offers\/(\w+)\/discard$/, (_b, m) => h.voiceOffers.discard(m[1])],
   ];
 }

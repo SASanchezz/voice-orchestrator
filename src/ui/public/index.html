@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="/styles/markdown.css" />
     <link rel="stylesheet" href="/styles/attachments.css" />
     <link rel="stylesheet" href="/styles/budget.css" />
+    <link rel="stylesheet" href="/styles/todo.css" />
   </head>
   <body>
     <header class="topbar">
@@ -88,7 +89,12 @@
           <ol id="feed" class="feed" aria-live="polite"></ol>
         </section>
 
-        <p id="voice-status" class="voice-status" aria-live="polite" hidden></p>
+        <div id="voice-status" class="voice-status" hidden>
+          <span id="voice-status-text" class="voice-status-text" aria-live="polite"></span>
+          <button type="button" id="voice-discard" class="ghost" title="Discard this voice message (Esc)">
+            Cancel
+          </button>
+        </div>
 
         <ul id="attachment-list" class="attachment-list" aria-label="Attached files" hidden></ul>
 
@@ -148,8 +154,31 @@
         <p id="voice-offer-text" class="explanation"></p>
         <p id="voice-offer-files" class="muted"></p>
         <div class="dialog-actions">
+          <button value="discard" class="ghost">Discard message</button>
           <button value="keep" class="ghost">Keep in draft</button>
           <button value="confirm" class="primary">Send with message</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="todo-dialog" class="confirm-dialog">
+      <form method="dialog" class="todo-form">
+        <h2 id="todo-dialog-title">New to-do item</h2>
+        <label>
+          Title
+          <input id="todo-title-input" required maxlength="200" />
+        </label>
+        <label>
+          Description
+          <textarea id="todo-description-input" rows="4" maxlength="4000"></textarea>
+        </label>
+        <label>
+          Project
+          <select id="todo-project-input"></select>
+        </label>
+        <div class="dialog-actions">
+          <button type="button" id="todo-cancel" class="ghost">Cancel</button>
+          <button value="save" class="primary">Save</button>
         </div>
       </form>
     </dialog>

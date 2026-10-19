@@ -9,8 +9,12 @@ import type { TaskHistory } from "../../registry/task-history.js";
 import type { DestructiveList } from "../../safety/destructive-list.js";
 import type { ScreenSource } from "../../screen/screen-source.js";
 import type { ChangeSummarizer } from "../../workers/change-summarizer.js";
+import type { QueuedTasks } from "../../workers/queued-tasks.js";
 import type { SessionControl } from "../../workers/session-control.js";
 import type { TaskIntake } from "../../workers/task-intake.js";
+import type { TodoItemSender } from "../../todo-items/todo-item-sender.js";
+import type { TodoItems } from "../../todo-items/todo-items.js";
+import type { TodoTrash } from "../../todo-items/todo-trash.js";
 import type { TodoRunner } from "../../workers/todo-runner.js";
 import type { AccountSwitch } from "../actions/account-switch.js";
 import type { GitCommands } from "../actions/git-commands.js";
@@ -31,8 +35,11 @@ import {
   removeProject,
   setProjectAccount,
 } from "./project-tools.js";
+import { listQueuedTasks, removeQueuedTask } from "./queue-tools.js";
 import { closeSession, listSessions, newSession, switchSession } from "./session-tools.js";
 import { git, runTask, stopTask, summarizeChanges } from "./task-tools.js";
+import { deleteTodoItem, restoreTodoItem, sendTodoItem, setTodoItemDone } from "./todo-item-change-tools.js";
+import { addTodoItem, editTodoItem, listTodoItems } from "./todo-item-tools.js";
 import { discardTodo, listTodo, runTodo } from "./todo-tools.js";
 import type { OperatorTool } from "./tool-kit.js";
 
@@ -47,7 +54,11 @@ export interface ToolServices {
   accounts: AccountSwitch;
   intake: TaskIntake;
   control: SessionControl;
+  queuedTasks: QueuedTasks;
   todos: TodoRunner;
+  todoItems: TodoItems;
+  todoTrash: TodoTrash;
+  todoSender: TodoItemSender;
   summarizer: ChangeSummarizer;
   git: GitCommands;
   notes: AssistantNotes;
@@ -75,11 +86,20 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => listTodo(s.todos),
   (s) => runTodo(s.todos),
   (s) => discardTodo(s.todos),
+  (s) => listTodoItems(s.todoItems),
+  (s) => addTodoItem(s.todoItems, s.cfg),
+  (s) => editTodoItem(s.todoItems, s.cfg),
+  (s) => setTodoItemDone(s.todoItems),
+  (s) => deleteTodoItem(s.todoItems, s.todoTrash),
+  (s) => restoreTodoItem(s.todoTrash),
+  (s) => sendTodoItem(s.todoItems, s.todoSender),
   (s) => projectHistory(s.history, s.cfg),
   (s) => remember(s.notes),
   (s) => resetContext(s.requests),
   (s) => restartOrchestrator(s.requests),
-  (s) => stopTask(s.control, s.cfg),
+  (s) => stopTask(s.control, s.registry, s.cfg),
+  (s) => listQueuedTasks(s.queuedTasks, s.registry, s.cfg),
+  (s) => removeQueuedTask(s.queuedTasks, s.registry, s.cfg),
   (s) => summarizeChanges(s.summarizer, s.cfg),
   (s) => git(s.git, s.cfg),
   (s) => listPendingPermissions(s.views),

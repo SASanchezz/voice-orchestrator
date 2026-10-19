@@ -3,7 +3,7 @@
 import { readAttachmentNote } from "../../attachments/noted-files.js";
 import type { ChatMessageView, FeedEntryView } from "../protocol.js";
 import { chatRows, permissionAnswerOf } from "../permission-lines.js";
-import { collapsible, el, formatTime } from "./dom.js";
+import { collapsible, el, formatWhen } from "./dom.js";
 import { markdownView } from "./markdown-view.js";
 import { permissionItem, permissionRowItem } from "./permission-items.js";
 import { sentFiles } from "./sent-files.js";
@@ -60,7 +60,7 @@ function chatItem(kindClass: string, who: string | undefined, line: FeedEntryVie
   return el(
     "li",
     { class: `entry ${kindClass}${failed}` },
-    el("div", { class: "entry-meta" }, el("span", {}, who ?? ""), el("span", {}, formatTime(line.at))),
+    el("div", { class: "entry-meta" }, el("span", {}, who ?? ""), el("span", {}, formatWhen(line.at))),
     ...entryBody(kindClass, line.text),
   );
 }

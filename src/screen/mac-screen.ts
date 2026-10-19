@@ -1,31 +1,39 @@
 import { execFile } from "node:child_process";
-import { mkdirSync, readdirSync, readFileSync, rmSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { STATE_DIR } from "../config/paths.js";
 import { buildNativeHelper } from "../macos/native-helper.js";
+import { sweepLeftoverShots } from "./leftover-shot-sweep.js";
 import type { Screenshot, ScreenSource } from "./screen-source.js";
+import { ScreenshotFolder } from "./screenshot-folder.js";
+import { TurnShots } from "./turn-shots.js";
 
 const run = promisify(execFile);
 
 const SCREEN_RECORDING_MISSING_EXIT_CODE = 2;
-const RETENTION_MS = 86_400_000; // one day
 /** Longest edge Claude's vision uses without downscaling; anything bigger only costs tokens. */
 const MAX_EDGE_PX = 1568;
 
-/** macOS: screenshot of the display under the cursor, kept in state/screenshots for a day. */
+/**
+ * macOS: screenshot of the display under the cursor, written to state/screenshots and deleted once the turn that
+ * could look at it is over; leftovers go after an hour.
+ */
 export class MacScreen implements ScreenSource {
   private pending?: Promise<Screenshot>;
+  private shots: TurnShots;
 
   private constructor(
     private helperPath: string,
-    private dir: string,
-  ) {}
+    private folder: ScreenshotFolder,
+  ) {
+    this.shots = new TurnShots(folder);
+  }
 
   static async create(): Promise<MacScreen> {
-    const dir = resolve(STATE_DIR, "screenshots");
-    mkdirSync(dir, { recursive: true });
-    return new MacScreen(await buildNativeHelper("cursor-display"), dir);
+    const folder = new ScreenshotFolder(resolve(STATE_DIR, "screenshots"));
+    sweepLeftoverShots(folder);
+    return new MacScreen(await buildNativeHelper("cursor-display"), folder);
   }
 
   capture(): void {
@@ -38,11 +46,21 @@ export class MacScreen implements ScreenSource {
     return this.pending ?? this.shoot();
   }
 
-  private async shoot(): Promise<Screenshot> {
-    const file = join(this.dir, `${new Date().toISOString().replace(/[:.]/g, "-")}.jpg`);
+  releaseShotsBefore(time: number): void {
+    this.shots.releaseBefore(time);
+  }
+
+  private shoot(): Promise<Screenshot> {
+    const takenAt = Date.now();
+    const file = this.folder.pathFor(new Date(takenAt));
+    const written = this.write(file);
+    this.shots.add({ file, takenAt, written });
+    return written;
+  }
+
+  private async write(file: string): Promise<Screenshot> {
     await run("screencapture", ["-x", "-t", "jpg", `-R${await this.displayUnderCursor()}`, file]);
     await run("sips", ["-Z", String(MAX_EDGE_PX), file]);
-    deleteOlderThan(this.dir, Date.now() - RETENTION_MS);
     return { data: readFileSync(file).toString("base64"), mimeType: "image/jpeg" };
   }
 
@@ -53,13 +71,6 @@ export class MacScreen implements ScreenSource {
     } catch (e) {
       throw isScreenRecordingMissing(e) ? screenRecordingError() : e;
     }
-  }
-}
-
-function deleteOlderThan(dir: string, cutoff: number): void {
-  for (const name of readdirSync(dir)) {
-    const path = join(dir, name);
-    if (statSync(path).mtimeMs < cutoff) rmSync(path, { force: true });
   }
 }
 

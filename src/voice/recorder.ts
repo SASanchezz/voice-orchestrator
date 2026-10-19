@@ -1,11 +1,12 @@
 import { spawn, type ChildProcess } from "node:child_process";
+import type { UtteranceSlot } from "./utterance-merger.js";
 
 const RECORDER_STOP_GRACE_MS = 2000;
 
 /** One push-to-talk recording while sox writes it. */
 export interface Recording {
   /** Its place in the message being held, see UtteranceMerger. */
-  slot: number;
+  slot: UtteranceSlot;
   wav: string;
   startedAt: number;
   recorder: ChildProcess;

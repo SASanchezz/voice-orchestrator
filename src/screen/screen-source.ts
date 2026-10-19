@@ -7,4 +7,6 @@ export interface Screenshot {
 export interface ScreenSource {
   capture(): void;
   latest(): Promise<Screenshot>;
+  /** The turns that could look at the snapshots taken before `time` are over, so their files can go. */
+  releaseShotsBefore(time: number): void;
 }

@@ -20,6 +20,7 @@ export const speechModeBody = z.object({ mode: z.enum(SPEECH_MODES) });
 export const taskBody = z
   .object({ instruction: z.string().trim(), attachments: attachmentsField })
   .refine((body) => body.instruction || body.attachments.length, NOTHING_TO_SEND);
+export const queueRemovalBody = z.object({ place: z.number().int().positive(), instruction: z.string().min(1) });
 export const attachedFilesBody = z
   .object({ attachments: attachmentsField })
   .refine((body) => body.attachments.length, "Attach a file");

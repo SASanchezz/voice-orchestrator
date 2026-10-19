@@ -1,23 +1,20 @@
-// The right panel: the selected project's active session, with its controls and history.
+// The right panel: the selected project's active session, with its controls and history; your to-do list otherwise.
 
 import { shortFolder } from "../folder-path.js";
 import type { ProjectView, SessionView } from "../protocol.js";
 import { isBusy } from "../running-tasks.js";
 import { act } from "./api.js";
 import { budgetLines } from "./budget-panel.js";
-import { button, byId, collapsible, copyButton, el, formatTime } from "./dom.js";
+import { button, byId, collapsible, copyButton, el, formatWhen } from "./dom.js";
 import { markdownView } from "./markdown-view.js";
+import { queueLines } from "./queue-list.js";
 import { activeSession, STATUS_LABELS, store } from "./store.js";
+import { renderTodoPanel } from "./todo-panel.js";
 
 export function renderDetail(): void {
   const panel = byId("detail", HTMLElement);
   const project = store.selectedProject();
-  if (!project) {
-    delete panel.dataset.version;
-    return panel.replaceChildren(
-      el("p", { class: "empty" }, "Select a project to chat with its sessions and see their history."),
-    );
-  }
+  if (!project) return renderTodoPanel(panel);
   const session = activeSession(project);
   // rebuild only when there is something new, so open details survive live updates
   const version = `${session.id}#${session.history.length}`;
@@ -38,6 +35,7 @@ function detailHeadContent(project: ProjectView, session: SessionView): HTMLDivE
   const lines = [titleLine(project, session), folderLine(project), statusLine(session), ...budgetLines(session)];
   if (session.task && isBusy(session))
     lines.push(el("div", {}, el("span", { class: "muted" }, "Task: "), session.task));
+  lines.push(...queueLines(session));
   if (session.status === "failed" && session.lastError)
     lines.push(el("div", { class: "outcome failed" }, session.lastError));
   return lines;
@@ -100,7 +98,7 @@ function historyItem(h: SessionView["history"][number]): HTMLLIElement {
       "div",
       { class: "entry-meta" },
       el("span", { class: `outcome ${h.outcome}` }, h.outcome),
-      el("span", {}, formatTime(h.finishedAt)),
+      el("span", {}, formatWhen(h.finishedAt)),
     ),
     el("div", { class: "history-task" }, h.task),
     collapsible("Result", markdownView(h.result, "more-body")),

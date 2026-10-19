@@ -9,6 +9,7 @@ import { byId } from "./dom.js";
 import { store } from "./store.js";
 
 const SEND_WITH_FILES = "confirm";
+const DISCARD_MESSAGE = "discard";
 const SECOND_MS = 1000;
 /** The voice message the dialog is open for; unset before the page closes the dialog itself, so that sends nothing. */
 let shownId: string | undefined;
@@ -43,6 +44,7 @@ async function choose(id: string, choice: string, tray: AttachmentTray): Promise
   if (shownId !== id) return; // the message already went
   shownId = undefined;
   if (choice === SEND_WITH_FILES) return sendWithFiles(id, tray);
+  if (choice === DISCARD_MESSAGE) return discard(id);
   await keepInDraft(id);
 }
 
@@ -55,6 +57,10 @@ async function sendWithFiles(id: string, tray: AttachmentTray): Promise<void> {
 
 async function keepInDraft(id: string): Promise<void> {
   await act(`/api/voice-offers/${id}/keep`);
+}
+
+async function discard(id: string): Promise<void> {
+  await act(`/api/voice-offers/${id}/discard`);
 }
 
 function waitingFilesLine(files: number): string {

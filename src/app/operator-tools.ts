@@ -19,13 +19,14 @@ export function buildOperatorTools(core: Core, neighbors: OperatorNeighbors, kit
 
 function toolServices(
   core: Core,
-  { permissions, workers, devices }: OperatorNeighbors,
+  { permissions, workers, todo, devices }: OperatorNeighbors,
   kit: ConversationKit,
 ): ToolServices {
   return {
     ...core,
     ...workers,
     ...permissions,
+    ...todo,
     ...projectActions(core, workers.control, devices.configFile),
     git: new GitCommands(core.cfg, core.destructive, kit.context),
     notes: devices.notes,

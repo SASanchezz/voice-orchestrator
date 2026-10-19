@@ -20,6 +20,7 @@ const INITIAL_STATE: UiState = {
   permissionMode: "ask",
   speechMode: "questions",
   voiceInput: "idle",
+  todo: { items: [] },
   // nothing is marked until the server's first state brings the real limits
   budget: {
     contextWarnPercent: Number.POSITIVE_INFINITY,

@@ -6,7 +6,8 @@ import type { PageTarget } from "./page-target.js";
 export type SessionStatus = "idle" | "running" | "waiting_permission" | "done" | "failed" | "stopped";
 export type PermissionModeName = "auto" | "ask";
 export type SpeechModeName = "all" | "questions" | "muted";
-export type VoiceInputName = "idle" | "recording" | "held";
+/** queued: your spoken message waits for the assistant to finish its current reply. */
+export type VoiceInputName = "idle" | "recording" | "held" | "queued";
 
 export interface TaskRecordView {
   task: string;
@@ -101,6 +102,25 @@ export interface UiState {
   voiceInput: VoiceInputName;
   voiceOffer?: VoiceOfferView;
   budget: BudgetView;
+  todo: TodoListView;
+}
+
+/** An item on your personal to-do list. */
+export interface TodoItemView {
+  id: number;
+  title: string;
+  description: string;
+  project?: string;
+  done: boolean;
+  /** ISO time. */
+  createdAt: string;
+}
+
+export interface TodoListView {
+  /** Oldest first. */
+  items: TodoItemView[];
+  /** The item deleted last, which Undo brings back. */
+  lastDeleted?: TodoItemView;
 }
 
 /** A worker session an assistant's line is about or relays an answer from; the page links to it. */

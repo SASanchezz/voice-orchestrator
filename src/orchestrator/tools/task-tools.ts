@@ -1,10 +1,19 @@
 import { z } from "zod";
 import type { AppConfig } from "../../config/app-config.js";
+import type { Registry } from "../../registry/registry.js";
 import type { ChangeSummarizer } from "../../workers/change-summarizer.js";
 import type { SessionControl } from "../../workers/session-control.js";
 import type { TaskIntake } from "../../workers/task-intake.js";
 import type { GitCommands } from "../actions/git-commands.js";
-import { defineTool, needProject, projectArg, text, type OperatorTool } from "./tool-kit.js";
+import {
+  defineTool,
+  needProject,
+  optionalSessionArg,
+  projectArg,
+  sessionOf,
+  text,
+  type OperatorTool,
+} from "./tool-kit.js";
 
 export function runTask(intake: TaskIntake, cfg: AppConfig): OperatorTool {
   return defineTool({
@@ -15,12 +24,15 @@ export function runTask(intake: TaskIntake, cfg: AppConfig): OperatorTool {
   });
 }
 
-export function stopTask(control: SessionControl, cfg: AppConfig): OperatorTool {
+export function stopTask(control: SessionControl, registry: Registry, cfg: AppConfig): OperatorTool {
   return defineTool({
     name: "stop_task",
-    description: "Stop a running worker and clear its queue.",
-    args: { project: projectArg },
-    run: ({ project }) => text(control.stop(needProject(cfg, project))),
+    description:
+      "Stop the running worker of one session, the project's active session unless a number is given, and clear " +
+      "that session's queue. The project's other sessions keep running. To drop just one queued task, use remove_queued_task.",
+    args: { project: projectArg, session: optionalSessionArg },
+    run: ({ project, session }) =>
+      text(control.stopSession(sessionOf(registry, needProject(cfg, project), session).id)),
   });
 }
 

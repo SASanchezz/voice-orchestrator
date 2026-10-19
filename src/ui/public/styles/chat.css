@@ -46,14 +46,19 @@
   white-space: nowrap;
 }
 .session-close,
+.session-stop,
 .session-new {
   padding: 2px 8px;
   color: var(--muted);
   border-color: transparent;
   background: transparent;
 }
-.session-close:hover {
+.session-close:hover,
+.session-stop:hover {
   color: var(--danger);
+}
+.session-stop {
+  font-size: 10px;
 }
 .session-new {
   align-self: center;
@@ -201,12 +206,21 @@ details.steps summary {
 }
 
 .voice-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin: 0;
   padding: 6px 16px;
   border-top: 1px solid var(--border);
   background: var(--accent-soft);
   color: var(--accent);
   font-size: 13px;
+}
+.voice-status[hidden] {
+  display: none;
+}
+.voice-status-text {
   animation: voice-status-pulse 1.6s ease-in-out infinite;
 }
 @keyframes voice-status-pulse {

@@ -1,3 +1,6 @@
+/** One recording's place in the message being held. */
+export type UtteranceSlot = symbol;
+
 /**
  * Joins recordings made in quick succession into one message. Each transcript is held for a short
  * grace period; a recording started meanwhile (even while an earlier one is still being transcribed)
@@ -5,7 +8,7 @@
  */
 export class UtteranceMerger {
   /** One entry per recording, in the order they started; undefined until its transcript arrives. */
-  private transcripts: (string | undefined)[] = [];
+  private transcripts = new Map<UtteranceSlot, string | undefined>();
   private sendTimer?: NodeJS.Timeout;
 
   constructor(
@@ -14,27 +17,36 @@ export class UtteranceMerger {
   ) {}
 
   /** A recording started. Returns its slot, to pass to finish() with its transcript. */
-  begin(): number {
+  begin(): UtteranceSlot {
     clearTimeout(this.sendTimer);
-    return this.transcripts.push(undefined) - 1;
+    const slot = Symbol("utterance");
+    this.transcripts.set(slot, undefined);
+    return slot;
   }
 
   /** A recording's transcript arrived; "" for silence, an accidental tap or a failed transcription. */
-  finish(slot: number, transcript: string): void {
-    this.transcripts[slot] = transcript.trim();
-    if (this.transcripts.includes(undefined)) return; // an earlier or later recording is still on its way
+  finish(slot: UtteranceSlot, transcript: string): void {
+    if (!this.transcripts.has(slot)) return; // discarded while it was transcribed
+    this.transcripts.set(slot, transcript.trim());
+    if ([...this.transcripts.values()].includes(undefined)) return; // an earlier or later recording is still on its way
     clearTimeout(this.sendTimer);
     this.sendTimer = setTimeout(() => this.sendHeld(), this.graceMs);
   }
 
+  /** Drops the whole message being held, including recordings still being transcribed; nothing is sent. */
+  discard(): void {
+    clearTimeout(this.sendTimer);
+    this.transcripts.clear();
+  }
+
   /** True from the first recording's start until the joined message is sent. */
   isHolding(): boolean {
-    return this.transcripts.length > 0;
+    return this.transcripts.size > 0;
   }
 
   private sendHeld(): void {
-    const message = this.transcripts.filter(Boolean).join(" ");
-    this.transcripts = [];
+    const message = [...this.transcripts.values()].filter(Boolean).join(" ");
+    this.transcripts.clear();
     if (message) this.send(message);
   }
 }

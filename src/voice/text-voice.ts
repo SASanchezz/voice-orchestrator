@@ -23,6 +23,8 @@ export class TextVoice implements VoiceIO {
     return "idle";
   }
 
+  discardInput(): void {} // a typed line is sent as soon as it is entered
+
   async start(): Promise<void> {
     const lines = createInterface({ input: process.stdin });
     lines.on("line", (line) => {

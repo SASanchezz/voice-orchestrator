@@ -22,4 +22,9 @@ export class VoiceOfferActions {
     this.hold.sendAlone(id);
     return "Voice message sent; the files stay in the draft.";
   }
+
+  discard(id: string): string {
+    this.hold.discard(id);
+    return "Voice message discarded; the files stay in the draft.";
+  }
 }

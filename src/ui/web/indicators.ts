@@ -10,15 +10,15 @@ const VOICE_INPUT_NOTICE: Record<VoiceInputName, string> = {
   idle: "",
   recording: "Listening…",
   held: "Holding your message a moment in case you keep talking…",
+  queued: "Your message waits for the assistant to finish its current reply…",
 };
 
 export function renderIndicators(): void {
   const { permissionMode, speechMode, voiceInput, pending } = store.state;
   markSegment("permission-mode", permissionMode);
   markSegment("speech-mode", speechMode);
-  const notice = byId("voice-status", HTMLElement);
-  notice.hidden = voiceInput === "idle";
-  notice.textContent = VOICE_INPUT_NOTICE[voiceInput];
+  byId("voice-status", HTMLElement).hidden = voiceInput === "idle";
+  byId("voice-status-text", HTMLElement).textContent = VOICE_INPUT_NOTICE[voiceInput];
   document.title = pending.length ? `(${pending.length}) ${BASE_TITLE}` : BASE_TITLE;
 }
 

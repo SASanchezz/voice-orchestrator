@@ -6,7 +6,7 @@ import { commandPreview } from "../permission-lines.js";
 import type { ChatMessageView, PendingRequestView } from "../protocol.js";
 import { allSteps, requestDescription, type Step } from "../step-tree.js";
 import { sessionItem } from "./chat-items.js";
-import { el, formatTime } from "./dom.js";
+import { el, formatWhen } from "./dom.js";
 
 /** The "Bash: " a request's description starts with; the step it sits under names the tool already. */
 const TOOL_PREFIX = /^[\w.-]+: /;
@@ -40,7 +40,7 @@ function approvalLine(approval: ChatMessageView): HTMLDetailsElement {
     "summary",
     {},
     el("span", { class: "approval-tag" }, "Approval"),
-    el("span", { class: "permission-time" }, formatTime(approval.at)),
+    el("span", { class: "permission-time" }, formatWhen(approval.at)),
     el("code", {}, commandPreview(description.replace(TOOL_PREFIX, ""))),
   );
   const line = el("details", { class: "step-approval" }, summary, el("pre", {}, description));

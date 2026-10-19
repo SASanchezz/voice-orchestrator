@@ -29,13 +29,18 @@ export class MacVoice implements VoiceIO {
     return this.ptt.state();
   }
 
+  discardInput(): void {
+    this.ptt.discard();
+  }
+
   async start(): Promise<void> {
     await this.ptt.prepare();
     await this.hotkey.start(
       () => this.keyDown(),
       () => this.ptt.release(),
+      () => this.cancelKey(),
     );
-    console.log(`Hold ${this.hotkey.keyName} to talk. Ctrl+C to quit.`);
+    console.log(`Hold ${this.hotkey.keyName} to talk, and press Escape while holding it to discard. Ctrl+C to quit.`);
   }
 
   speak(text: string): Promise<void> {
@@ -51,5 +56,10 @@ export class MacVoice implements VoiceIO {
     this.stopSpeaking(); // pressing the key interrupts Claude mid-sentence, as clicking a pop-up does
     this.pressed();
     this.ptt.begin();
+  }
+
+  /** Escape pressed while the talk key is held; its auto-repeat finds nothing left to discard. */
+  private cancelKey(): void {
+    if (this.ptt.state() === "recording") this.ptt.discard();
   }
 }

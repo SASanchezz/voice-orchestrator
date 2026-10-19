@@ -75,3 +75,16 @@ test("voice hold: choosing for a message that already went is refused", () => {
   hold.sendAlone(id);
   assert.throws(() => hold.sendWithFiles(id, [FILE]), /already sent/);
 });
+
+test("voice hold: a discarded message is never sent, not even when its wait runs out", async () => {
+  const { hold, sent, id } = heldWithDraft();
+  hold.discard(id);
+  await sleep(WAIT_MS * 3);
+  assert.deepEqual(sent, []);
+});
+
+test("voice hold: once discarded, nothing waits any more", () => {
+  const { hold, id } = heldWithDraft();
+  hold.discard(id);
+  assert.equal(hold.waiting, undefined);
+});

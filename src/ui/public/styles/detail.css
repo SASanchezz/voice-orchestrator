@@ -84,3 +84,28 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* The active session's queued tasks, each removable on its own. */
+.queue-list {
+  margin: 2px 0 0;
+  padding-left: 22px;
+}
+.queue-item::marker {
+  color: var(--muted);
+}
+.queue-item {
+  font-size: 13px;
+}
+.queue-text {
+  overflow-wrap: anywhere;
+}
+button.queue-remove {
+  margin-left: 6px;
+  padding: 0 6px;
+  color: var(--muted);
+  border-color: transparent;
+  background: transparent;
+}
+button.queue-remove:hover {
+  color: var(--danger);
+}

@@ -1,4 +1,4 @@
-import type { Input } from "./inputs.js";
+import type { Input, UserInput } from "./inputs.js";
 import type { QuestionGate } from "./question-gate.js";
 
 /** What the operator still has to handle: your words ahead of queued notifications. */
@@ -21,6 +21,15 @@ export class InputQueue {
   takeReady(): Input | undefined {
     const index = this.inputs.findIndex((input) => this.gate.isReady(input));
     return index === -1 ? undefined : this.inputs.splice(index, 1)[0];
+  }
+
+  /** Your newest spoken message still waiting for the operator to start on it. */
+  latestVoiceMessage(): UserInput | undefined {
+    return this.inputs.findLast((input): input is UserInput => input.kind === "user" && input.source === "voice");
+  }
+
+  remove(input: Input): void {
+    this.inputs = this.inputs.filter((queued) => queued !== input);
   }
 
   isEmpty(): boolean {

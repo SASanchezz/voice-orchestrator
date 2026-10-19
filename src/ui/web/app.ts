@@ -16,6 +16,8 @@ import { byId } from "./dom.js";
 import { reportDraft, reportDraftWhileShown } from "./draft-report.js";
 import { wireImageViewer } from "./image-viewer.js";
 import { renderVoiceOffer } from "./voice-offer.js";
+import { wireVoiceDiscard } from "./voice-discard.js";
+import { wireTodoDialog } from "./todo-dialog.js";
 
 const chat = new ChatView();
 const tray = new AttachmentTray(byId("attachment-list", HTMLElement), reportDraft);
@@ -54,5 +56,7 @@ wireSegment("speech-mode", "/api/speech-mode");
 wireComposer(tray);
 reportDraftWhileShown(() => tray.count);
 wireImageViewer();
+wireVoiceDiscard();
+wireTodoDialog();
 wireRestart();
 connect();

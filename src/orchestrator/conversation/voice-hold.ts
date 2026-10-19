@@ -54,6 +54,11 @@ export class VoiceHold {
     this.send(this.take(id).text);
   }
 
+  /** The waiting message is dropped unsent; the files stay in the draft. */
+  discard(id: string): void {
+    this.take(id);
+  }
+
   private hold(text: string): void {
     const id = String(++this.lastId);
     this.held = { id, text };

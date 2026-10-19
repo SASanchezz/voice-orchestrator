@@ -1,0 +1,87 @@
+/* ---------------------------------------------------------------- to-do list (right panel) */
+
+.detail-head.todo-head {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+.todo-head h2 {
+  font-size: 16px;
+}
+
+.todo-undo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 13px;
+}
+
+.todo-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.todo-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.todo-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.todo-title input {
+  flex: none;
+}
+.todo-item.done .todo-title span:first-of-type {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.todo-description {
+  margin-left: 24px;
+  font-size: 13px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.todo-meta {
+  margin-left: 24px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.todo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: 24px;
+}
+.todo-actions button {
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.todo-done {
+  padding: 8px 16px;
+}
+.todo-done .todo-item {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.todo-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.todo-form input,
+.todo-form textarea,
+.todo-form select {
+  font: inherit;
+  color: var(--text);
+}

@@ -1,9 +1,9 @@
 import type { AppConfig } from "../config/app-config.js";
 import { startRecorder, type Recording } from "./recorder.js";
-import { abandonRecording, MAX_RECORDING_MS, transcribeRecording } from "./recording-end.js";
+import { discardRecording, finishAtLimit, MAX_RECORDING_MS, transcribeRecording } from "./recording-end.js";
 import { RecordingFiles } from "./recording-files.js";
 import { prepareRecording } from "./recording-tools.js";
-import { playSound, START_SOUND } from "./sounds.js";
+import { DISCARD_SOUND, playSound, START_SOUND } from "./sounds.js";
 import type { Transcriber } from "./transcriber.js";
 import { UtteranceMerger } from "./utterance-merger.js";
 import type { VoiceInputState } from "./voice-io.js";
@@ -20,6 +20,7 @@ export class PushToTalk {
   constructor(
     private cfg: AppConfig["voice"],
     private transcriber: Transcriber,
+    private maxRecordingMs = MAX_RECORDING_MS,
   ) {
     this.merger = new UtteranceMerger(cfg.mergeWindowSeconds * SECOND_MS, (message) => this.deliver(message));
   }
@@ -41,7 +42,7 @@ export class PushToTalk {
     const wav = this.files.next();
     const slot = this.merger.begin();
     const recorder = startRecorder(this.cfg.recordBin, wav);
-    const limit = setTimeout(() => this.abandon(), MAX_RECORDING_MS);
+    const limit = setTimeout(() => this.stopAtLimit(), this.maxRecordingMs);
     this.current = { slot, wav, startedAt: Date.now(), recorder, limit };
     playSound(START_SOUND);
   }
@@ -53,9 +54,18 @@ export class PushToTalk {
     if (recording) void transcribeRecording(recording, this.transcriber, this.merger);
   }
 
-  private abandon(): void {
+  /** Drops what you're saying and what you said just before it, even if still being transcribed: nothing is sent. */
+  discard(): void {
     const recording = this.current;
-    this.current = undefined; // first, so a late key release can't send the partial recording
-    if (recording) abandonRecording(recording, this.merger);
+    this.current = undefined;
+    this.merger.discard();
+    if (recording) void discardRecording(recording);
+    playSound(DISCARD_SOUND);
+  }
+
+  private stopAtLimit(): void {
+    const recording = this.current;
+    this.current = undefined; // first, so a late key release can't send the recording a second time
+    if (recording) void finishAtLimit(recording, this.transcriber, this.merger);
   }
 }

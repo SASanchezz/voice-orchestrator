@@ -1,9 +1,10 @@
 // Small DOM helpers. Text is always inserted as text, never as HTML.
 
+import { formatWaiting, formatWhen as formatWhenAt } from "../when.js";
+
 /** A child for el(): "" leaves a slot empty. */
 type Child = Node | string;
 
-const MINUTE_MS = 60_000;
 /** How long a copy button says "Copied" before it reads "Copy" again. */
 const COPIED_MS = 1500;
 const MAX_COMPOSER_HEIGHT_PX = 200;
@@ -60,13 +61,13 @@ export function collapsible(summary: string, body: HTMLElement): HTMLDetailsElem
   return el("details", { class: "more" }, el("summary", {}, summary), body);
 }
 
-export function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+/** "14:05" today, "Oct 13, 14:05" for an earlier day. */
+export function formatWhen(iso: string): string {
+  return formatWhenAt(new Date(iso), new Date());
 }
 
 export function timeAgo(ms: number): string {
-  const minutes = Math.round((Date.now() - ms) / MINUTE_MS);
-  return minutes < 1 ? "just now" : `${minutes} min ago`;
+  return formatWaiting(new Date(ms), new Date());
 }
 
 export function autoGrow(textarea: HTMLTextAreaElement): void {
