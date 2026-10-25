@@ -76,3 +76,11 @@ budget:
   contextCriticalPercent: 80
   sessionCostUsd: 5          # one session's total
   dailyCostUsd: 25           # all sessions together, per day
+
+# Camera gestures: hold an open palm to talk, thumbs-down to discard (sensors/gestures; set it up as its README says).
+sensors:
+  gestures:
+    enabled: false                              # true to start the sensor with the app (not in text mode)
+    python: sensors/gestures/.venv/bin/python   # relative to this app's folder, or absolute
+    args: [-m, gestures, run]                   # add e.g. --min-hold-ms, 400 to tune the sensor
+    mapping: config/gestures.yaml               # which gesture does what: cp config/gestures.example.yaml config/gestures.yaml

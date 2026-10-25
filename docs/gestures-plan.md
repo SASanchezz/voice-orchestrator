@@ -44,6 +44,7 @@ src/sensors/                 Node side
   gesture-process.ts         spawns/restarts the Python process, parses stdout
   sensor-router.ts           event -> reflex action or operator input
   reflex-table.ts            loads config/gestures.yaml
+src/voice/talk-switch.ts     the mic, held by the hotkey or a gesture
   camera-source.ts           (M5) like ScreenSource: capture()/latest()
 config/gestures.example.yaml reflex mapping
 ```
@@ -94,6 +95,9 @@ Works: `python -m gestures run` prints clean start/end JSON lines as you show ge
 - [x] `recognizer_canned.py` with MediaPipe GestureRecognizer (`gesture_recognizer.task`, downloaded on first run
       into `models/`). Built-in labels: Open_Palm, Closed_Fist, Pointing_Up, Thumb_Up, Thumb_Down, Victory,
       ILoveYou, None -> map to snake_case. It also gives the landmarks, so it replaced HandLandmarker.
+- [x] Left hand: the built-in model's gestures were much weaker on the left hand. `CannedRecognizer` runs a second
+      recognizer on the mirrored frame (each hand looks like the other) and gives each hand the better reading,
+      matched by wrist position. ~88 FPS for both passes on the MacBook.
 - [x] `stabilizer.py`: per hand, a label must hold `minHoldMs` (e.g. 250) at `minConfidence` (e.g. 0.7) to emit
       `start`; emit `end` after `releaseMs` (e.g. 200) of a different label / no hand; `cooldownMs` per name
       (default 500: a repeat already waits `minHoldMs` after an end, so a smaller cooldown does nothing).
@@ -105,25 +109,32 @@ Works: `python -m gestures run` prints clean start/end JSON lines as you show ge
 Check: wave the hand around normally for a minute -> no events; deliberate gestures -> exactly one start/end each.
 Commit: `gestures: stable gesture events with built-in recognizer`
 
-## M2: Gesture push-to-talk in the orchestrator  [ ]
+## M2: Gesture push-to-talk in the orchestrator  [~] (code done, verify on the Mac)
 
-Works: `npm start`, hold an open palm to talk (like holding the hotkey), lower it to send; thumbs-down discards.
+Works: `npm start`, show an open palm to start talking, a closed fist to send; thumbs-down discards.
+Holding a gesture for the whole message was too tiring, so talk is started and ended by two taps
+(`hold: talk` still exists). Both hands work: the recognizer also runs on a mirrored frame (see M1 note below).
 
-- [ ] `config.yaml`: `sensors.gestures: { enabled, python, script, mapping: config/gestures.yaml }`, schema in
-      `src/config/` (new module, don't grow `app-config.ts` past its limit), defaults off.
-- [ ] `sensor-event.ts`: zod schema for the protocol; malformed lines are logged and skipped.
-- [ ] `gesture-process.ts`: spawn, read lines, restart with backoff on crash, stop on shutdown (`shutDown` in main.ts).
-- [ ] `config/gestures.example.yaml`:
+- [x] `config.yaml`: `sensors.gestures: { enabled, python, args, mapping: config/gestures.yaml }`, schema in
+      `src/config/sensor-config.ts`, defaults off. `args` (default `[-m, gestures, run]`) replaced the planned
+      `script`: the package is installed in its venv, so the interpreter plus a module is enough, and extra
+      sensor options (`--min-hold-ms`, ...) go there too. Paths are relative to the app folder.
+- [x] `sensor-event.ts`: zod schema for the protocol; malformed lines are logged and skipped.
+- [x] `gesture-process.ts`: spawn, read lines, restart with `CrashBackoff` (reset on `ready`), stop on shutdown
+      (`shutDown` in main.ts). Started once the mic is ready; not in text mode.
+- [x] `config/gestures.example.yaml` (copy to the gitignored `config/gestures.yaml`):
       ```yaml
-      open_palm:   { hold: talk }        # start -> voice begin, end -> voice release
-      thumb_down:  { tap: discard }      # -> voice.discardInput()
-      closed_fist: { tap: stop_speaking }
+      open_palm:   { tap: start_talk }   # -> voice begin
+      closed_fist: { tap: end_talk }     # -> voice release (sends)
+      thumb_down:  { tap: discard }      # -> like the page's Discard button (VoiceCancel.discardLatest)
       ```
-- [ ] `sensor-router.ts` + `reflex-table.ts`: map events to actions on `VoiceIO`/`PushToTalk`. Rules: ignore gesture
-      talk while the hotkey is recording and vice versa; one active `talk` hold at a time.
-- [ ] Reuse the hotkey path's press behavior (screen capture on press, start sound).
-- [ ] Tests: router with a fake voice and a scripted event stream; process wrapper with a fake child that prints lines.
-- [ ] UI: show "gestures on/off" and the last gesture (small indicator, optional).
+- [x] `sensor-router.ts` + `reflex-table.ts`: map events to actions. `src/voice/talk-switch.ts` holds the mic for
+      either the hotkey or a gesture, and ignores the other until it is let go; the router allows one `talk` hold
+      (one hand) at a time. A sensor that dies mid-hold ends the talk, like the hotkey helper dying.
+- [x] Reuses the hotkey path's press behavior: `TalkSwitch.press` stops speech, fires `onPress` (screen capture),
+      and `PushToTalk.begin` plays the start sound.
+- [x] Tests: router with fake actions, talk switch with a fake recorder, process wrapper with a fake Node child.
+- [ ] UI: show "gestures on/off" and the last gesture (optional; not done).
 
 Check: full voice round-trip with no keyboard. Hotkey still works. Killing the Python process -> it restarts, app keeps running.
 Commit: `sensors: gesture push-to-talk`

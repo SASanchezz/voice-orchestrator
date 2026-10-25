@@ -2,7 +2,14 @@
 
 Camera gesture sensor for the voice orchestrator. Build plan: [docs/gestures-plan.md](../../docs/gestures-plan.md).
 
-Status: **M1**, stable gesture events (MediaPipe's built-in gestures) as JSON lines on stdout.
+Status: **M2**, stable gesture events (MediaPipe's built-in gestures) as JSON lines on stdout,
+used by the orchestrator for push-to-talk.
+
+## Use it in the orchestrator
+
+After the setup below, in `config/config.yaml` set `sensors.gestures.enabled: true` and copy the mapping:
+`cp config/gestures.example.yaml config/gestures.yaml`. `npm start` then runs `python -m gestures run` from
+the venv: show an open palm to start talking, a closed fist to send, thumbs-down to discard.
 
 ## Setup (macOS)
 
@@ -73,7 +80,7 @@ Tests need no camera. The real-model test is skipped until the model has been do
 | File | Job |
 | --- | --- |
 | `camera.py` | OpenCV capture (AVFoundation on macOS), raw frames (not mirrored) |
-| `recognizer_canned.py` | MediaPipe GestureRecognizer in VIDEO mode → `Sighting(hand, gesture, confidence)` per hand |
+| `recognizer_canned.py` | MediaPipe GestureRecognizer in VIDEO mode, on the raw and a mirrored frame (its gestures are much weaker on one hand) → `Sighting(hand, gesture, confidence)` per hand |
 | `landmarks.py` | `Hand(side, score, 21 points)` |
 | `stabilizer.py` | per-hand hold / release / cooldown → `start` and `end` events |
 | `events.py`, `protocol.py` | the events and their JSON lines on stdout |

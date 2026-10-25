@@ -3,9 +3,15 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from gestures.landmarks import LANDMARK_COUNT
+from gestures.landmarks import LANDMARK_COUNT, Hand
 from gestures.models import GESTURE_RECOGNIZER, MODELS_DIR
-from gestures.recognizer_canned import CannedRecognizer, RecognizerConfig, sightings_from_result
+from gestures.recognizer_canned import (
+    CannedRecognizer,
+    RecognizerConfig,
+    Sighting,
+    merge_passes,
+    sightings_from_result,
+)
 
 
 def category(name: str, score: float) -> list[SimpleNamespace]:
@@ -56,3 +62,27 @@ def test_real_model_finds_no_hand_in_a_blank_frame() -> None:
     with CannedRecognizer(MODEL, RecognizerConfig()) as recognizer:
         assert recognizer.detect(blank, 0) == []
         assert recognizer.detect(blank, 0) == []  # same timestamp twice is fine
+
+
+def sighting_at(x: float, gesture: str, confidence: float) -> Sighting:
+    return Sighting(Hand("left", 0.95, ((x, 0.5, 0.0),) * LANDMARK_COUNT), gesture, confidence)
+
+
+def test_merge_takes_the_mirrored_gesture_when_the_raw_pass_saw_none() -> None:
+    [merged] = merge_passes([sighting_at(0.3, "none", 0.9)], [sighting_at(0.31, "open_palm", 0.8)])
+    assert (merged.gesture, merged.confidence) == ("open_palm", 0.8)
+
+
+def test_merge_takes_the_more_confident_of_two_gestures() -> None:
+    [merged] = merge_passes([sighting_at(0.3, "open_palm", 0.6)], [sighting_at(0.3, "open_palm", 0.9)])
+    assert merged.confidence == 0.9
+
+
+def test_merge_ignores_a_mirrored_hand_elsewhere_in_the_frame() -> None:
+    [merged] = merge_passes([sighting_at(0.3, "none", 0.9)], [sighting_at(0.8, "open_palm", 0.9)])
+    assert merged.gesture == "none"
+
+
+def test_merge_keeps_the_raw_hand_without_a_mirrored_twin() -> None:
+    raw = sighting_at(0.3, "victory", 0.9)
+    assert merge_passes([raw], []) == [raw]

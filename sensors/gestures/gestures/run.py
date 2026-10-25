@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import signal
+import threading
+from collections.abc import Iterable
+
+import numpy as np
 
 from .camera import CameraError
-from .pipeline import SensorSettings, open_pipeline
+from .pipeline import GesturePipeline, SensorSettings, open_pipeline
 from .protocol import EventWriter
 from .recognizer_canned import RECOGNIZER_NAME
+
+STOP_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 
 
 def run_sensor(settings: SensorSettings, out: EventWriter) -> None:
@@ -19,9 +25,24 @@ def run_sensor(settings: SensorSettings, out: EventWriter) -> None:
 
 
 def _run(settings: SensorSettings, out: EventWriter) -> None:
-    # The orchestrator stops the sensor with SIGTERM; as KeyboardInterrupt, open holds still get their end event.
-    signal.signal(signal.SIGTERM, signal.default_int_handler)
+    stop = _stop_on_signals()
     with open_pipeline(settings, out) as (cam, pipeline):
         out.ready(RECOGNIZER_NAME)
-        for frame in cam.frames():
-            pipeline.process(frame)
+        process_until(cam.frames(), pipeline, stop)
+
+
+def _stop_on_signals() -> threading.Event:
+    """Ctrl+C and the orchestrator's SIGTERM often arrive together. Raised as KeyboardInterrupt, the second one
+    would break into MediaPipe's close() halfway, and its finalizer then closes again and crashes. A flag checked
+    between frames lets cleanup run once and whole; held gestures still get their end event."""
+    stop = threading.Event()
+    for signum in STOP_SIGNALS:
+        signal.signal(signum, lambda _signum, _frame: stop.set())
+    return stop
+
+
+def process_until(frames: Iterable[np.ndarray], pipeline: GesturePipeline, stop: threading.Event) -> None:
+    for frame in frames:
+        if stop.is_set():
+            return
+        pipeline.process(frame)

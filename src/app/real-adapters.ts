@@ -8,9 +8,11 @@ import { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../safety/destructive-list.js";
 import { MacScreen } from "../screen/mac-screen.js";
 import { MacHotkey } from "../voice/hotkey.js";
+import { HotkeyTalk } from "../voice/hotkey-talk.js";
 import { MacVoice } from "../voice/mac-voice.js";
 import { PushToTalk } from "../voice/push-to-talk.js";
 import { SaySpeaker } from "../voice/say-speaker.js";
+import { TalkSwitch } from "../voice/talk-switch.js";
 import { Transcriber } from "../voice/transcriber.js";
 import type { VoiceIO } from "../voice/voice-io.js";
 import type { Adapters } from "./build-app.js";
@@ -30,8 +32,17 @@ export async function realAdapters(voice: VoiceIO): Promise<Adapters> {
   return { ...devices, questionPanels, destructive, configFile: CONFIG_PATH, explainCommands: true };
 }
 
+/** Your voice on macOS, and the mic switch that lets gestures talk as well as the hotkey. */
+export interface MacVoiceParts {
+  voice: MacVoice;
+  talk: TalkSwitch;
+}
+
 /** Hold the hotkey to talk; replies are spoken with `say`. */
-export function macVoice(settings: AppConfig["voice"]): MacVoice {
+export function macVoice(settings: AppConfig["voice"]): MacVoiceParts {
   const pushToTalk = new PushToTalk(settings, new Transcriber(settings));
-  return new MacVoice(pushToTalk, new SaySpeaker(settings), new MacHotkey(settings.hotkey));
+  const speaker = new SaySpeaker(settings);
+  const talk = new TalkSwitch(pushToTalk, () => speaker.stop());
+  const hotkey = new HotkeyTalk(new MacHotkey(settings.hotkey), talk);
+  return { voice: new MacVoice(pushToTalk, speaker, hotkey), talk };
 }

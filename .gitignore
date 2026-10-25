@@ -3,6 +3,7 @@ state/
 .playwright-mcp/
 config/config.yaml
 config/notes.md
+config/gestures.yaml
 sensors/gestures/.venv/
 sensors/gestures/models/
 __pycache__/

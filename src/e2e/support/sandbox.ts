@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppConfig } from "../../config/app-config.js";
 import { DEFAULT_BUDGET } from "../../config/budget-config.js";
+import { DEFAULT_SENSORS } from "../../config/sensor-config.js";
 import { DESTRUCTIVE_PATH, setStateDir } from "../../config/paths.js";
 
 /** A temporary home with real git repos, two account folders, and the app's state, rules and notes. */
@@ -56,6 +57,7 @@ export const cfg: AppConfig = {
   ui: { port: 0, open: false },
   permissions: { mode: "ask", reminderMinutes: 60, alwaysDestination: "localSettings" },
   budget: DEFAULT_BUDGET,
+  sensors: DEFAULT_SENSORS,
 };
 
 /** Which account a Claude Code process ran under, from its CLAUDE_CONFIG_DIR. */

@@ -5,6 +5,7 @@ Give it raw, unmirrored frames: on those, MediaPipe's "Right" is the user's righ
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -21,6 +22,9 @@ from .events import NO_GESTURE
 from .landmarks import Hand, hand_from
 
 RECOGNIZER_NAME = "canned"
+WRIST = 0
+# Hands in the raw and the mirrored pass closer than this (in image sizes) are the same hand.
+SAME_HAND_DISTANCE = 0.15
 
 CANNED_NAMES = {
     "None": NO_GESTURE,
@@ -59,10 +63,16 @@ class RecognizerConfig:
 
 
 class CannedRecognizer:
-    """Context manager around GestureRecognizer in VIDEO mode (synchronous, tracks between frames)."""
+    """Context manager around two GestureRecognizers in VIDEO mode (synchronous, tracks between frames).
+
+    MediaPipe's built-in gestures are recognized much less reliably on one hand than the other. One recognizer
+    sees the raw frame, the other a mirrored copy, where each hand looks like the other one; each hand gets
+    the better of its two readings.
+    """
 
     def __init__(self, model_path: Path, cfg: RecognizerConfig) -> None:
-        self._recognizer = GestureRecognizer.create_from_options(_options(model_path, cfg))
+        self._raw = GestureRecognizer.create_from_options(_options(model_path, cfg))
+        self._mirrored = GestureRecognizer.create_from_options(_options(model_path, cfg))
         self._last_ts = -1
 
     def __enter__(self) -> CannedRecognizer:
@@ -74,14 +84,51 @@ class CannedRecognizer:
         exc: BaseException | None,
         tb: TracebackType | None,
     ) -> None:
-        self._recognizer.close()
+        try:
+            self._raw.close()
+        finally:
+            self._mirrored.close()
 
     def detect(self, frame_bgr: np.ndarray, timestamp_ms: int) -> list[Sighting]:
         # VIDEO mode needs strictly increasing timestamps.
         self._last_ts = max(timestamp_ms, self._last_ts + 1)
         rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+        raw = self._recognize(self._raw, rgb)
+        mirrored = [sighting.mirrored() for sighting in self._recognize(self._mirrored, cv2.flip(rgb, 1))]
+        return merge_passes(raw, mirrored)
+
+    def _recognize(self, recognizer: GestureRecognizer, rgb: np.ndarray) -> list[Sighting]:
         image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-        return sightings_from_result(self._recognizer.recognize_for_video(image, self._last_ts))
+        return sightings_from_result(recognizer.recognize_for_video(image, self._last_ts))
+
+
+def merge_passes(raw: list[Sighting], mirrored: list[Sighting]) -> list[Sighting]:
+    """Each raw hand with the better gesture reading of the two passes; its side and points stay the raw ones.
+
+    `mirrored` must already be mapped back to raw-frame coordinates (Sighting.mirrored()).
+    """
+    return [_better_reading(sighting, _same_hand(sighting, mirrored)) for sighting in raw]
+
+
+def _same_hand(sighting: Sighting, others: list[Sighting]) -> list[Sighting]:
+    """The one of `others` at the same place in the frame, if any."""
+    near = [other for other in others if _wrist_distance(sighting, other) < SAME_HAND_DISTANCE]
+    return sorted(near, key=lambda other: _wrist_distance(sighting, other))[:1]
+
+
+def _wrist_distance(one: Sighting, other: Sighting) -> float:
+    (x1, y1, _), (x2, y2, _) = one.hand.points[WRIST], other.hand.points[WRIST]
+    return math.hypot(x1 - x2, y1 - y2)
+
+
+def _better_reading(sighting: Sighting, twins: list[Sighting]) -> Sighting:
+    best = max([sighting, *twins], key=_how_telling)
+    return replace(sighting, gesture=best.gesture, confidence=best.confidence)
+
+
+def _how_telling(sighting: Sighting) -> tuple[bool, float]:
+    """A real gesture beats "none"; between two of a kind, the more confident one wins."""
+    return sighting.gesture != NO_GESTURE, sighting.confidence
 
 
 def sightings_from_result(result: Any) -> list[Sighting]:
