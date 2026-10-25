@@ -11,6 +11,10 @@ After the setup below, in `config/config.yaml` set `sensors.gestures.enabled: tr
 `cp config/gestures.example.yaml config/gestures.yaml`. `npm start` then runs `python -m gestures run` from
 the venv: show an open palm to start talking, a closed fist to send, thumbs-down to discard.
 
+The web UI's **Gestures** switch turns the sensor on and off while the app runs. Off stops the sensor process, so the
+camera isn't captured or processed at all (it saves battery). The switch is remembered in `state/gestures.json` and
+takes over from `enabled`, which only decides the very first start.
+
 ## Setup (macOS)
 
 Python 3.11 or newer (MediaPipe sometimes lags the newest Python release; if `pip install` finds no

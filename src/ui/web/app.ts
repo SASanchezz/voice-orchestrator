@@ -53,6 +53,7 @@ function connect(): void {
 store.onChange(renderPage);
 wireSegment("permission-mode", "/api/permission-mode");
 wireSegment("speech-mode", "/api/speech-mode");
+wireSegment("gesture-mode", "/api/gestures");
 wireComposer(tray);
 reportDraftWhileShown(() => tray.count);
 wireImageViewer();

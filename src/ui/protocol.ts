@@ -6,6 +6,8 @@ import type { PageTarget } from "./page-target.js";
 export type SessionStatus = "idle" | "running" | "waiting_permission" | "done" | "failed" | "stopped";
 export type PermissionModeName = "auto" | "ask";
 export type SpeechModeName = "all" | "questions" | "muted";
+/** unavailable: text mode, which has no mic for gestures to talk into. */
+export type GestureStateName = "on" | "off" | "unavailable";
 /** queued: your spoken message waits for the assistant to finish its current reply. */
 export type VoiceInputName = "idle" | "recording" | "held" | "queued";
 
@@ -99,6 +101,8 @@ export interface UiState {
   questions: PendingQuestionView[];
   permissionMode: PermissionModeName;
   speechMode: SpeechModeName;
+  /** Camera gestures; off means the camera isn't used at all. */
+  gestures: GestureStateName;
   voiceInput: VoiceInputName;
   voiceOffer?: VoiceOfferView;
   budget: BudgetView;

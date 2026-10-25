@@ -1,5 +1,6 @@
 import type { VoiceCancel } from "../../orchestrator/conversation/voice-cancel.js";
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
+import type { GestureControl } from "../../sensors/gesture-switch.js";
 import type { AppActions } from "./app-actions.js";
 import type { AssistantActions } from "./assistant-actions.js";
 import type { AttachedText } from "./attached-text.js";
@@ -8,7 +9,7 @@ import { MAX_ATTACHED_BODY_BYTES } from "./attachment-body.js";
 import type { PermissionActions } from "./permission-actions.js";
 import type { QuestionActions } from "./question-actions.js";
 import type { QueueActions } from "./queue-actions.js";
-import { MAX_BODY_BYTES, permissionModeBody } from "./request-body.js";
+import { gestureModeBody, MAX_BODY_BYTES, permissionModeBody } from "./request-body.js";
 import type { SessionActions } from "./session-actions.js";
 import type { TabActions } from "./tab-actions.js";
 import type { TaskActions } from "./task-actions.js";
@@ -30,6 +31,7 @@ export interface RouteHandlers {
   assistant: AssistantActions;
   /** Saves the files attached to a message or task and lists them after its text. */
   attached: AttachedText;
+  gestures: GestureControl;
   handoffs: HandoffActions;
   policy: PermissionPolicy;
   permissions: PermissionActions;
@@ -86,6 +88,7 @@ function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
     [/^\/api\/questions\/(\w+)\/skip$/, (_b, m) => h.questions.skip(m[1])],
     [/^\/api\/permission-mode$/, (b) => h.policy.setMode(permissionModeBody.parse(b).mode)],
     [/^\/api\/speech-mode$/, (b) => h.assistant.setSpeechMode(b)],
+    [/^\/api\/gestures$/, (b) => h.gestures.setMode(gestureModeBody.parse(b).mode)],
     [/^\/api\/projects\/([^/]+)\/sessions$/, (_b, m) => h.tabs.createSession(decodeURIComponent(m[1]))],
     [/^\/api\/sessions\/([\w-]+)\/activate$/, (_b, m) => h.tabs.activateSession(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/close$/, (_b, m) => h.sessions.closeSession(m[1])],

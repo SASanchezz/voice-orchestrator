@@ -6,6 +6,7 @@ import { MacPopups } from "../macos/mac-popups.js";
 import { MacQuestionPanels } from "../macos/mac-question-panels.js";
 import { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../safety/destructive-list.js";
+import type { GestureControl } from "../sensors/gesture-switch.js";
 import { MacScreen } from "../screen/mac-screen.js";
 import { MacHotkey } from "../voice/hotkey.js";
 import { HotkeyTalk } from "../voice/hotkey-talk.js";
@@ -21,14 +22,23 @@ import type { Adapters } from "./build-app.js";
  * The real world: config/destructive.yaml (hot-reloaded), config/config.yaml, the screen, pop-ups, config/notes.md
  * and the Agent SDK.
  */
-export async function realAdapters(voice: VoiceIO): Promise<Adapters> {
+export async function realAdapters(voice: VoiceIO, gestures: GestureControl): Promise<Adapters> {
   const destructive = new DestructiveList();
   destructive.watchForChanges();
   const screen = await MacScreen.create();
   const popups = await MacPopups.create();
   const questionPanels = await MacQuestionPanels.create(); // after MacPopups: the helper is built by then
   const notes = new AssistantNotes(NOTES_PATH);
-  const devices = { voice, screen, notes, query: sdkQuery, popups, notices: popups, browser: new MacBrowserPage() };
+  const devices = {
+    voice,
+    screen,
+    notes,
+    query: sdkQuery,
+    gestures,
+    popups,
+    notices: popups,
+    browser: new MacBrowserPage(),
+  };
   return { ...devices, questionPanels, destructive, configFile: CONFIG_PATH, explainCommands: true };
 }
 

@@ -11,6 +11,7 @@ import { rmSync } from "node:fs";
 import { buildApp, startOperator } from "../../app/build-app.js";
 import { AssistantNotes } from "../../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../../safety/destructive-list.js";
+import { UnavailableGestures } from "../../sensors/gesture-switch.js";
 import { fakeQuery } from "../../testing/fake-query.js";
 import { TestBrowserPage, TestNotices } from "../../testing/test-notices.js";
 import { TestPopups } from "../../testing/test-popups.js";
@@ -39,6 +40,7 @@ export const app = buildApp(cfg, {
   configFile,
   destructive: new DestructiveList(rulesFile),
   query,
+  gestures: new UnavailableGestures(),
   explainCommands: false,
   popups,
   questionPanels,

@@ -2,6 +2,7 @@ import type { IncomingMessage } from "node:http";
 import { z } from "zod";
 import { MAX_ATTACHMENTS } from "../../attachments/attachment-limits.js";
 import { PERMISSION_MODES, SPEECH_MODES } from "../../config/app-config.js";
+import { GESTURE_MODES } from "../../sensors/gesture-setting.js";
 import { attachmentsField } from "./attachment-body.js";
 import { HTTP_STATUS, HttpError } from "./http-error.js";
 
@@ -17,6 +18,7 @@ export const decisionBody = z.object({ decision: z.enum(["once", "always", "deny
 export const answersBody = z.object({ answers: z.record(z.string(), z.string()) });
 export const permissionModeBody = z.object({ mode: z.enum(PERMISSION_MODES) });
 export const speechModeBody = z.object({ mode: z.enum(SPEECH_MODES) });
+export const gestureModeBody = z.object({ mode: z.enum(GESTURE_MODES) });
 export const taskBody = z
   .object({ instruction: z.string().trim(), attachments: attachmentsField })
   .refine((body) => body.instruction || body.attachments.length, NOTHING_TO_SEND);

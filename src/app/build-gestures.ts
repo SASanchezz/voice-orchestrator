@@ -1,6 +1,9 @@
+import { resolve } from "node:path";
+import { STATE_DIR } from "../config/paths.js";
 import type { GestureSettings } from "../config/sensor-config.js";
 import type { VoiceCancel } from "../orchestrator/conversation/voice-cancel.js";
 import { GestureProcess } from "../sensors/gesture-process.js";
+import { GestureSetting } from "../sensors/gesture-setting.js";
 import { loadReflexTable } from "../sensors/reflex-table.js";
 import { SensorRouter, type GestureActions } from "../sensors/sensor-router.js";
 import { errorMessage } from "../shared/errors.js";
@@ -12,6 +15,11 @@ const LOG = "[gestures]";
 export function buildGestures(settings: GestureSettings, actions: GestureActions): GestureProcess {
   const router = new SensorRouter(loadReflexTable(settings.mapping), actions);
   return new GestureProcess({ bin: settings.python, args: settings.args }, router);
+}
+
+/** The web UI's Gestures switch, saved in state/; until it is first used, `sensors.gestures.enabled` decides. */
+export function gestureSetting(settings: GestureSettings): GestureSetting {
+  return new GestureSetting(resolve(STATE_DIR, "gestures.json"), settings.enabled ? "on" : "off");
 }
 
 /** Gestures act like the hotkey and the page's Discard button. */

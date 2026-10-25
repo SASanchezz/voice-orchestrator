@@ -19,6 +19,7 @@ const INITIAL_STATE: UiState = {
   questions: [],
   permissionMode: "ask",
   speechMode: "questions",
+  gestures: "unavailable", // hidden until the server says whether there is a mic
   voiceInput: "idle",
   todo: { items: [] },
   // nothing is marked until the server's first state brings the real limits

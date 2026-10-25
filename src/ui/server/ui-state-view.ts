@@ -19,6 +19,7 @@ export class UiStateView {
       questions: this.waiting.questionsAsked(),
       permissionMode: this.waiting.permissionMode,
       speechMode: this.voice.speechMode,
+      gestures: this.voice.gestures,
       voiceInput: this.voice.voiceInput,
       voiceOffer: this.voice.offer(),
     };

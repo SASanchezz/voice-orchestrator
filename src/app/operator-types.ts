@@ -10,6 +10,7 @@ import type { ResetRequests } from "../orchestrator/lifecycle/reset-requests.js"
 import type { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import type { ConversationMemory } from "../orchestrator/memory/conversation-memory.js";
 import type { ScreenSource } from "../screen/screen-source.js";
+import type { GestureControl } from "../sensors/gesture-switch.js";
 import type { VoiceIO } from "../voice/voice-io.js";
 import type { PermissionParts } from "./build-permissions.js";
 import type { QuestionParts } from "./build-questions.js";
@@ -22,6 +23,8 @@ export interface OperatorDevices {
   screen: ScreenSource;
   notes: AssistantNotes;
   query: QueryFn;
+  /** Camera gestures, switched on and off from the web UI. */
+  gestures: GestureControl;
   /** config/config.yaml, which a removed project is taken out of. */
   configFile: string;
 }

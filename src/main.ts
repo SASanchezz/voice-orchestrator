@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process";
 import { buildApp, startOperator, type App } from "./app/build-app.js";
-import { buildGestures, gestureActions } from "./app/build-gestures.js";
+import { buildGestures, gestureActions, gestureSetting } from "./app/build-gestures.js";
 import { checkLogins } from "./app/login-check.js";
 import { macVoice, realAdapters } from "./app/real-adapters.js";
 import { RESTART_EXIT_CODE, RESTARTED_ENV } from "./app/restart.js";
 import type { AppConfig } from "./config/app-config.js";
 import { loadConfig } from "./config/load-config.js";
+import { GestureSwitch, UnavailableGestures } from "./sensors/gesture-switch.js";
 import { errorMessage } from "./shared/errors.js";
 import { TextVoice } from "./voice/text-voice.js";
 
@@ -19,16 +20,13 @@ if (!process.argv.includes("--skip-auth-check")) await checkLogins(cfg);
 
 const mac = textMode ? undefined : macVoice(cfg.voice);
 const voice = mac?.voice ?? new TextVoice();
-const app = buildApp(cfg, await realAdapters(voice));
-const gesturesOn = mac !== undefined && cfg.sensors.gestures.enabled; // text mode has no mic to talk into
-const gestures = gesturesOn
-  ? buildGestures(cfg.sensors.gestures, gestureActions(mac, app.operator.voiceCancel))
-  : undefined;
+const gestures = mac ? new GestureSwitch(gestureSetting(cfg.sensors.gestures)) : undefined; // text mode has no mic
+const app = buildApp(cfg, await realAdapters(voice, gestures ?? new UnavailableGestures()));
 
 await openUi(cfg, app);
 
 startOperator(app, voice)
-  .then(() => gestures?.start()) // once the mic is ready
+  .then(connectGestures) // once the mic is ready
   .catch((e: unknown) => {
     console.error(errorMessage(e));
     process.exit(1);
@@ -39,6 +37,13 @@ app.operator.lifecycle.on("restart", () => {
   console.log("Restarting…");
   shutDown(RESTART_EXIT_CODE);
 });
+
+/** The camera is used only while the web UI's Gestures switch is on. */
+function connectGestures(): void {
+  if (!mac || !gestures) return;
+  const actions = gestureActions(mac, app.operator.voiceCancel);
+  gestures.connect(() => buildGestures(cfg.sensors.gestures, actions));
+}
 
 async function openUi({ ui }: AppConfig, { ui: parts }: App): Promise<void> {
   try {

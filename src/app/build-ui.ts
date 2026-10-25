@@ -16,7 +16,7 @@ import { PermissionActions } from "../ui/server/permission-actions.js";
 import { QueueActions } from "../ui/server/queue-actions.js";
 import { QuestionActions } from "../ui/server/question-actions.js";
 import { ReadRoutes, SessionChatReader } from "../ui/server/read-routes.js";
-import { RouteTable } from "../ui/server/route-table.js";
+import { RouteTable, type RouteHandlers } from "../ui/server/route-table.js";
 import { SessionActions } from "../ui/server/session-actions.js";
 import { StatePublisher } from "../ui/server/state-publisher.js";
 import { TabActions } from "../ui/server/tab-actions.js";
@@ -30,6 +30,7 @@ import { VoiceOfferActions } from "../ui/server/voice-offer-actions.js";
 import { VoiceViews } from "../ui/server/voice-views.js";
 import { TodayBudget } from "../ui/server/today-budget.js";
 import { WaitingViews } from "../ui/server/waiting-views.js";
+import type { GestureControl } from "../sensors/gesture-switch.js";
 import { SessionChats } from "../ui/session-chats.js";
 import type { OperatorParts } from "./build-operator.js";
 import { todoItemHandlers, todoItemViews } from "./build-todo.js";
@@ -78,11 +79,10 @@ interface UiSources {
 }
 
 function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources): UiServer {
-  const { orchestrator, voiceHold, voiceCancel } = sources.operator;
   const access = new UiAccess();
   const { clients, lookup } = sources;
   relayToClients(clients, sources.feed, sources.chats);
-  const live = new UiStateView(lookup, sources.waiting, new VoiceViews(orchestrator, voiceHold, voiceCancel));
+  const live = new UiStateView(lookup, sources.waiting, new VoiceViews(sources.operator, neighbors.devices.gestures));
   const budget = new TodayBudget(core.cfg.budget, neighbors.workers.spend);
   const view = new PageStateView(live, budget, todoItemViews(neighbors.todo));
   const publisher = new StatePublisher(clients, view, sources.feed);
@@ -93,7 +93,8 @@ function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources):
 }
 
 /** What each of the page's actions acts on. */
-function routeTable(core: Core, { permissions, workers, todo }: OperatorNeighbors, sources: UiSources): RouteTable {
+function routeTable(core: Core, neighbors: OperatorNeighbors, sources: UiSources): RouteTable {
+  const { permissions, workers, todo, devices } = neighbors;
   const { reporter, lookup } = sources;
   return new RouteTable({
     app: new AppActions(sources.operator.lifecycle),
@@ -108,7 +109,14 @@ function routeTable(core: Core, { permissions, workers, todo }: OperatorNeighbor
     tasks: new TaskActions(workers.intake, lookup, reporter),
     todoItems: todoItemHandlers(todo, lookup, reporter),
     sessions: new SessionActions(workers.control, lookup, reporter),
-    voice: sources.operator.voiceCancel,
-    voiceOffers: new VoiceOfferActions(sources.operator.voiceHold),
+    ...voiceHandlers(sources.operator, devices.gestures),
   });
+}
+
+/** What the page's voice message buttons and the Gestures switch act on. */
+function voiceHandlers(
+  { voiceCancel, voiceHold }: OperatorParts,
+  gestures: GestureControl,
+): Pick<RouteHandlers, "voice" | "voiceOffers" | "gestures"> {
+  return { voice: voiceCancel, voiceOffers: new VoiceOfferActions(voiceHold), gestures };
 }
