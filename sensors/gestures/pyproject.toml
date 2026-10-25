@@ -1,0 +1,23 @@
+[project]
+name = "gestures"
+version = "0.1.0"
+description = "Camera gesture sensor for the voice orchestrator"
+requires-python = ">=3.11"
+dependencies = [
+    "mediapipe>=0.10.20",
+    "opencv-python>=4.10",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["gestures*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

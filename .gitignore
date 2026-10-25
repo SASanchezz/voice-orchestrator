@@ -3,3 +3,8 @@ state/
 .playwright-mcp/
 config/config.yaml
 config/notes.md
+sensors/gestures/.venv/
+sensors/gestures/models/
+__pycache__/
+.pytest_cache/
+*.egg-info/
