@@ -24,9 +24,12 @@ sensors/gestures/            Python package (own venv, own tests)
   pyproject.toml             mediapipe, opencv-python, numpy, scikit-learn, pytest
   gestures/
     camera.py                opens the camera, yields frames
-    landmarks.py             Hand (side + 21 points); M3 adds the normalized feature vector
+    landmarks.py             Hand (side + 21 points) and its normalized feature vector
     recognizer_canned.py     MediaPipe GestureRecognizer (built-in gestures)
     recognizer_custom.py     your trained classifier (M3)
+    recognizers.py           canned | custom | both (M3)
+    classifier.py            load/save/classify with the trained model (M3)
+    samples.py               data/<label>.csv rows (M3)
     stabilizer.py            debounce / hold / cooldown -> start & end events
     events.py                GestureStart / GestureEnd and their JSON shape
     protocol.py              JSON-lines output and stdin commands
@@ -37,7 +40,7 @@ sensors/gestures/            Python package (own venv, own tests)
     train.py                 train + evaluate classifier (M3)
     __main__.py              `python -m gestures run|preview|collect|train`
   models/                    downloaded .task file + trained classifier (gitignored)
-  data/                      recorded samples (gitignored, or commit if small)
+  data/                      recorded samples (gitignored)
   tests/
 src/sensors/                 Node side
   sensor-event.ts            zod schema for the JSON lines
@@ -139,20 +142,25 @@ Holding a gesture for the whole message was too tiring, so talk is started and e
 Check: full voice round-trip with no keyboard. Hotkey still works. Killing the Python process -> it restarts, app keeps running.
 Commit: `sensors: gesture push-to-talk`
 
-## M3: Your own gestures: collect data, train a classifier  [ ]
+## M3: Your own gestures: collect data, train a classifier  [~] (code done, verify on the Mac)
 
 Works: you record a new gesture (e.g. `point_left`, `ok_sign`), train in under a minute, and it fires like the built-in ones.
 
-- [ ] `landmarks.py` features: 21x(x,y,z) relative to the wrist, scaled by palm size (wrist -> middle-finger base),
-      left hand mirrored to look like the right -> 63 numbers. Optionally add finger-joint angles.
-- [ ] `collect.py --label ok_sign --seconds 20`: records feature rows while you hold the gesture
-      (vary distance, angle, lighting, both hands). Saves `data/<label>.csv`.
-- [ ] Always record a `none` class: random hand poses, typing, scratching, holding a cup. This is what
-      prevents false positives; give it at least as many samples as the real classes combined.
-- [ ] `train.py`: scikit-learn MLP (or kNN as a baseline), stratified split, prints accuracy + confusion matrix,
-      saves `models/custom.joblib` with label list and feature version.
-- [ ] `recognizer_custom.py`; config `recognizer: canned | custom | both` (custom wins when confident).
-- [ ] Tests: feature normalization (translation/scale/mirror invariance), train on a tiny fixture set.
+- [x] `landmarks.py` features: 21x(x,y,z) relative to the wrist, scaled by palm size (wrist -> middle-finger base, 3D),
+      left hand mirrored to look like the right -> 63 numbers. `FEATURE_VERSION` is saved with the model; a model
+      of another version must be retrained. Finger-joint angles not added (only if accuracy needs them).
+- [x] `collect.py --label ok_sign --seconds 20`: window with a 3 s countdown, then records a feature row per hand per
+      frame. Appends to `data/<label>.csv` (gitignored), so sessions add up; delete the file to start over.
+- [x] Always record a `none` class: random hand poses, typing, scratching, holding a cup. This is what
+      prevents false positives; give it at least as many samples as the real classes combined. (`train` warns without it.)
+- [x] `train.py`: scikit-learn MLP (`--model knn` for the baseline), stratified 80/20 split, prints accuracy,
+      per-class precision/recall and the confusion matrix, then refits on all samples and saves `models/custom.joblib`
+      with label list and feature version.
+- [x] `recognizer_custom.py`; CLI option `--recognizer canned | custom | both` (custom wins at >= 0.8), passed via
+      `sensors.gestures.args`. The built-in recognizer still finds the hands; the classifier labels them.
+      `ready` reports the mode.
+- [x] Tests: feature normalization (translation/scale/mirror invariance), train on a tiny fixture set, the custom
+      recognizer's choice with a fake classifier, the recording window.
 
 Targets: ~300-500 samples per class from 2+ sessions; validation accuracy > 95% and `none` precision high.
 If a gesture keeps confusing with another, change the gesture, not the model.

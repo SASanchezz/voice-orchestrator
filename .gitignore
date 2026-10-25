@@ -9,3 +9,4 @@ sensors/gestures/models/
 __pycache__/
 .pytest_cache/
 *.egg-info/
+sensors/gestures/data/

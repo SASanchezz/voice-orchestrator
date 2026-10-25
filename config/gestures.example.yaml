@@ -1,11 +1,12 @@
 # What each camera gesture does (sensors.gestures in config.yaml).
 # Copy to config/gestures.yaml and edit: cp config/gestures.example.yaml config/gestures.yaml
-# tap: done once when the gesture is recognized.
+# tap: done once when the gesture is recognized. One action, or a list done in order: { tap: [end_talk, stop_speaking] }.
 #   start_talk / end_talk: start recording, then stop it and send what you said (like pressing and releasing the hotkey).
 #   discard: drop your voice message (like the Discard button). stop_speaking: interrupt the reply being spoken.
 # hold: lasts while the gesture is held. talk = push-to-talk, like holding the hotkey (instead of start/end_talk).
 # Gestures: open_palm, closed_fist, pointing_up, thumb_up, thumb_down, victory, i_love_you. Unlisted ones do nothing.
+# Plus any you trained yourself (sensors/gestures/README.md, "Your own gestures"), by the label you recorded.
 
 open_palm: { tap: start_talk }
-closed_fist: { tap: end_talk }
+closed_fist: { tap: [end_talk, stop_speaking] } # sends while you talk, else stops the spoken reply
 thumb_down: { tap: discard }

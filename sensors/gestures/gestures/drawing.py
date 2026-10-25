@@ -33,7 +33,12 @@ def draw_sightings(frame: np.ndarray, sightings: Sequence[Sighting]) -> None:
 
 def draw_status(frame: np.ndarray, fps: float, holds: Mapping[str, str]) -> None:
     held = ", ".join(f"{side} {gesture}" for side, gesture in holds.items()) or "-"
-    _text(frame, f"FPS {fps:4.1f}   holding: {held}", (16, 32))
+    draw_caption(frame, f"FPS {fps:4.1f}   holding: {held}")
+
+
+def draw_caption(frame: np.ndarray, caption: str) -> None:
+    """A line of text at the top, and how to quit at the bottom."""
+    _text(frame, caption, (16, 32))
     _text(frame, "q / Esc: quit", (16, frame.shape[0] - 16))
 
 

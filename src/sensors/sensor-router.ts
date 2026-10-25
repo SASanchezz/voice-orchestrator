@@ -39,12 +39,16 @@ export class SensorRouter implements SensorListener {
     const reflex = this.reflexes.get(gesture.name);
     if (!reflex) return;
     if ("hold" in reflex) this.holdTalk(gesture);
-    else if (gesture.phase !== "end") TAPS[reflex.tap](this.actions);
+    else if (gesture.phase !== "end") this.tap(reflex.tap);
   }
 
   /** A sensor that dies while you talk would otherwise leave the mic on; when you aren't talking, this does nothing. */
   sensorStopped(): void {
     this.endTalk();
+  }
+
+  private tap(actions: readonly TapAction[]): void {
+    for (const action of actions) TAPS[action](this.actions);
   }
 
   private holdTalk(gesture: GestureEvent): void {

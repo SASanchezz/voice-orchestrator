@@ -8,9 +8,17 @@ export const HOLD_ACTIONS = ["talk"] as const;
 export const TAP_ACTIONS = ["start_talk", "end_talk", "discard", "stop_speaking"] as const;
 export type TapAction = (typeof TAP_ACTIONS)[number];
 
+const tapActionSchema = z.enum(TAP_ACTIONS);
+
+/** `tap` is one action or a list, done in order; either way it is read as a list. */
+const tapActionsSchema = z.union([
+  tapActionSchema.transform((action) => [action]),
+  z.array(tapActionSchema).nonempty(),
+]);
+
 const reflexSchema = z.union([
   z.strictObject({ hold: z.enum(HOLD_ACTIONS) }),
-  z.strictObject({ tap: z.enum(TAP_ACTIONS) }),
+  z.strictObject({ tap: tapActionsSchema }),
 ]);
 export type Reflex = z.infer<typeof reflexSchema>;
 

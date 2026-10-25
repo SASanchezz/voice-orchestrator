@@ -6,10 +6,11 @@ import { SensorRouter, type GestureActions } from "./sensor-router.js";
 
 const REFLEXES = new Map<string, Reflex>([
   ["open_palm", { hold: "talk" }],
-  ["pointing_up", { tap: "start_talk" }],
-  ["victory", { tap: "end_talk" }],
-  ["thumb_down", { tap: "discard" }],
-  ["closed_fist", { tap: "stop_speaking" }],
+  ["pointing_up", { tap: ["start_talk"] }],
+  ["victory", { tap: ["end_talk"] }],
+  ["thumb_down", { tap: ["discard"] }],
+  ["closed_fist", { tap: ["stop_speaking"] }],
+  ["ok_sign", { tap: ["end_talk", "stop_speaking"] }],
 ]);
 
 /** A router whose actions are written down instead of done. */
@@ -54,6 +55,12 @@ test("sensor router: a closed fist stops the reply being spoken", () => {
   const { router: gestures, done } = router();
   gestures.receive(gesture("closed_fist", "start"));
   assert.deepEqual(done, ["stopSpeaking"]);
+});
+
+test("sensor router: a tap gesture with several actions does them all, in order", () => {
+  const { router: gestures, done } = router();
+  gestures.receive(gesture("ok_sign", "start"));
+  assert.deepEqual(done, ["endTalk", "stopSpeaking"]);
 });
 
 test("sensor router: talk started by one tap gesture is ended by another", () => {

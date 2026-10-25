@@ -19,10 +19,8 @@ from mediapipe.tasks.python import BaseOptions
 from mediapipe.tasks.python.vision import GestureRecognizer, GestureRecognizerOptions, RunningMode
 
 from .events import NO_GESTURE
-from .landmarks import Hand, hand_from
+from .landmarks import WRIST, Hand, hand_from
 
-RECOGNIZER_NAME = "canned"
-WRIST = 0
 # Hands in the raw and the mirrored pass closer than this (in image sizes) are the same hand.
 SAME_HAND_DISTANCE = 0.15
 

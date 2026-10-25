@@ -14,12 +14,21 @@ function mappingFile(yaml: string): string {
 
 test("reflex table: the example file starts talking on an open palm", () => {
   const reflexes = loadReflexTable(resolve(APP_DIR, "config/gestures.example.yaml"));
-  assert.deepEqual(reflexes.get("open_palm"), { tap: "start_talk" });
+  assert.deepEqual(reflexes.get("open_palm"), { tap: ["start_talk"] });
 });
 
-test("reflex table: the example file ends talking on a closed fist", () => {
+test("reflex table: the example file ends talking or stops speech on a closed fist", () => {
   const reflexes = loadReflexTable(resolve(APP_DIR, "config/gestures.example.yaml"));
-  assert.deepEqual(reflexes.get("closed_fist"), { tap: "end_talk" });
+  assert.deepEqual(reflexes.get("closed_fist"), { tap: ["end_talk", "stop_speaking"] });
+});
+
+test("reflex table: a list of tap actions keeps its order", () => {
+  const reflexes = loadReflexTable(mappingFile("victory: { tap: [stop_speaking, discard] }\n"));
+  assert.deepEqual(reflexes.get("victory"), { tap: ["stop_speaking", "discard"] });
+});
+
+test("reflex table: an empty list of tap actions is rejected", () => {
+  assert.throws(() => loadReflexTable(mappingFile("victory: { tap: [] }\n")));
 });
 
 test("reflex table: an unknown action is rejected", () => {

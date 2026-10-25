@@ -5,7 +5,7 @@
 orchestrator:
   profile: personal          # which Claude account the orchestrator itself runs on
   model: sonnet              # routing model; haiku is cheaper, sonnet understands messy speech better
-  resetMinutes: 60           # context reset with a short handoff, only when idle
+  resetMinutes: 20           # context reset with a short handoff, only when idle
   answerWindowSeconds: 15    # after "X finished, want details?", the next notification waits this long for your answer (permission questions wait until answered)
   rules:                     # standing instructions the orchestrator always follows; they can't override the destructive checks
     - "Always ask the worker to run the tests after a code change."
@@ -82,5 +82,5 @@ sensors:
   gestures:
     enabled: false                              # true to start the sensor with the app (not in text mode)
     python: sensors/gestures/.venv/bin/python   # relative to this app's folder, or absolute
-    args: [-m, gestures, run]                   # add e.g. --min-hold-ms, 400 to tune the sensor
+    args: [-m, gestures, run]                   # add e.g. --min-hold-ms, 400 to tune it, or --recognizer, both for trained gestures
     mapping: config/gestures.yaml               # which gesture does what: cp config/gestures.example.yaml config/gestures.yaml

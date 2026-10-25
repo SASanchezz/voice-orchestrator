@@ -34,3 +34,8 @@ def ensure_model(name: str, url: str, folder: Path = MODELS_DIR) -> Path:
 
 def gesture_recognizer_model() -> Path:
     return ensure_model(*GESTURE_RECOGNIZER)
+
+
+def custom_model_path() -> Path:
+    """Where `python -m gestures train` saves the classifier, and the custom recognizer loads it from."""
+    return MODELS_DIR / "custom.joblib"

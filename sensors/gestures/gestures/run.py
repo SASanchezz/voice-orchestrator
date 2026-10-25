@@ -11,7 +11,6 @@ import numpy as np
 from .camera import CameraError
 from .pipeline import GesturePipeline, SensorSettings, open_pipeline
 from .protocol import EventWriter
-from .recognizer_canned import RECOGNIZER_NAME
 
 STOP_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 
@@ -27,7 +26,7 @@ def run_sensor(settings: SensorSettings, out: EventWriter) -> None:
 def _run(settings: SensorSettings, out: EventWriter) -> None:
     stop = _stop_on_signals()
     with open_pipeline(settings, out) as (cam, pipeline):
-        out.ready(RECOGNIZER_NAME)
+        out.ready(settings.recognizer_mode)
         process_until(cam.frames(), pipeline, stop)
 
 
