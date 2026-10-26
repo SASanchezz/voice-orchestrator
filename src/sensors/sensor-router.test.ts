@@ -11,6 +11,9 @@ const REFLEXES = new Map<string, Reflex>([
   ["thumb_down", { tap: ["discard"] }],
   ["closed_fist", { tap: ["stop_speaking"] }],
   ["ok_sign", { tap: ["end_talk", "stop_speaking"] }],
+  ["swipe_right", { tap: ["repeat_last"] }],
+  ["swipe_left", { tap: ["space_right"] }],
+  ["thumb_up", { tap: ["space_left"] }],
 ]);
 
 /** A router whose actions are written down instead of done. */
@@ -21,6 +24,9 @@ function router(): { router: SensorRouter; done: string[] } {
     endTalk: () => done.push("endTalk"),
     discard: () => done.push("discard"),
     stopSpeaking: () => done.push("stopSpeaking"),
+    repeatLast: () => done.push("repeatLast"),
+    spaceLeft: () => done.push("spaceLeft"),
+    spaceRight: () => done.push("spaceRight"),
   };
   return { router: new SensorRouter(REFLEXES, actions), done };
 }
@@ -55,6 +61,24 @@ test("sensor router: a closed fist stops the reply being spoken", () => {
   const { router: gestures, done } = router();
   gestures.receive(gesture("closed_fist", "start"));
   assert.deepEqual(done, ["stopSpeaking"]);
+});
+
+test("sensor router: a swipe repeats the last spoken words", () => {
+  const { router: gestures, done } = router();
+  gestures.receive(gesture("swipe_right", "tap"));
+  assert.deepEqual(done, ["repeatLast"]);
+});
+
+test("sensor router: a swipe can move to the space on the right", () => {
+  const { router: gestures, done } = router();
+  gestures.receive(gesture("swipe_left", "tap"));
+  assert.deepEqual(done, ["spaceRight"]);
+});
+
+test("sensor router: a gesture can move to the space on the left", () => {
+  const { router: gestures, done } = router();
+  gestures.receive(gesture("thumb_up", "start"));
+  assert.deepEqual(done, ["spaceLeft"]);
 });
 
 test("sensor router: a tap gesture with several actions does them all, in order", () => {

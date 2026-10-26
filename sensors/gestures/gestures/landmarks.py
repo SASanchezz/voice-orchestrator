@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from typing import Any
@@ -15,6 +16,8 @@ FEATURE_VERSION = 1
 
 WRIST = 0
 MIDDLE_FINGER_BASE = 9
+# (middle joint, fingertip) of the index, middle, ring and little finger; the thumb bends sideways, so it's left out.
+FINGERS = ((6, 8), (10, 12), (14, 16), (18, 20))
 # Keeps a degenerate hand (all points in one place) from dividing by zero.
 MIN_PALM_SIZE = 1e-6
 
@@ -49,3 +52,13 @@ def features(hand: Hand) -> np.ndarray:
         relative[:, 0] *= -1
     palm_size = max(float(np.linalg.norm(relative[MIDDLE_FINGER_BASE])), MIN_PALM_SIZE)
     return (relative / palm_size).ravel()
+
+
+def is_open_hand(hand: Hand) -> bool:
+    """All four fingers stretched out: each fingertip farther from the wrist than its middle joint, in the image."""
+    return all(_from_wrist(hand, tip) > _from_wrist(hand, joint) for joint, tip in FINGERS)
+
+
+def _from_wrist(hand: Hand, index: int) -> float:
+    (wrist_x, wrist_y, _), (x, y, _) = hand.points[WRIST], hand.points[index]
+    return math.hypot(x - wrist_x, y - wrist_y)

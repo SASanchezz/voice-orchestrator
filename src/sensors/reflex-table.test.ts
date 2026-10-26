@@ -22,6 +22,11 @@ test("reflex table: the example file ends talking or stops speech on a closed fi
   assert.deepEqual(reflexes.get("closed_fist"), { tap: ["end_talk", "stop_speaking"] });
 });
 
+test("reflex table: the example file moves to the space on the right on a swipe to the left", () => {
+  const reflexes = loadReflexTable(resolve(APP_DIR, "config/gestures.example.yaml"));
+  assert.deepEqual(reflexes.get("swipe_left"), { tap: ["space_right"] });
+});
+
 test("reflex table: a list of tap actions keeps its order", () => {
   const reflexes = loadReflexTable(mappingFile("victory: { tap: [stop_speaking, discard] }\n"));
   assert.deepEqual(reflexes.get("victory"), { tap: ["stop_speaking", "discard"] });

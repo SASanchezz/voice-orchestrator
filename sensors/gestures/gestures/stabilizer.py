@@ -3,6 +3,7 @@
 A gesture must be seen for `min_hold_ms` at `min_confidence` or more before it starts. Once started,
 any frame with the same label keeps it alive (whatever its confidence), and it ends after `release_ms`
 of something else or no hand. After an end, that hand can't start the same gesture for `cooldown_ms`.
+A hand that is held off (see `hold_off`) can't start any gesture, but keeps the one it holds.
 """
 
 from __future__ import annotations
@@ -48,6 +49,10 @@ class Stabilizer:
             events += hand.update(ts, gesture, confidence)
         return events
 
+    def hold_off(self, side: str, until: int) -> None:
+        """`side` can't start a gesture up to and including `until`, e.g. while it moves."""
+        self._hands[side].hold_off(until)
+
     def holds(self) -> dict[str, str]:
         """Gestures currently held, by hand."""
         return {side: hand.held for side, hand in self._hands.items() if hand.held != NO_GESTURE}
@@ -89,6 +94,7 @@ class HandStabilizer:
         self._candidate = _Candidate(NO_GESTURE, 0)
         self._hold: _Hold | None = None
         self._cooldown_until: dict[str, int] = {}
+        self._held_off_until = -1
 
     @property
     def held(self) -> str:
@@ -105,13 +111,17 @@ class HandStabilizer:
             return []
         return [self._end(hold, ts), *self._try_start(ts, gesture, confidence)]
 
+    def hold_off(self, until: int) -> None:
+        self._held_off_until = max(self._held_off_until, until)
+
     def close(self, ts: int) -> list[GestureEvent]:
         if self._hold is None:
             return []
         return [self._end(self._hold, ts)]
 
     def _try_start(self, ts: int, gesture: str, confidence: float) -> list[GestureEvent]:
-        if not self._is_confident(gesture, confidence):
+        is_held_off = ts <= self._held_off_until
+        if is_held_off or not self._is_confident(gesture, confidence):
             self._candidate = _Candidate(NO_GESTURE, ts)
             return []
         if gesture != self._candidate.name:

@@ -5,6 +5,7 @@ import { checkLogins } from "./app/login-check.js";
 import { macVoice, realAdapters } from "./app/real-adapters.js";
 import { RESTART_EXIT_CODE, RESTARTED_ENV } from "./app/restart.js";
 import type { AppConfig } from "./config/app-config.js";
+import { MacSpaces } from "./macos/mac-spaces.js";
 import { loadConfig } from "./config/load-config.js";
 import { GestureSwitch, UnavailableGestures } from "./sensors/gesture-switch.js";
 import { errorMessage } from "./shared/errors.js";
@@ -41,7 +42,7 @@ app.operator.lifecycle.on("restart", () => {
 /** The camera is used only while the web UI's Gestures switch is on. */
 function connectGestures(): void {
   if (!mac || !gestures) return;
-  const actions = gestureActions(mac, app.operator.voiceCancel);
+  const actions = gestureActions(mac, app.operator.voiceCancel, new MacSpaces());
   gestures.connect(() => buildGestures(cfg.sensors.gestures, actions));
 }
 

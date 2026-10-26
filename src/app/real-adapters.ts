@@ -12,6 +12,7 @@ import { MacHotkey } from "../voice/hotkey.js";
 import { HotkeyTalk } from "../voice/hotkey-talk.js";
 import { MacVoice } from "../voice/mac-voice.js";
 import { PushToTalk } from "../voice/push-to-talk.js";
+import { RepeatingSpeaker } from "../voice/repeating-speaker.js";
 import { SaySpeaker } from "../voice/say-speaker.js";
 import { TalkSwitch } from "../voice/talk-switch.js";
 import { Transcriber } from "../voice/transcriber.js";
@@ -51,7 +52,7 @@ export interface MacVoiceParts {
 /** Hold the hotkey to talk; replies are spoken with `say`. */
 export function macVoice(settings: AppConfig["voice"]): MacVoiceParts {
   const pushToTalk = new PushToTalk(settings, new Transcriber(settings));
-  const speaker = new SaySpeaker(settings);
+  const speaker = new RepeatingSpeaker(new SaySpeaker(settings));
   const talk = new TalkSwitch(pushToTalk, () => speaker.stop());
   const hotkey = new HotkeyTalk(new MacHotkey(settings.hotkey), talk);
   return { voice: new MacVoice(pushToTalk, speaker, hotkey), talk };

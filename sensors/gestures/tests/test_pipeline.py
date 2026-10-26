@@ -8,6 +8,8 @@ from gestures.pipeline import GesturePipeline
 from gestures.protocol import EventWriter
 from gestures.recognizer_canned import Sighting
 from gestures.stabilizer import Stabilizer, StabilizerConfig
+from gestures.swipes import SwipeConfig, SwipeDetector
+from gestures.tracker import GestureTracker
 
 FRAME = np.zeros((4, 4, 3), dtype=np.uint8)
 PALM = Sighting(Hand("right", 0.95, ((0.5, 0.5, 0.0),) * LANDMARK_COUNT), "open_palm", 0.9)
@@ -20,7 +22,7 @@ class FakeRecognizer:
 
 def a_pipeline() -> tuple[GesturePipeline, io.StringIO]:
     stream = io.StringIO()
-    instant = Stabilizer(StabilizerConfig(min_hold_ms=0))
+    instant = GestureTracker(Stabilizer(StabilizerConfig(min_hold_ms=0)), SwipeDetector(SwipeConfig()))
     return GesturePipeline(FakeRecognizer(), instant, EventWriter(stream)), stream
 
 

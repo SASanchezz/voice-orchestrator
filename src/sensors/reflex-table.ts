@@ -5,7 +5,15 @@ import { z } from "zod";
 /** Actions that last as long as the gesture is held. */
 export const HOLD_ACTIONS = ["talk"] as const;
 /** Actions done once, the moment the gesture is recognized. */
-export const TAP_ACTIONS = ["start_talk", "end_talk", "discard", "stop_speaking"] as const;
+export const TAP_ACTIONS = [
+  "start_talk",
+  "end_talk",
+  "discard",
+  "stop_speaking",
+  "repeat_last",
+  "space_left",
+  "space_right",
+] as const;
 export type TapAction = (typeof TAP_ACTIONS)[number];
 
 const tapActionSchema = z.enum(TAP_ACTIONS);

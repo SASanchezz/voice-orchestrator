@@ -3,7 +3,17 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from gestures.landmarks import FEATURE_COUNT, LANDMARK_COUNT, MIDDLE_FINGER_BASE, Hand, features, hand_from
+from hands import fist, open_hand
+
+from gestures.landmarks import (
+    FEATURE_COUNT,
+    LANDMARK_COUNT,
+    MIDDLE_FINGER_BASE,
+    Hand,
+    features,
+    hand_from,
+    is_open_hand,
+)
 
 
 def test_keeps_side_and_score() -> None:
@@ -75,3 +85,11 @@ def test_mirroring_a_right_hand_changes_its_features() -> None:
 def test_features_of_a_point_sized_hand_are_finite() -> None:
     dot = Hand("right", 0.9, ((0.5, 0.5, 0.0),) * LANDMARK_COUNT)
     assert np.isfinite(features(dot)).all()
+
+
+def test_stretched_fingers_are_an_open_hand() -> None:
+    assert is_open_hand(open_hand(0.5))
+
+
+def test_curled_fingers_are_no_open_hand() -> None:
+    assert not is_open_hand(fist(0.5))

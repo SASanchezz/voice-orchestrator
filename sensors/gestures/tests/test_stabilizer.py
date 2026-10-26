@@ -168,3 +168,25 @@ def test_close_ends_open_holds() -> None:
     scene.show(500, PALM)
     ended = scene.stabilizer.close(scene.ts)
     assert [(event.hand, event.name) for event in ended] == [("right", "open_palm")]
+
+
+def test_a_held_off_hand_does_not_start() -> None:
+    scene = Scene()
+    scene.stabilizer.hold_off("right", 1000)
+    scene.show(990, PALM)
+    assert scene.events == []
+
+
+def test_a_hand_starts_a_full_hold_after_its_hold_off() -> None:
+    scene = Scene()
+    scene.stabilizer.hold_off("right", 500)
+    scene.show(1000, PALM)
+    assert scene.events[0].ts >= 500 + CONFIG.min_hold_ms
+
+
+def test_a_hold_off_keeps_a_started_hold() -> None:
+    scene = Scene()
+    scene.show(500, PALM)
+    scene.stabilizer.hold_off("right", 2000)
+    scene.show(1000, PALM)
+    assert scene.stabilizer.holds() == {"right": "open_palm"}

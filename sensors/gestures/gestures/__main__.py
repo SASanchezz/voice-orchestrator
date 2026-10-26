@@ -17,6 +17,7 @@ from .recognizers import CANNED, RECOGNIZER_MODES
 from .run import run_sensor
 from .samples import DATA_DIR
 from .stabilizer import StabilizerConfig
+from .swipes import SwipeConfig
 from .train import ESTIMATORS, train
 
 LABEL_PATTERN = re.compile(r"[a-z][a-z0-9_]*")
@@ -36,14 +37,15 @@ def main(argv: list[str] | None = None) -> int:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="gestures", description="Camera gesture sensor.")
-    camera, sensor = _camera_options(), _sensor_options()
+    camera = _camera_options()
+    sensor = [camera, _sensor_options(), _swipe_options()]
     commands = parser.add_subparsers(dest="command", required=True)
 
-    run = commands.add_parser("run", parents=[camera, sensor], help="gesture events as JSON lines on stdout")
+    run = commands.add_parser("run", parents=sensor, help="gesture events as JSON lines on stdout")
     run.set_defaults(handler=_run)
 
     preview_help = "window with hands and gestures, plus events"
-    preview = commands.add_parser("preview", parents=[camera, sensor], help=preview_help)
+    preview = commands.add_parser("preview", parents=sensor, help=preview_help)
     preview.set_defaults(handler=_preview)
 
     _add_training_commands(commands, camera)
@@ -82,6 +84,17 @@ def _sensor_options() -> argparse.ArgumentParser:
     return options
 
 
+def _swipe_options() -> argparse.ArgumentParser:
+    options = argparse.ArgumentParser(add_help=False)
+    swipe = SwipeConfig()
+    travel_help = "image widths an open hand must move sideways for a swipe"
+    options.add_argument("--swipe-travel", type=float, default=swipe.min_travel, help=travel_help)
+    options.add_argument("--swipe-window-ms", type=int, default=swipe.window_ms, help="... within this long")
+    cooldown_help = "before that hand swipes again"
+    options.add_argument("--swipe-cooldown-ms", type=int, default=swipe.cooldown_ms, help=cooldown_help)
+    return options
+
+
 def _label(text: str) -> str:
     if not LABEL_PATTERN.fullmatch(text):
         raise argparse.ArgumentTypeError(f"{text!r} isn't snake_case (like ok_sign)")
@@ -108,14 +121,23 @@ def _sensor_settings(args: argparse.Namespace) -> SensorSettings:
     return SensorSettings(
         camera=_camera(args),
         recognizer=_recognizer(args),
-        stabilizer=StabilizerConfig(
-            min_hold_ms=args.min_hold_ms,
-            min_confidence=args.min_confidence,
-            release_ms=args.release_ms,
-            cooldown_ms=args.cooldown_ms,
-        ),
+        stabilizer=_stabilizer(args),
+        swipes=_swipes(args),
         recognizer_mode=args.recognizer,
     )
+
+
+def _stabilizer(args: argparse.Namespace) -> StabilizerConfig:
+    return StabilizerConfig(
+        min_hold_ms=args.min_hold_ms,
+        min_confidence=args.min_confidence,
+        release_ms=args.release_ms,
+        cooldown_ms=args.cooldown_ms,
+    )
+
+
+def _swipes(args: argparse.Namespace) -> SwipeConfig:
+    return SwipeConfig(window_ms=args.swipe_window_ms, min_travel=args.swipe_travel, cooldown_ms=args.swipe_cooldown_ms)
 
 
 def _camera(args: argparse.Namespace) -> CameraConfig:

@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import { STATE_DIR } from "../config/paths.js";
 import type { GestureSettings } from "../config/sensor-config.js";
+import type { MacSpaces } from "../macos/mac-spaces.js";
 import type { VoiceCancel } from "../orchestrator/conversation/voice-cancel.js";
 import { GestureProcess } from "../sensors/gesture-process.js";
 import { GestureSetting } from "../sensors/gesture-setting.js";
@@ -22,13 +23,19 @@ export function gestureSetting(settings: GestureSettings): GestureSetting {
   return new GestureSetting(resolve(STATE_DIR, "gestures.json"), settings.enabled ? "on" : "off");
 }
 
-/** Gestures act like the hotkey and the page's Discard button. */
-export function gestureActions({ voice, talk }: MacVoiceParts, cancel: VoiceCancel): GestureActions {
+/**
+ * Gestures act like the hotkey and the page's Discard button, can have the last spoken words said again,
+ * and switch Spaces like the trackpad.
+ */
+export function gestureActions({ voice, talk }: MacVoiceParts, cancel: VoiceCancel, spaces: MacSpaces): GestureActions {
   return {
     beginTalk: () => talk.press("gesture"),
     endTalk: () => talk.release("gesture"),
     discard: () => discardLatest(cancel),
     stopSpeaking: () => voice.stopSpeaking(),
+    repeatLast: () => void voice.repeatLast(),
+    spaceLeft: () => void spaces.moveLeft(),
+    spaceRight: () => void spaces.moveRight(),
   };
 }
 

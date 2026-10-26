@@ -31,6 +31,8 @@ sensors/gestures/            Python package (own venv, own tests)
     classifier.py            load/save/classify with the trained model (M3)
     samples.py               data/<label>.csv rows (M3)
     stabilizer.py            debounce / hold / cooldown -> start & end events
+    swipes.py                wrist trail -> swipe tap events (M4)
+    tracker.py               stabilizer + swipes; moving hands can't start poses (M4)
     events.py                GestureStart / GestureEnd and their JSON shape
     protocol.py              JSON-lines output and stdin commands
     pipeline.py              frame -> sightings -> events, shared by run and preview
@@ -166,13 +168,30 @@ Targets: ~300-500 samples per class from 2+ sessions; validation accuracy > 95% 
 If a gesture keeps confusing with another, change the gesture, not the model.
 Commit: `gestures: data collection and custom classifier`
 
-## M4: Motion gestures (swipes)  [ ]
+## M4: Motion gestures (swipes)  [~] (code done, verify on the Mac)
 
-Works: swipe left/right fires a `tap` event, mapped e.g. to "dismiss notification" / "repeat last reply".
+Works: swipe left/right fires a `tap` event; the example mapping switches macOS Spaces with them, like a three-finger
+swipe on the trackpad (swipe left -> the space on the right).
 
-- [ ] Heuristic first: wrist x-velocity over a 400-600 ms window with an open hand, minimum travel, then cooldown.
+- [x] Heuristic: `swipes.py` keeps each hand's wrist over a 500 ms window; an open hand (all four fingers stretched,
+      from the landmarks, so it works with any `--recognizer`) in >= 60% of the frames, sideways travel >= 0.25
+      image widths and at least twice the vertical travel -> `swipe_left` / `swipe_right` (named from the user's
+      side), then an 800 ms cooldown that also swallows the hand swinging back. CLI: `--swipe-travel`,
+      `--swipe-window-ms`, `--swipe-cooldown-ms`.
+- [x] Conflict with `open_palm`: a swipe is made with an open palm, so it would also start `open_palm` (start_talk).
+      `tracker.py` holds off the stabilizer's *starts* for a hand while it moves (> 0.3 image sizes/s) and for the
+      swipe cooldown; holds already started go on.
 - [ ] Only if the heuristic is not good enough: small sequence model (e.g. 1D-conv/GRU over 15-20 frames of features).
-- [ ] Map to actions in `gestures.yaml`; add any new orchestrator action behind a small interface + test.
+- [x] New tap action `repeat_last` (`RepeatingSpeaker` around `SaySpeaker` remembers the last spoken text;
+      skipped while you talk). "Dismiss notification" not added: `stop_speaking` covers the spoken part.
+- [x] Tap actions `space_left` / `space_right` (`src/macos/mac-spaces.ts`): press Ctrl+Left/Right through System
+      Events (`osascript`), macOS's "Move left/right a space" shortcut. Needs Accessibility permission for the terminal
+      app and that shortcut left on (System Settings > Keyboard > Keyboard Shortcuts > Mission Control).
+- [x] Tests: swipe detector with synthetic hand trails, open-hand check, stabilizer hold-off, tracker, tap line,
+      router + reflex table for `repeat_last`, repeating speaker with a fake.
+
+Check: swipes fire once each, the swing back doesn't fire, waving around while talking with an open palm doesn't swipe
+by accident too often, and open palm / fist still start and end talk.
 
 Commit: `gestures: swipe detection`
 

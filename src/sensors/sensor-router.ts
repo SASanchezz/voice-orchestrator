@@ -7,6 +7,10 @@ export interface GestureActions {
   endTalk(): void;
   discard(): void;
   stopSpeaking(): void;
+  repeatLast(): void;
+  /** macOS Spaces: to the desktop on the left or right. */
+  spaceLeft(): void;
+  spaceRight(): void;
 }
 
 /** Hears what a sensor sees, and when the sensor stops. */
@@ -20,11 +24,15 @@ const TAPS: Record<TapAction, (actions: GestureActions) => void> = {
   end_talk: (actions) => actions.endTalk(),
   discard: (actions) => actions.discard(),
   stop_speaking: (actions) => actions.stopSpeaking(),
+  repeat_last: (actions) => actions.repeatLast(),
+  space_left: (actions) => actions.spaceLeft(),
+  space_right: (actions) => actions.spaceRight(),
 };
 
 /**
  * Turns gestures into reflexes. Talk is either held (`hold: talk`) or started and ended by two gestures
  * (`tap: start_talk`, `tap: end_talk`). One talk hold at a time: a second hand showing the talk gesture is ignored.
+ * One-shot gestures such as swipes only ever `tap`.
  */
 export class SensorRouter implements SensorListener {
   /** The hand holding talk, as `name/hand`. */

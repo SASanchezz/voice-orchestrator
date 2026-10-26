@@ -1,7 +1,7 @@
 import io
 import json
 
-from gestures.events import GestureEnd, GestureStart
+from gestures.events import GestureEnd, GestureStart, GestureTap
 from gestures.protocol import EventWriter
 
 
@@ -54,3 +54,15 @@ def test_every_line_is_flushed() -> None:
     stream = FlushCounter()
     EventWriter(stream).gestures([GestureStart("victory", "left", 0.9, 1), GestureEnd("victory", "left", 5, 9)])
     assert stream.flushes == 2
+
+
+def test_tap_line() -> None:
+    [line] = written("gestures", [GestureTap("swipe_left", "left", 0.8, 1000)])
+    assert line == {
+        "type": "gesture",
+        "phase": "tap",
+        "name": "swipe_left",
+        "hand": "left",
+        "confidence": 0.8,
+        "ts": 1000,
+    }

@@ -1,4 +1,4 @@
-"""Stable gesture events, as the stabilizer emits them and the protocol prints them."""
+"""Stable gesture events, as the stabilizer and the swipe detector emit them and the protocol prints them."""
 
 from __future__ import annotations
 
@@ -43,4 +43,24 @@ class GestureEnd:
         }
 
 
-GestureEvent = GestureStart | GestureEnd
+@dataclass(frozen=True)
+class GestureTap:
+    """A one-shot gesture, such as a swipe: it has no hold, so no end."""
+
+    name: str
+    hand: str
+    confidence: float
+    ts: int
+
+    def message(self) -> dict[str, object]:
+        return {
+            "type": "gesture",
+            "phase": "tap",
+            "name": self.name,
+            "hand": self.hand,
+            "confidence": round(self.confidence, 3),
+            "ts": self.ts,
+        }
+
+
+GestureEvent = GestureStart | GestureEnd | GestureTap

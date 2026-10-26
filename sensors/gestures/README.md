@@ -2,7 +2,7 @@
 
 Camera gesture sensor for the voice orchestrator. Build plan: [docs/gestures-plan.md](../../docs/gestures-plan.md).
 
-Status: **M3**, stable gesture events (MediaPipe's built-in gestures, plus your own trained ones) as
+Status: **M4**, stable gesture events (MediaPipe's built-in gestures, your own trained ones, and swipes) as
 JSON lines on stdout, used by the orchestrator for push-to-talk.
 
 ## Use it in the orchestrator
@@ -10,6 +10,8 @@ JSON lines on stdout, used by the orchestrator for push-to-talk.
 After the setup below, in `config/config.yaml` set `sensors.gestures.enabled: true` and copy the mapping:
 `cp config/gestures.example.yaml config/gestures.yaml`. `npm start` then runs `python -m gestures run` from
 the venv: show an open palm to start talking, a closed fist to send, thumbs-down to discard.
+Swipe left or right to switch Spaces (desktops), like three fingers on the trackpad; that needs Accessibility
+permission for your terminal app (System Settings → Privacy & Security → Accessibility).
 
 The web UI's **Gestures** switch turns the sensor on and off while the app runs. Off stops the sensor process, so the
 camera isn't captured or processed at all (it saves battery). The switch is remembered in `state/gestures.json` and
@@ -52,12 +54,29 @@ Stabilizer options (both commands):
 | `--release-ms` | 200 | `end` once the hand shows something else, or is gone, this long |
 | `--cooldown-ms` | 500 | after an `end`, the same hand can't start the same gesture for this long |
 
+## Swipes
+
+Move an open hand (all four fingers stretched out) fast sideways: `swipe_left` or `swipe_right`, named from your
+point of view, as in the mirrored preview. A swipe is one `tap` event, with no `end`; its `confidence` is the share of
+its frames that showed an open hand.
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `--swipe-travel` | 0.25 | how far the wrist must move sideways, in image widths (and twice as far as up or down) |
+| `--swipe-window-ms` | 500 | ... within this long |
+| `--swipe-cooldown-ms` | 800 | before that hand swipes again; it also ignores the hand swinging back |
+
+A moving hand can't start a held gesture, and neither can a hand that just swiped: otherwise every swipe would also
+start `open_palm`. Gestures are poses, held still; one already held goes on while the hand moves. Swipe straight away
+rather than pausing with an open palm first, or the pause counts as `open_palm`.
+
 Output, one JSON object per line (logs go to stderr):
 
 ```json
 {"type":"ready","recognizer":"canned"}
 {"type":"gesture","phase":"start","name":"open_palm","hand":"right","confidence":0.934,"ts":1761400000123}
 {"type":"gesture","phase":"end","name":"open_palm","hand":"right","heldMs":1840,"ts":1761400002163}
+{"type":"gesture","phase":"tap","name":"swipe_left","hand":"right","confidence":0.9,"ts":1761400005020}
 {"type":"error","message":"Camera 0 gives no frames. ..."}
 ```
 
@@ -113,10 +132,12 @@ Tests need no camera. The real-model test is skipped until the model has been do
 | `recognizers.py` | picks the recognizer for `--recognizer` |
 | `recognizer_canned.py` | MediaPipe GestureRecognizer in VIDEO mode, on the raw and a mirrored frame (its gestures are much weaker on one hand) → `Sighting(hand, gesture, confidence)` per hand |
 | `recognizer_custom.py` | your trained classifier on the hands the built-in recognizer found; `both` or `custom` |
-| `landmarks.py` | `Hand(side, score, 21 points)`, and its features: points relative to the wrist, scaled by the palm size, left hand mirrored to a right one (63 numbers) |
+| `landmarks.py` | `Hand(side, score, 21 points)`, and its features: points relative to the wrist, scaled by the palm size, left hand mirrored to a right one (63 numbers); whether it is open |
 | `collect.py`, `samples.py` | records feature rows into `data/<label>.csv` |
 | `train.py`, `classifier.py` | trains, scores and saves the classifier (`models/custom.joblib`), and loads it |
 | `stabilizer.py` | per-hand hold / release / cooldown → `start` and `end` events |
+| `swipes.py` | per-hand wrist trail → `tap` events for swipes; says which hands are moving |
+| `tracker.py` | sightings → stabilizer and swipe events; holds off poses of moving hands |
 | `events.py`, `protocol.py` | the events and their JSON lines on stdout |
 | `pipeline.py` | frame → sightings → events; shared by `run` and `preview` |
 | `run.py` | the headless loop |
