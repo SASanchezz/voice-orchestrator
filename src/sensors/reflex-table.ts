@@ -3,7 +3,8 @@ import YAML from "yaml";
 import { z } from "zod";
 
 /** Actions that last as long as the gesture is held. */
-export const HOLD_ACTIONS = ["talk"] as const;
+export const HOLD_ACTIONS = ["talk", "point"] as const;
+export type HoldAction = (typeof HOLD_ACTIONS)[number];
 /** Actions done once, the moment the gesture is recognized. */
 export const TAP_ACTIONS = [
   "start_talk",

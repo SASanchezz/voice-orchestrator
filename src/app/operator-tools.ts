@@ -33,6 +33,7 @@ function toolServices(
     requests: kit.requests,
     context: kit.context,
     screen: devices.screen,
+    camera: devices.camera,
   };
 }
 

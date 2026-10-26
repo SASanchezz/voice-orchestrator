@@ -7,6 +7,8 @@
 #   space_left / space_right: move to the Space (desktop) on the left / right, like Ctrl+arrow. Needs Accessibility
 #   permission for your terminal app (System Settings > Privacy & Security > Accessibility).
 # hold: lasts while the gesture is held. talk = push-to-talk, like holding the hotkey (instead of start/end_talk).
+#   point = you are pointing at something: what you say meanwhile reaches the assistant with a note, so it looks
+#   through the camera (look_at_camera).
 # Gestures: open_palm, closed_fist, pointing_up, thumb_up, thumb_down, victory, i_love_you. Unlisted ones do nothing.
 # Swipes (an open hand moved fast sideways, from your point of view): swipe_left, swipe_right. They only `tap`.
 # Plus any you trained yourself (sensors/gestures/README.md, "Your own gestures"), by the label you recorded.
@@ -14,5 +16,6 @@
 open_palm: { tap: start_talk }
 closed_fist: { tap: [end_talk, stop_speaking] } # sends while you talk, else stops the spoken reply
 thumb_down: { tap: discard }
+pointing_up: { hold: point }
 swipe_left: { tap: space_right } # like a three-finger swipe on the trackpad: the desktops follow your hand
 swipe_right: { tap: space_left }

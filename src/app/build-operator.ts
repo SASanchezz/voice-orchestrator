@@ -25,6 +25,7 @@ import { ConversationMemory } from "../orchestrator/memory/conversation-memory.j
 import type { OperatorSession } from "../orchestrator/model/operator-session.js";
 import { Orchestrator } from "../orchestrator/orchestrator.js";
 import type { OperatorTools } from "../orchestrator/tools/operator-tools.js";
+import { PointingCue } from "../sensors/pointing-cue.js";
 import type { PermissionParts } from "./build-permissions.js";
 import type { Core } from "./core.js";
 import { buildOperatorSession } from "./operator-session.js";
@@ -44,6 +45,8 @@ export interface OperatorParts {
   voiceHold: VoiceHold;
   /** Takes back your newest voice message before the operator starts on it. */
   voiceCancel: VoiceCancel;
+  /** Whether you pointed while talking, told to the model with your words. */
+  pointing: PointingCue;
 }
 
 /** Builds the operator and has it listen: your key press, your words, and every app event. */
@@ -54,12 +57,14 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   const { loop, lifecycle } = operatorLoop(core, neighbors.permissions, { kit, session });
   const voiceHold = new VoiceHold(loop, VOICE_MESSAGE_WAIT_MS);
   const voiceCancel = new VoiceCancel(neighbors.devices.voice, voiceHold, kit.queue);
-  listen(neighbors.devices, voiceHold, kit.context);
+  const pointing = new PointingCue();
+  listen(neighbors.devices, pointing, (text) => voiceHold.receive(pointing.annotate(text)));
+  releaseShotsAfterTurns(neighbors.devices, kit.context);
   core.events.on("event", (e: AppEvent) => loop.enqueue(inputFor(e, kit.voices)));
   core.events.on("permission_closed", (requestId: string) => kit.replies.answered(requestId));
   const orchestrator = new Orchestrator(loop, kit.context, kit.speech);
   const { lines, context, voices } = kit;
-  return { orchestrator, session, lifecycle, lines, tools, context, voices, voiceHold, voiceCancel };
+  return { orchestrator, session, lifecycle, lines, tools, context, voices, voiceHold, voiceCancel, pointing };
 }
 
 function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighbors): ConversationKit {
@@ -100,8 +105,23 @@ function operatorLoop(
   return { loop: new OperatorLoop(kit.queue, dispatcher, lifecycle), lifecycle };
 }
 
-function listen({ voice, screen }: OperatorDevices, voiceHold: VoiceHold, context: TurnContext): void {
-  voice.onPress(() => screen.capture()); // what you're looking at when you start asking, not seconds later
-  context.onTurnEnd((startedAt) => screen.releaseShotsBefore(startedAt)); // the reply is done with them
-  voice.onUtterance((text) => voiceHold.receive(text));
+function listen(
+  { voice, screen, camera }: OperatorDevices,
+  pointing: PointingCue,
+  heard: (text: string) => void,
+): void {
+  voice.onPress(() => {
+    screen.capture(); // what you're looking at when you start asking, not seconds later
+    camera.capture();
+    pointing.talkStarted();
+  });
+  voice.onUtterance(heard);
+}
+
+/** The reply is done with the snapshots taken before its turn started. */
+function releaseShotsAfterTurns({ screen, camera }: OperatorDevices, context: TurnContext): void {
+  context.onTurnEnd((startedAt) => {
+    screen.releaseShotsBefore(startedAt);
+    camera.releaseShotsBefore(startedAt);
+  });
 }

@@ -1,4 +1,4 @@
-import type { ReflexTable, TapAction } from "./reflex-table.js";
+import type { HoldAction, ReflexTable, TapAction } from "./reflex-table.js";
 import type { GestureEvent } from "./sensor-event.js";
 
 /** What gestures can do in the app. */
@@ -11,6 +11,9 @@ export interface GestureActions {
   /** macOS Spaces: to the desktop on the left or right. */
   spaceLeft(): void;
   spaceRight(): void;
+  /** The first hand starts pointing, and the last one stops. */
+  pointStarted(): void;
+  pointEnded(): void;
 }
 
 /** Hears what a sensor sees, and when the sensor stops. */
@@ -37,6 +40,8 @@ const TAPS: Record<TapAction, (actions: GestureActions) => void> = {
 export class SensorRouter implements SensorListener {
   /** The hand holding talk, as `name/hand`. */
   private talkingHand?: string;
+  /** The hands pointing, as `name/hand`. */
+  private pointingHands = new Set<string>();
 
   constructor(
     private reflexes: ReflexTable,
@@ -46,17 +51,34 @@ export class SensorRouter implements SensorListener {
   receive(gesture: GestureEvent): void {
     const reflex = this.reflexes.get(gesture.name);
     if (!reflex) return;
-    if ("hold" in reflex) this.holdTalk(gesture);
+    if ("hold" in reflex) this.hold(reflex.hold, gesture);
     else if (gesture.phase !== "end") this.tap(reflex.tap);
   }
 
   /** A sensor that dies while you talk would otherwise leave the mic on; when you aren't talking, this does nothing. */
   sensorStopped(): void {
     this.endTalk();
+    if (this.pointingHands.size) this.actions.pointEnded();
+    this.pointingHands.clear();
   }
 
   private tap(actions: readonly TapAction[]): void {
     for (const action of actions) TAPS[action](this.actions);
+  }
+
+  private hold(action: HoldAction, gesture: GestureEvent): void {
+    if (action === "talk") this.holdTalk(gesture);
+    else this.holdPoint(gesture);
+  }
+
+  private holdPoint(gesture: GestureEvent): void {
+    const hand = `${gesture.name}/${gesture.hand}`;
+    const wasPointing = this.pointingHands.size > 0;
+    if (gesture.phase === "start") this.pointingHands.add(hand);
+    else if (gesture.phase === "end") this.pointingHands.delete(hand);
+    const isPointing = this.pointingHands.size > 0;
+    if (isPointing && !wasPointing) this.actions.pointStarted();
+    if (wasPointing && !isPointing) this.actions.pointEnded();
   }
 
   private holdTalk(gesture: GestureEvent): void {

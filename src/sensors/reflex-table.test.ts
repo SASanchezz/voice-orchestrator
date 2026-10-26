@@ -47,3 +47,8 @@ test("reflex table: a reflex with both hold and tap is rejected", () => {
 test("reflex table: a missing file says to copy the example", () => {
   assert.throws(() => loadReflexTable("/nonexistent/gestures.yaml"), /gestures\.example\.yaml/);
 });
+
+test("reflex table: the example file points with a raised index finger", () => {
+  const reflexes = loadReflexTable(resolve(APP_DIR, "config/gestures.example.yaml"));
+  assert.deepEqual(reflexes.get("pointing_up"), { hold: "point" });
+});

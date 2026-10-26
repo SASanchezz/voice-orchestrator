@@ -1,3 +1,4 @@
+import type { CameraSource } from "../../camera/camera-source.js";
 import type { Screenshot, ScreenSource } from "../../screen/screen-source.js";
 import type { VoiceInputState, VoiceIO } from "../../voice/voice-io.js";
 
@@ -77,3 +78,6 @@ export class TestScreen implements ScreenSource {
     this.releases.push(time);
   }
 }
+
+/** A fake camera; like the fake screen, it counts frames and remembers their releases. */
+export class TestCamera extends TestScreen implements CameraSource {}

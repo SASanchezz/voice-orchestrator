@@ -37,6 +37,7 @@ sensors/gestures/            Python package (own venv, own tests)
     protocol.py              JSON-lines output and stdin commands
     pipeline.py              frame -> sightings -> events, shared by run and preview
     run.py                   headless loop
+    snapshots.py             stdin snapshot commands -> JPEG of the next frame (M5)
     preview.py               window with skeleton + current label (debug)
     collect.py               record labeled samples (M3)
     train.py                 train + evaluate classifier (M3)
@@ -50,7 +51,7 @@ src/sensors/                 Node side
   sensor-router.ts           event -> reflex action or operator input
   reflex-table.ts            loads config/gestures.yaml
 src/voice/talk-switch.ts     the mic, held by the hotkey or a gesture
-  camera-source.ts           (M5) like ScreenSource: capture()/latest()
+src/camera/                  (M5) CameraSource + SensorCamera, like ScreenSource: capture()/latest()
 config/gestures.example.yaml reflex mapping
 ```
 
@@ -73,13 +74,14 @@ Add to `.gitignore`: `sensors/gestures/.venv/`, `sensors/gestures/models/`, `__p
 Commands (Node -> Python, stdin, one JSON per line; from M5):
 
 ```json
-{"cmd":"snapshot","id":"abc","path":"/abs/state/camera/abc.jpg"}
+{ "cmd": "snapshot", "id": "abc", "path": "/abs/state/camera/abc.jpg" }
 ```
+
 answered with `{"type":"snapshot","id":"abc","path":"...","ok":true}`.
 
 ---
 
-## M0: Camera + hand skeleton preview  [~] (code done, verify on the Mac)
+## M0: Camera + hand skeleton preview [~] (code done, verify on the Mac)
 
 Works: `python -m gestures preview` opens a window with your hand skeleton and FPS.
 
@@ -93,7 +95,7 @@ Works: `python -m gestures preview` opens a window with your hand skeleton and F
 Check: smooth preview (>= 20 FPS on the MacBook), skeleton follows both hands.
 Commit: `gestures: camera preview with hand landmarks`
 
-## M1: Stable gesture events on stdout (built-in recognizer, no training)  [~] (code done, verify on the Mac)
+## M1: Stable gesture events on stdout (built-in recognizer, no training) [~] (code done, verify on the Mac)
 
 Works: `python -m gestures run` prints clean start/end JSON lines as you show gestures.
 
@@ -114,7 +116,7 @@ Works: `python -m gestures run` prints clean start/end JSON lines as you show ge
 Check: wave the hand around normally for a minute -> no events; deliberate gestures -> exactly one start/end each.
 Commit: `gestures: stable gesture events with built-in recognizer`
 
-## M2: Gesture push-to-talk in the orchestrator  [~] (code done, verify on the Mac)
+## M2: Gesture push-to-talk in the orchestrator [~] (code done, verify on the Mac)
 
 Works: `npm start`, show an open palm to start talking, a closed fist to send; thumbs-down discards.
 Holding a gesture for the whole message was too tiring, so talk is started and ended by two taps
@@ -128,11 +130,11 @@ Holding a gesture for the whole message was too tiring, so talk is started and e
 - [x] `gesture-process.ts`: spawn, read lines, restart with `CrashBackoff` (reset on `ready`), stop on shutdown
       (`shutDown` in main.ts). Started once the mic is ready; not in text mode.
 - [x] `config/gestures.example.yaml` (copy to the gitignored `config/gestures.yaml`):
-      ```yaml
-      open_palm:   { tap: start_talk }   # -> voice begin
-      closed_fist: { tap: end_talk }     # -> voice release (sends)
-      thumb_down:  { tap: discard }      # -> like the page's Discard button (VoiceCancel.discardLatest)
-      ```
+      `yaml
+  open_palm:   { tap: start_talk }   # -> voice begin
+  closed_fist: { tap: end_talk }     # -> voice release (sends)
+  thumb_down:  { tap: discard }      # -> like the page's Discard button (VoiceCancel.discardLatest)
+  `
 - [x] `sensor-router.ts` + `reflex-table.ts`: map events to actions. `src/voice/talk-switch.ts` holds the mic for
       either the hotkey or a gesture, and ignores the other until it is let go; the router allows one `talk` hold
       (one hand) at a time. A sensor that dies mid-hold ends the talk, like the hotkey helper dying.
@@ -144,7 +146,7 @@ Holding a gesture for the whole message was too tiring, so talk is started and e
 Check: full voice round-trip with no keyboard. Hotkey still works. Killing the Python process -> it restarts, app keeps running.
 Commit: `sensors: gesture push-to-talk`
 
-## M3: Your own gestures: collect data, train a classifier  [~] (code done, verify on the Mac)
+## M3: Your own gestures: collect data, train a classifier [~] (code done, verify on the Mac)
 
 Works: you record a new gesture (e.g. `point_left`, `ok_sign`), train in under a minute, and it fires like the built-in ones.
 
@@ -168,7 +170,7 @@ Targets: ~300-500 samples per class from 2+ sessions; validation accuracy > 95% 
 If a gesture keeps confusing with another, change the gesture, not the model.
 Commit: `gestures: data collection and custom classifier`
 
-## M4: Motion gestures (swipes)  [~] (code done, verify on the Mac)
+## M4: Motion gestures (swipes) [~] (code done, verify on the Mac)
 
 Works: swipe left/right fires a `tap` event; the example mapping switches macOS Spaces with them, like a three-finger
 swipe on the trackpad (swipe left -> the space on the right).
@@ -179,7 +181,7 @@ swipe on the trackpad (swipe left -> the space on the right).
       side), then an 800 ms cooldown that also swallows the hand swinging back. CLI: `--swipe-travel`,
       `--swipe-window-ms`, `--swipe-cooldown-ms`.
 - [x] Conflict with `open_palm`: a swipe is made with an open palm, so it would also start `open_palm` (start_talk).
-      `tracker.py` holds off the stabilizer's *starts* for a hand while it moves (> 0.3 image sizes/s) and for the
+      `tracker.py` holds off the stabilizer's _starts_ for a hand while it moves (> 0.3 image sizes/s) and for the
       swipe cooldown; holds already started go on.
 - [ ] Only if the heuristic is not good enough: small sequence model (e.g. 1D-conv/GRU over 15-20 frames of features).
 - [x] New tap action `repeat_last` (`RepeatingSpeaker` around `SaySpeaker` remembers the last spoken text;
@@ -195,20 +197,31 @@ by accident too often, and open palm / fist still start and end talk.
 
 Commit: `gestures: swipe detection`
 
-## M5: `look_at_camera` tool (Claude vision)  [ ]
+## M5: `look_at_camera` tool (Claude vision) [~] (code done, verify on the Mac)
 
 Works: point at / hold up something and say "what is this?"; Claude answers from a camera frame.
 
-- [ ] Python keeps the latest frame; stdin `snapshot` command writes a JPEG (longest edge <= 1568 px).
-- [ ] `camera-source.ts`, same shape as `ScreenSource` (`capture()` on talk start, `latest()` on demand),
-      files in `state/camera/` with the same turn-scoped cleanup and sweep as screenshots.
-- [ ] Orchestrator tool `look_at_camera` next to the screen tool; prompt rule: use it when the user refers to
-      something physical or is pointing (router adds "[gesture] user is pointing" to the turn when `point` is active).
-- [ ] Tests with a fake camera source.
+- [x] `snapshots.py`: a stdin thread queues `snapshot` commands; the frame loop answers each with the next frame,
+      written as a JPEG (longest edge <= 1568 px), then `{"type":"snapshot",...,"ok":true}` (or `ok:false` + message).
+      Node spawns the sensor with a stdin pipe now.
+- [x] `src/camera/sensor-camera.ts` (`CameraSource`, same shape as `ScreenSource`: `capture()` on talk start,
+      `latest()` on demand), files in `state/camera/` with the same turn-scoped cleanup and sweep as screenshots
+      (reuses `ScreenshotFolder`, `TurnShots`, `sweepLeftoverShots`). `src/sensors/sensor-snapshots.ts` matches
+      answers to requests by id, fails them when the sensor stops or after 5 s. The camera works only while the
+      Gestures switch is on (the sensor holds the camera); otherwise the tool says so.
+- [x] Orchestrator tool `look_at_camera` next to the screen tool; prompt rule: use it when the user refers to
+      something physical or is pointing. New hold action `point` (example: `pointing_up: { hold: point }`):
+      pointing at talk start or while talking appends "[gesture] user is pointing" to the user's words
+      (`PointingCue`). Kept as a note on the voice input instead of a new `InputSource`.
+- [x] Tests: Python snapshot commands/writer, protocol lines; Node schema, process stdin round trip,
+      sensor snapshots, sensor camera, tool with a fake camera, router `point`, pointing cue.
+
+Check: with Gestures on, hold up an object, say "what is this?" -> correct answer; with Gestures off -> the assistant
+says the camera works only while Gestures are on. Frames in `state/camera/` disappear after the reply.
 
 Commit: `sensors: look_at_camera tool`
 
-## M6: Local vision model for camera frames  [ ]
+## M6: Local vision model for camera frames [ ]
 
 Works: with `camera.describer: local`, frames are described by a local vision model and only the text reaches Claude.
 
@@ -219,7 +232,7 @@ Works: with `camera.describer: local`, frames are described by a local vision mo
 
 Commit: `sensors: local vision describer`
 
-## M7: Screen history via screenpipe  [ ]
+## M7: Screen history via screenpipe [ ]
 
 Works: "what was that error I saw ten minutes ago?" gets answered from screen history.
 

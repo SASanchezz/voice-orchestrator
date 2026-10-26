@@ -1,33 +1,39 @@
-"""`python -m gestures run`: no window, just gesture events as JSON lines on stdout."""
+"""`python -m gestures run`: no window, just gesture events as JSON lines on stdout, and camera snapshots on request."""
 
 from __future__ import annotations
 
 import signal
 import threading
 from collections.abc import Iterable
+from typing import TextIO
 
 import numpy as np
 
 from .camera import CameraError
 from .pipeline import GesturePipeline, SensorSettings, open_pipeline
 from .protocol import EventWriter
+from .snapshots import SnapshotRequests, SnapshotTaker
 
 STOP_SIGNALS = (signal.SIGINT, signal.SIGTERM)
 
 
-def run_sensor(settings: SensorSettings, out: EventWriter) -> None:
+def run_sensor(settings: SensorSettings, out: EventWriter, commands: TextIO) -> None:
+    """Gesture events on `out`; snapshot commands read from `commands` are answered there too."""
     try:
-        _run(settings, out)
+        _run(settings, out, commands)
     except (CameraError, RuntimeError) as e:
         out.error(str(e))
         raise
 
 
-def _run(settings: SensorSettings, out: EventWriter) -> None:
+def _run(settings: SensorSettings, out: EventWriter, commands: TextIO) -> None:
     stop = _stop_on_signals()
+    requests = SnapshotRequests()
+    requests.listen(commands)
+    snapshots = SnapshotTaker(requests, out)
     with open_pipeline(settings, out) as (cam, pipeline):
         out.ready(settings.recognizer_mode)
-        process_until(cam.frames(), pipeline, stop)
+        process_until(snapshots.serving(cam.frames()), pipeline, stop)
 
 
 def _stop_on_signals() -> threading.Event:

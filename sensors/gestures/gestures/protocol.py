@@ -23,6 +23,12 @@ class EventWriter:
     def error(self, message: str) -> None:
         self._write({"type": "error", "message": message})
 
+    def snapshot_taken(self, request_id: str, path: str) -> None:
+        self._write({"type": "snapshot", "id": request_id, "path": path, "ok": True})
+
+    def snapshot_failed(self, request_id: str, message: str) -> None:
+        self._write({"type": "snapshot", "id": request_id, "ok": False, "message": message})
+
     def _write(self, message: dict[str, object]) -> None:
         self._stream.write(json.dumps(message, separators=(",", ":")) + "\n")
         self._stream.flush()

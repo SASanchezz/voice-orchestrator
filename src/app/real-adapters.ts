@@ -1,4 +1,5 @@
 import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
+import { SensorCamera } from "../camera/sensor-camera.js";
 import type { AppConfig } from "../config/app-config.js";
 import { CONFIG_PATH, NOTES_PATH } from "../config/paths.js";
 import { MacBrowserPage } from "../macos/mac-browser-page.js";
@@ -7,6 +8,7 @@ import { MacQuestionPanels } from "../macos/mac-question-panels.js";
 import { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../safety/destructive-list.js";
 import type { GestureControl } from "../sensors/gesture-switch.js";
+import type { SensorSnapshots } from "../sensors/sensor-snapshots.js";
 import { MacScreen } from "../screen/mac-screen.js";
 import { MacHotkey } from "../voice/hotkey.js";
 import { HotkeyTalk } from "../voice/hotkey-talk.js";
@@ -20,27 +22,35 @@ import type { VoiceIO } from "../voice/voice-io.js";
 import type { Adapters } from "./build-app.js";
 
 /**
- * The real world: config/destructive.yaml (hot-reloaded), config/config.yaml, the screen, pop-ups, config/notes.md
- * and the Agent SDK.
+ * The real world: the screen, the camera (through the gesture sensor's `snapshots`), pop-ups, your files and the
+ * Agent SDK.
  */
-export async function realAdapters(voice: VoiceIO, gestures: GestureControl): Promise<Adapters> {
-  const destructive = new DestructiveList();
-  destructive.watchForChanges();
+export async function realAdapters(
+  voice: VoiceIO,
+  gestures: GestureControl,
+  snapshots: SensorSnapshots,
+): Promise<Adapters> {
   const screen = await MacScreen.create();
   const popups = await MacPopups.create();
   const questionPanels = await MacQuestionPanels.create(); // after MacPopups: the helper is built by then
-  const notes = new AssistantNotes(NOTES_PATH);
   const devices = {
     voice,
     screen,
-    notes,
-    query: sdkQuery,
+    camera: SensorCamera.create(snapshots),
     gestures,
     popups,
     notices: popups,
     browser: new MacBrowserPage(),
   };
-  return { ...devices, questionPanels, destructive, configFile: CONFIG_PATH, explainCommands: true };
+  return { ...devices, questionPanels, ...filesAndModel() };
+}
+
+/** config/destructive.yaml (hot-reloaded), config/config.yaml, config/notes.md and the Agent SDK. */
+function filesAndModel(): Pick<Adapters, "destructive" | "configFile" | "notes" | "query" | "explainCommands"> {
+  const destructive = new DestructiveList();
+  destructive.watchForChanges();
+  const notes = new AssistantNotes(NOTES_PATH);
+  return { destructive, configFile: CONFIG_PATH, notes, query: sdkQuery, explainCommands: true };
 }
 
 /** Your voice on macOS, and the mic switch that lets gestures talk as well as the hotkey. */

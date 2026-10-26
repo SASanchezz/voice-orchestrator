@@ -4,9 +4,9 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sleep } from "../shared/sleep.js";
-import { GestureProcess, type RestartBackoff } from "./gesture-process.js";
-import type { GestureEvent } from "./sensor-event.js";
-import type { SensorListener } from "./sensor-router.js";
+import { CAMERA_OFF, GestureProcess, type RestartBackoff } from "./gesture-process.js";
+import type { GestureEvent, SnapshotAnswer } from "./sensor-event.js";
+import type { SensorOutput } from "./sensor-lines.js";
 
 const RESTART_DELAY_MS = 10;
 const WAIT_STEP_MS = 20;
@@ -17,13 +17,25 @@ const START = '{"type":"gesture","phase":"start","name":"open_palm","hand":"righ
 const END = '{"type":"gesture","phase":"end","name":"open_palm","hand":"right","heldMs":500,"ts":2}';
 const READY = '{"type":"ready","recognizer":"canned"}';
 const STAY_RUNNING = "setInterval(() => {}, 1000);";
+/** Answers each snapshot command on stdin as taken, the way the Python sensor does. */
+const ANSWER_SNAPSHOTS = `
+import { createInterface } from "node:readline";
+createInterface({ input: process.stdin }).on("line", (line) => {
+  const { id, path } = JSON.parse(line);
+  console.log(JSON.stringify({ type: "snapshot", id, path, ok: true }));
+});`;
 
-class RecordingListener implements SensorListener {
+class RecordingListener implements SensorOutput {
   gestures: GestureEvent[] = [];
+  answers: SnapshotAnswer[] = [];
   stops = 0;
 
   receive(gesture: GestureEvent): void {
     this.gestures.push(gesture);
+  }
+
+  snapshotAnswered(answer: SnapshotAnswer): void {
+    this.answers.push(answer);
   }
 
   sensorStopped(): void {
@@ -90,4 +102,20 @@ test("gesture process: a stopped sensor isn't started again", async () => {
   sensor.stop();
   await sleep(SETTLE_MS);
   assert.equal(heard.gestures.length, 1);
+});
+
+test("gesture process: a snapshot request reaches the sensor and its answer the listener", async () => {
+  const { sensor, heard } = fakeSensor([READY], ANSWER_SNAPSHOTS);
+  sensor.start();
+  sensor.requestSnapshot({ id: "abc", path: "/state/camera/abc.jpg" });
+  await until(() => heard.answers.length === 1);
+  sensor.stop();
+  assert.deepEqual(heard.answers, [{ type: "snapshot", id: "abc", path: "/state/camera/abc.jpg", ok: true }]);
+});
+
+test("gesture process: a stopped sensor can't take a snapshot", () => {
+  const { sensor } = fakeSensor([], STAY_RUNNING);
+  sensor.start();
+  sensor.stop();
+  assert.throws(() => sensor.requestSnapshot({ id: "abc", path: "/state/camera/abc.jpg" }), { message: CAMERA_OFF });
 });

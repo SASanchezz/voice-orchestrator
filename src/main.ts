@@ -8,6 +8,7 @@ import type { AppConfig } from "./config/app-config.js";
 import { MacSpaces } from "./macos/mac-spaces.js";
 import { loadConfig } from "./config/load-config.js";
 import { GestureSwitch, UnavailableGestures } from "./sensors/gesture-switch.js";
+import { SensorSnapshots } from "./sensors/sensor-snapshots.js";
 import { errorMessage } from "./shared/errors.js";
 import { TextVoice } from "./voice/text-voice.js";
 
@@ -22,7 +23,8 @@ if (!process.argv.includes("--skip-auth-check")) await checkLogins(cfg);
 const mac = textMode ? undefined : macVoice(cfg.voice);
 const voice = mac?.voice ?? new TextVoice();
 const gestures = mac ? new GestureSwitch(gestureSetting(cfg.sensors.gestures)) : undefined; // text mode has no mic
-const app = buildApp(cfg, await realAdapters(voice, gestures ?? new UnavailableGestures()));
+const snapshots = new SensorSnapshots(); // the camera's frames come from the gesture sensor while it runs
+const app = buildApp(cfg, await realAdapters(voice, gestures ?? new UnavailableGestures(), snapshots));
 
 await openUi(cfg, app);
 
@@ -42,8 +44,8 @@ app.operator.lifecycle.on("restart", () => {
 /** The camera is used only while the web UI's Gestures switch is on. */
 function connectGestures(): void {
   if (!mac || !gestures) return;
-  const actions = gestureActions(mac, app.operator.voiceCancel, new MacSpaces());
-  gestures.connect(() => buildGestures(cfg.sensors.gestures, actions));
+  const actions = gestureActions(mac, app.operator, new MacSpaces());
+  gestures.connect(() => buildGestures(cfg.sensors.gestures, actions, snapshots));
 }
 
 async function openUi({ ui }: AppConfig, { ui: parts }: App): Promise<void> {

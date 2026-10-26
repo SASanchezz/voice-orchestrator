@@ -19,7 +19,7 @@ import { TestQuestionPanels } from "../../testing/test-question-panels.js";
 import { connectBrain, fakeOperator } from "./fake-operator.js";
 import { fakeWorker } from "./fake-worker.js";
 import { cfg, configFile, notesFile, root, rulesFile } from "./sandbox.js";
-import { TestScreen, TestVoice } from "./test-devices.js";
+import { TestCamera, TestScreen, TestVoice } from "./test-devices.js";
 
 after(() => rmSync(root, { recursive: true, force: true }));
 
@@ -36,6 +36,7 @@ const query = fakeQuery(({ prompt, options }) =>
 export const app = buildApp(cfg, {
   voice,
   screen,
+  camera: new TestCamera(),
   notes: new AssistantNotes(notesFile),
   configFile,
   destructive: new DestructiveList(rulesFile),

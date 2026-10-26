@@ -6,7 +6,7 @@ import { SensorRouter, type GestureActions } from "./sensor-router.js";
 
 const REFLEXES = new Map<string, Reflex>([
   ["open_palm", { hold: "talk" }],
-  ["pointing_up", { tap: ["start_talk"] }],
+  ["i_love_you", { tap: ["start_talk"] }],
   ["victory", { tap: ["end_talk"] }],
   ["thumb_down", { tap: ["discard"] }],
   ["closed_fist", { tap: ["stop_speaking"] }],
@@ -14,6 +14,7 @@ const REFLEXES = new Map<string, Reflex>([
   ["swipe_right", { tap: ["repeat_last"] }],
   ["swipe_left", { tap: ["space_right"] }],
   ["thumb_up", { tap: ["space_left"] }],
+  ["pointing_up", { hold: "point" }],
 ]);
 
 /** A router whose actions are written down instead of done. */
@@ -27,6 +28,8 @@ function router(): { router: SensorRouter; done: string[] } {
     repeatLast: () => done.push("repeatLast"),
     spaceLeft: () => done.push("spaceLeft"),
     spaceRight: () => done.push("spaceRight"),
+    pointStarted: () => done.push("pointStarted"),
+    pointEnded: () => done.push("pointEnded"),
   };
   return { router: new SensorRouter(REFLEXES, actions), done };
 }
@@ -89,15 +92,15 @@ test("sensor router: a tap gesture with several actions does them all, in order"
 
 test("sensor router: talk started by one tap gesture is ended by another", () => {
   const { router: gestures, done } = router();
-  gestures.receive(gesture("pointing_up", "start"));
-  gestures.receive(gesture("pointing_up", "end"));
+  gestures.receive(gesture("i_love_you", "start"));
+  gestures.receive(gesture("i_love_you", "end"));
   gestures.receive(gesture("victory", "start"));
   assert.deepEqual(done, ["beginTalk", "endTalk"]);
 });
 
 test("sensor router: a gesture with no reflex does nothing", () => {
   const { router: gestures, done } = router();
-  gestures.receive(gesture("i_love_you", "start"));
+  gestures.receive(gesture("ok_hand", "start"));
   assert.deepEqual(done, []);
 });
 
@@ -110,7 +113,29 @@ test("sensor router: the sensor stopping mid-talk ends the talk", () => {
 
 test("sensor router: the sensor stopping ends a talk started by a tap", () => {
   const { router: gestures, done } = router();
-  gestures.receive(gesture("pointing_up", "start"));
+  gestures.receive(gesture("i_love_you", "start"));
   gestures.sensorStopped();
   assert.deepEqual(done, ["beginTalk", "endTalk"]);
+});
+
+test("sensor router: pointing lasts while the point gesture is held", () => {
+  const { router: gestures, done } = router();
+  gestures.receive(gesture("pointing_up", "start"));
+  gestures.receive(gesture("pointing_up", "end"));
+  assert.deepEqual(done, ["pointStarted", "pointEnded"]);
+});
+
+test("sensor router: pointing goes on while either hand still points", () => {
+  const { router: gestures, done } = router();
+  gestures.receive(gesture("pointing_up", "start", "right"));
+  gestures.receive(gesture("pointing_up", "start", "left"));
+  gestures.receive(gesture("pointing_up", "end", "right"));
+  assert.deepEqual(done, ["pointStarted"]);
+});
+
+test("sensor router: the sensor stopping ends the pointing", () => {
+  const { router: gestures, done } = router();
+  gestures.receive(gesture("pointing_up", "start"));
+  gestures.sensorStopped();
+  assert.deepEqual(done, ["pointStarted", "endTalk", "pointEnded"]);
 });

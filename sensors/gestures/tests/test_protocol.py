@@ -66,3 +66,13 @@ def test_tap_line() -> None:
         "confidence": 0.8,
         "ts": 1000,
     }
+
+
+def test_snapshot_taken_line() -> None:
+    [line] = written("snapshot_taken", "abc", "/state/camera/abc.jpg")
+    assert line == {"type": "snapshot", "id": "abc", "path": "/state/camera/abc.jpg", "ok": True}
+
+
+def test_snapshot_failed_line() -> None:
+    [line] = written("snapshot_failed", "abc", "disk full")
+    assert line == {"type": "snapshot", "id": "abc", "ok": False, "message": "disk full"}

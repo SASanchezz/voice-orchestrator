@@ -1,4 +1,5 @@
 import type { AttachmentFiles } from "../../attachments/attachment-files.js";
+import type { CameraSource } from "../../camera/camera-source.js";
 import type { AppConfig } from "../../config/app-config.js";
 import type { PermissionAnswers } from "../../permissions/permission-answers.js";
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
@@ -23,7 +24,7 @@ import type { ProjectRemover } from "../actions/project-remover.js";
 import type { TurnContext } from "../conversation/turn-context.js";
 import type { ResetRequests } from "../lifecycle/reset-requests.js";
 import type { AssistantNotes } from "../memory/assistant-notes.js";
-import { lookAtScreen, remember, resetContext, restartOrchestrator } from "./assistant-tools.js";
+import { lookAtCamera, lookAtScreen, remember, resetContext, restartOrchestrator } from "./assistant-tools.js";
 import { readAttachment } from "./attachment-tools.js";
 import { destructiveAdd, destructiveRemove, destructiveRules } from "./destructive-tools.js";
 import { answerPermission, listPendingPermissions, setPermissionMode } from "./permission-tools.js";
@@ -68,6 +69,7 @@ export interface ToolServices {
   views: PermissionViews;
   context: TurnContext;
   screen: ScreenSource;
+  camera: CameraSource;
   attachments: AttachmentFiles;
   destructive: DestructiveList;
 }
@@ -107,6 +109,7 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => answerPermission(s.answers, s.context),
   (s) => setProjectAccount(s.accounts, s.cfg),
   (s) => lookAtScreen(s.screen),
+  (s) => lookAtCamera(s.camera),
   (s) => readAttachment(s.attachments),
   (s) => destructiveRules(s.destructive),
   (s) => destructiveAdd(s.destructive, s.context),

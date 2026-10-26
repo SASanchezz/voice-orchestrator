@@ -12,11 +12,19 @@ const gestureEventSchema = z.object({
 });
 export type GestureEvent = z.infer<typeof gestureEventSchema>;
 
+/** The answer to a `snapshot` command: the JPEG is written to its path, or why it isn't. */
+const snapshotAnswerSchema = z.discriminatedUnion("ok", [
+  z.object({ type: z.literal("snapshot"), id: z.string(), ok: z.literal(true), path: z.string() }),
+  z.object({ type: z.literal("snapshot"), id: z.string(), ok: z.literal(false), message: z.string() }),
+]);
+export type SnapshotAnswer = z.infer<typeof snapshotAnswerSchema>;
+
 /** One line of a sensor's stdout, see the event protocol in docs/gestures-plan.md. */
 const sensorEventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("ready"), recognizer: z.string() }),
   z.object({ type: z.literal("error"), message: z.string() }),
   gestureEventSchema,
+  snapshotAnswerSchema,
 ]);
 export type SensorEvent = z.infer<typeof sensorEventSchema>;
 

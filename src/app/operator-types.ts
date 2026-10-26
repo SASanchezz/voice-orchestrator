@@ -1,4 +1,5 @@
 import type { QueryFn } from "../agent/query-fn.js";
+import type { CameraSource } from "../camera/camera-source.js";
 import type { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import type { InputQueue } from "../orchestrator/conversation/input-queue.js";
 import type { QuestionGate } from "../orchestrator/conversation/question-gate.js";
@@ -17,10 +18,12 @@ import type { QuestionParts } from "./build-questions.js";
 import type { TodoParts } from "./build-todo.js";
 import type { WorkerParts } from "./build-workers.js";
 
-/** The outside world the operator talks through: your voice and screen, your notes and config, and the model. */
+/** The outside world the operator talks through: your voice, screen and camera, your notes and config, and the model. */
 export interface OperatorDevices {
   voice: VoiceIO;
   screen: ScreenSource;
+  /** Frames from the gesture sensor's camera, while Gestures are on. */
+  camera: CameraSource;
   notes: AssistantNotes;
   query: QueryFn;
   /** Camera gestures, switched on and off from the web UI. */

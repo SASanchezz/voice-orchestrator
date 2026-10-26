@@ -17,6 +17,10 @@ The web UI's **Gestures** switch turns the sensor on and off while the app runs.
 camera isn't captured or processed at all (it saves battery). The switch is remembered in `state/gestures.json` and
 takes over from `enabled`, which only decides the very first start.
 
+While the sensor runs, the assistant can also look through the camera (`look_at_camera`): hold something up or point
+at it and ask "what is this?". It sees the frame from the moment you started talking. Raising your index finger
+(`pointing_up: { hold: point }` in the mapping) tells it you are pointing. With Gestures off, the camera isn't used.
+
 ## Setup (macOS)
 
 Python 3.11 or newer (MediaPipe sometimes lags the newest Python release; if `pip install` finds no
@@ -47,12 +51,12 @@ Built-in gestures: `open_palm`, `closed_fist`, `pointing_up`, `thumb_up`, `thumb
 
 Stabilizer options (both commands):
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--min-hold-ms` | 250 | a gesture must be seen this long to `start` |
-| `--min-confidence` | 0.7 | ... at this confidence or more |
-| `--release-ms` | 200 | `end` once the hand shows something else, or is gone, this long |
-| `--cooldown-ms` | 500 | after an `end`, the same hand can't start the same gesture for this long |
+| Option             | Default | Meaning                                                                  |
+| ------------------ | ------- | ------------------------------------------------------------------------ |
+| `--min-hold-ms`    | 250     | a gesture must be seen this long to `start`                              |
+| `--min-confidence` | 0.7     | ... at this confidence or more                                           |
+| `--release-ms`     | 200     | `end` once the hand shows something else, or is gone, this long          |
+| `--cooldown-ms`    | 500     | after an `end`, the same hand can't start the same gesture for this long |
 
 ## Swipes
 
@@ -60,11 +64,11 @@ Move an open hand (all four fingers stretched out) fast sideways: `swipe_left` o
 point of view, as in the mirrored preview. A swipe is one `tap` event, with no `end`; its `confidence` is the share of
 its frames that showed an open hand.
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `--swipe-travel` | 0.25 | how far the wrist must move sideways, in image widths (and twice as far as up or down) |
-| `--swipe-window-ms` | 500 | ... within this long |
-| `--swipe-cooldown-ms` | 800 | before that hand swipes again; it also ignores the hand swinging back |
+| Option                | Default | Meaning                                                                                |
+| --------------------- | ------- | -------------------------------------------------------------------------------------- |
+| `--swipe-travel`      | 0.25    | how far the wrist must move sideways, in image widths (and twice as far as up or down) |
+| `--swipe-window-ms`   | 500     | ... within this long                                                                   |
+| `--swipe-cooldown-ms` | 800     | before that hand swipes again; it also ignores the hand swinging back                  |
 
 A moving hand can't start a held gesture, and neither can a hand that just swiped: otherwise every swipe would also
 start `open_palm`. Gestures are poses, held still; one already held goes on while the hand moves. Swipe straight away
@@ -81,6 +85,15 @@ Output, one JSON object per line (logs go to stderr):
 ```
 
 `ts` is Unix time in ms. On Ctrl+C or SIGTERM, every held gesture still gets its `end`.
+
+Commands on stdin, one JSON object per line: a snapshot writes the camera's next frame as a JPEG (longest edge at
+most 1568 px) and is answered on stdout.
+
+```json
+{"cmd":"snapshot","id":"abc","path":"/abs/state/camera/abc.jpg"}
+{"type":"snapshot","id":"abc","path":"/abs/state/camera/abc.jpg","ok":true}
+{"type":"snapshot","id":"abc","ok":false,"message":"couldn't write /abs/state/camera/abc.jpg"}
+```
 
 The first run downloads `gesture_recognizer.task` (~8 MB) into `models/` (gitignored). If that fails
 (behind a proxy, or Python's SSL certificates aren't installed), download it by hand:
@@ -126,23 +139,24 @@ Tests need no camera. The real-model test is skipped until the model has been do
 
 ## How it works
 
-| File | Job |
-| --- | --- |
-| `camera.py` | OpenCV capture (AVFoundation on macOS), raw frames (not mirrored) |
-| `recognizers.py` | picks the recognizer for `--recognizer` |
-| `recognizer_canned.py` | MediaPipe GestureRecognizer in VIDEO mode, on the raw and a mirrored frame (its gestures are much weaker on one hand) → `Sighting(hand, gesture, confidence)` per hand |
-| `recognizer_custom.py` | your trained classifier on the hands the built-in recognizer found; `both` or `custom` |
-| `landmarks.py` | `Hand(side, score, 21 points)`, and its features: points relative to the wrist, scaled by the palm size, left hand mirrored to a right one (63 numbers); whether it is open |
-| `collect.py`, `samples.py` | records feature rows into `data/<label>.csv` |
-| `train.py`, `classifier.py` | trains, scores and saves the classifier (`models/custom.joblib`), and loads it |
-| `stabilizer.py` | per-hand hold / release / cooldown → `start` and `end` events |
-| `swipes.py` | per-hand wrist trail → `tap` events for swipes; says which hands are moving |
-| `tracker.py` | sightings → stabilizer and swipe events; holds off poses of moving hands |
-| `events.py`, `protocol.py` | the events and their JSON lines on stdout |
-| `pipeline.py` | frame → sightings → events; shared by `run` and `preview` |
-| `run.py` | the headless loop |
-| `preview.py`, `drawing.py`, `fps.py` | the window: skeletons, raw labels, stable holds, FPS |
-| `models.py` | model file paths; downloads the built-in model once |
+| File                                 | Job                                                                                                                                                                         |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `camera.py`                          | OpenCV capture (AVFoundation on macOS), raw frames (not mirrored)                                                                                                           |
+| `recognizers.py`                     | picks the recognizer for `--recognizer`                                                                                                                                     |
+| `recognizer_canned.py`               | MediaPipe GestureRecognizer in VIDEO mode, on the raw and a mirrored frame (its gestures are much weaker on one hand) → `Sighting(hand, gesture, confidence)` per hand      |
+| `recognizer_custom.py`               | your trained classifier on the hands the built-in recognizer found; `both` or `custom`                                                                                      |
+| `landmarks.py`                       | `Hand(side, score, 21 points)`, and its features: points relative to the wrist, scaled by the palm size, left hand mirrored to a right one (63 numbers); whether it is open |
+| `collect.py`, `samples.py`           | records feature rows into `data/<label>.csv`                                                                                                                                |
+| `train.py`, `classifier.py`          | trains, scores and saves the classifier (`models/custom.joblib`), and loads it                                                                                              |
+| `stabilizer.py`                      | per-hand hold / release / cooldown → `start` and `end` events                                                                                                               |
+| `swipes.py`                          | per-hand wrist trail → `tap` events for swipes; says which hands are moving                                                                                                 |
+| `tracker.py`                         | sightings → stabilizer and swipe events; holds off poses of moving hands                                                                                                    |
+| `events.py`, `protocol.py`           | the events and their JSON lines on stdout                                                                                                                                   |
+| `pipeline.py`                        | frame → sightings → events; shared by `run` and `preview`                                                                                                                   |
+| `run.py`                             | the headless loop                                                                                                                                                           |
+| `snapshots.py`                       | stdin `snapshot` commands → a JPEG of the next frame                                                                                                                        |
+| `preview.py`, `drawing.py`, `fps.py` | the window: skeletons, raw labels, stable holds, FPS                                                                                                                        |
+| `models.py`                          | model file paths; downloads the built-in model once                                                                                                                         |
 
 Points are normalized: `x`, `y` in 0..1 of the image, `z` is depth relative to the wrist (smaller = closer).
 Detection runs on the raw frame, because that's where MediaPipe's `Right` is your right hand

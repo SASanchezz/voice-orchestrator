@@ -102,7 +102,7 @@ def _label(text: str) -> str:
 
 
 def _run(args: argparse.Namespace) -> None:
-    run_sensor(_sensor_settings(args), EventWriter(sys.stdout))
+    run_sensor(_sensor_settings(args), EventWriter(sys.stdout), sys.stdin)
 
 
 def _preview(args: argparse.Namespace) -> None:
