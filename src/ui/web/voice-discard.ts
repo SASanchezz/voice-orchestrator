@@ -1,4 +1,4 @@
-// Takes back your voice message while you talk, while it's transcribed and held, or while it waits behind a reply:
+// Takes back your voice message while you talk, while it's transcribed, or while it waits behind a reply:
 // the Cancel button beside the listening strip, or Escape anywhere on the page.
 
 import { act } from "./api.js";

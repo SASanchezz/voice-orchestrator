@@ -26,7 +26,7 @@ import type { OperatorSession } from "../orchestrator/model/operator-session.js"
 import { Orchestrator } from "../orchestrator/orchestrator.js";
 import type { OperatorTools } from "../orchestrator/tools/operator-tools.js";
 import { PointingCue } from "../sensors/pointing-cue.js";
-import type { PermissionParts } from "./build-permissions.js";
+import { userTurnTaker } from "./build-camera.js";
 import type { Core } from "./core.js";
 import { buildOperatorSession } from "./operator-session.js";
 import { buildOperatorTools } from "./operator-tools.js";
@@ -54,7 +54,7 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   const kit = conversationKit(core, neighbors);
   const tools = buildOperatorTools(core, neighbors, kit);
   const session = buildOperatorSession(core, neighbors, { kit, tools });
-  const { loop, lifecycle } = operatorLoop(core, neighbors.permissions, { kit, session });
+  const { loop, lifecycle } = operatorLoop(core, neighbors, { kit, session });
   const voiceHold = new VoiceHold(loop, VOICE_MESSAGE_WAIT_MS);
   const voiceCancel = new VoiceCancel(neighbors.devices.voice, voiceHold, kit.queue);
   const pointing = new PointingCue();
@@ -89,15 +89,16 @@ function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighb
 
 function operatorLoop(
   { cfg }: Core,
-  { waiting }: PermissionParts,
+  { permissions, devices }: OperatorNeighbors,
   { kit, session }: { kit: ConversationKit; session: OperatorSession },
 ): { loop: OperatorLoop; lifecycle: SessionLifecycle } {
   const { gate, speech, memory, context, requests } = kit;
   const turns = new TurnTaker(new ReplyPresenter(session, kit.replies, kit.lines), memory, context);
   const reset = new ContextReset(session, memory, requests);
-  const lifecycle = new SessionLifecycle(requests, new ResetSchedule(cfg.orchestrator, session, waiting), reset);
+  const schedule = new ResetSchedule(cfg.orchestrator, session, permissions.waiting);
+  const lifecycle = new SessionLifecycle(requests, schedule, reset);
   const dispatcher = new InputDispatcher({
-    user: new UserTurns(turns, gate, speech),
+    user: new UserTurns(userTurnTaker(cfg.camera, devices.camera, turns), gate, speech),
     event: new EventTurns(turns, gate, speech),
     notice: new Notices(speech, context),
     clear: reset,
