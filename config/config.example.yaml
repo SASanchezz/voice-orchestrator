@@ -3,26 +3,26 @@
 # Paths may start with ~. Edit, then restart (destructive.yaml hot-reloads; this file does not).
 
 orchestrator:
-  profile: personal          # which Claude account the orchestrator itself runs on
-  model: sonnet              # routing model; haiku is cheaper, sonnet understands messy speech better
-  resetMinutes: 20           # context reset with a short handoff, only when idle
-  answerWindowSeconds: 15    # after "X finished, want details?", the next notification waits this long for your answer (permission questions wait until answered)
-  rules:                     # standing instructions the orchestrator always follows; they can't override the destructive checks
+  profile: personal # which Claude account the orchestrator itself runs on
+  model: sonnet # routing model; haiku is cheaper, sonnet understands messy speech better
+  resetMinutes: 20 # context reset with a short handoff, only when idle
+  answerWindowSeconds: 15 # after "X finished, want details?", the next notification waits this long for your answer (permission questions wait until answered)
+  rules: # standing instructions the orchestrator always follows; they can't override the destructive checks
     - "Always ask the worker to run the tests after a code change."
     - "Answer in English, even if I mix in another language."
     - "When a project's worker is busy and I add a clarification to the running task, send it into the same session with run_task instead of stopping the worker. A new, unrelated topic goes to a new session. If unsure which, ask me one short question."
-    - "When I give a request, first say one very short acknowledgment that rephrases it (for example \"Got it, adding a resend countdown on webshop.\") before calling any tools."
+    - 'When I give a request, first say one very short acknowledgment that rephrases it (for example "Got it, adding a resend countdown on webshop.") before calling any tools.'
     - "When relaying a worker's answer to my question, speak only a brief version, then write a line [SCREEN] followed by the full explanation; the part after [SCREEN] is shown in the web UI and never spoken."
-    - "When announcing a finished or failed task, say it in one spoken sentence: the project and session number plus five to ten words on what it did, for example: \"webshop session 7 finished: resend countdown on sign-up\". With nothing worth adding, say only that the session finished. Don't offer details."
+    - 'When announcing a finished or failed task, say it in one spoken sentence: the project and session number plus five to ten words on what it did, for example: "webshop session 7 finished: resend countdown on sign-up". With nothing worth adding, say only that the session finished. Don''t offer details.'
 
 # One entry per Claude account. Each maps to its own CLAUDE_CONFIG_DIR (= separate login).
 # Check with: CLAUDE_CONFIG_DIR=<dir> claude auth status   (npm start does this for you)
 # One profile is enough; add more for more accounts.
 profiles:
   personal:
-    configDir: ~/.claude            # the dir your personal `claude` login lives in
+    configDir: ~/.claude # the dir your personal `claude` login lives in
   work:
-    configDir: ~/.claude-work       # e.g. a `claude-work` alias: CLAUDE_CONFIG_DIR=~/.claude-work claude
+    configDir: ~/.claude-work # e.g. a `claude-work` alias: CLAUDE_CONFIG_DIR=~/.claude-work claude
 
 # Claude Code binary used for workers + login check. "auto" = `claude` on PATH, else the SDK's bundled one.
 # Or an absolute path, e.g. /opt/homebrew/bin/claude
@@ -43,44 +43,48 @@ projects:
   acme-api:
     path: ~/code/acme/acme-api
     profile: work
-    model: opus              # optional per-project worker model, under any project
+    model: opus # optional per-project worker model, under any project
   billing:
     path: ~/code/acme/billing
     profile: work
-    model: haiku
+    model: sonnet
 
 voice:
-  hotkey: RIGHT ALT          # hold to talk: e.g. "RIGHT ALT" (= right Option), "RIGHT CMD", "RIGHT CTRL", "F13"
-  recordBin: rec             # from `brew install sox`
-  whisperBin: whisper-cli    # from `brew install whisper-cpp`
-  whisperModel: ~/.whisper/ggml-small.en.bin   # for several languages: ~/.whisper/ggml-small.bin with language: auto
-  language: en               # "auto" if you switch between languages
-  sayVoice: "Ava (Premium)"  # `say -v '?'` lists voices; download Premium ones in System Settings > Accessibility > Spoken Content
+  hotkey: RIGHT ALT # hold to talk: e.g. "RIGHT ALT" (= right Option), "RIGHT CMD", "RIGHT CTRL", "F13"
+  recordBin: rec # from `brew install sox`
+  whisperBin: whisper-cli # from `brew install whisper-cpp`
+  whisperModel: ~/.whisper/ggml-small.en.bin # for several languages: ~/.whisper/ggml-small.bin with language: auto
+  language: en # "auto" if you switch between languages
+  sayVoice: "Ava (Premium)" # `say -v '?'` lists voices; download Premium ones in System Settings > Accessibility > Spoken Content
   sayRate: 200
-  mergeWindowSeconds: 1.5    # talk again within this many seconds of finishing and both recordings are sent as one message
-  speak: questions           # all | questions (permission requests, failures, replies to your voice) | muted. Switchable in the UI
+  speak: questions # all | questions (permission requests, failures, replies to your voice) | muted. Switchable in the UI
 
 ui:
-  port: 4777                 # the web UI at http://127.0.0.1:4777 (link with access token is printed on start)
-  open: true                 # open it in the browser on start
+  port: 4777 # the web UI at http://127.0.0.1:4777 (link with access token is printed on start)
+  open: true # open it in the browser on start
 
 permissions:
-  mode: auto                 # auto: workers run everything except destructive commands without asking | ask: every request goes to you. Switch by voice: "ask mode" / "auto mode"
-  reminderMinutes: 5         # re-announce unanswered permission requests
-  alwaysDestination: localSettings  # where "always allow" is saved: localSettings (project's .claude/settings.local.json) | projectSettings | userSettings | session
+  mode: auto # auto: workers run everything except destructive commands without asking | ask: every request goes to you. Switch by voice: "ask mode" / "auto mode"
+  reminderMinutes: 5 # re-announce unanswered permission requests
+  alwaysDestination: localSettings # where "always allow" is saved: localSettings (project's .claude/settings.local.json) | projectSettings | userSettings | session
 
 # When a session counts as large or expensive. Context: percent of the model's context window
 # (amber badge from warn, red badge plus one spoken notice and a handoff offer from critical). Costs in USD.
 budget:
   contextWarnPercent: 60
   contextCriticalPercent: 80
-  sessionCostUsd: 5          # one session's total
-  dailyCostUsd: 25           # all sessions together, per day
+  sessionCostUsd: 5 # one session's total
+  dailyCostUsd: 25 # all sessions together, per day
 
 # Camera gestures: hold an open palm to talk, thumbs-down to discard (sensors/gestures; set it up as its README says).
 sensors:
   gestures:
-    enabled: false                              # on or off at the first start (not in text mode); after that the web UI's Gestures switch decides, saved in state/gestures.json
-    python: sensors/gestures/.venv/bin/python   # relative to this app's folder, or absolute
-    args: [-m, gestures, run]                   # add e.g. --min-hold-ms, 400 to tune it, or --recognizer, both for trained gestures
-    mapping: config/gestures.yaml               # which gesture does what: cp config/gestures.example.yaml config/gestures.yaml
+    enabled: false # on or off at the first start (not in text mode); after that the web UI's Gestures switch decides, saved in state/gestures.json
+    python: sensors/gestures/.venv/bin/python # relative to this app's folder, or absolute
+    args: [-m, gestures, run] # add e.g. --min-hold-ms, 400 to tune it, or --recognizer, both for trained gestures
+    mapping: config/gestures.yaml # which gesture does what: cp config/gestures.example.yaml config/gestures.yaml
+
+# Who looks at camera frames for look_at_camera (camera frames exist only while Gestures are on).
+camera:
+  describer: claude # claude: Claude sees the frame; local: a local vision model describes it, only its text goes to Claude, and quick questions ("can you see me?") skip Claude
+  visionServer: http://127.0.0.1:8080 # for local: llama-server with a vision model, see docs/local-vision.md

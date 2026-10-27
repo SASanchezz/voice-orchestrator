@@ -32,7 +32,7 @@ function pushToTalk(): { ptt: PushToTalk; sent: string[] } {
   const recordBin = executable(dir, "rec", FAKE_RECORDER);
   executable(dir, "afplay", "#!/bin/sh\nexit 0\n");
   process.env.PATH = `${dir}:${process.env.PATH ?? ""}`;
-  const voice = { ...testConfig({}).voice, recordBin, mergeWindowSeconds: 0.01 };
+  const voice = { ...testConfig({}).voice, recordBin };
   const ptt = new PushToTalk(voice, new FixedTranscriber(voice), TEST_LIMIT_MS);
   const sent: string[] = [];
   ptt.onMessage((message) => sent.push(message));

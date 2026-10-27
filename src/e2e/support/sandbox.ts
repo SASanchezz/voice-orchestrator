@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AppConfig } from "../../config/app-config.js";
 import { DEFAULT_BUDGET } from "../../config/budget-config.js";
+import { DEFAULT_CAMERA } from "../../config/camera-config.js";
 import { DEFAULT_SENSORS } from "../../config/sensor-config.js";
 import { DESTRUCTIVE_PATH, setStateDir } from "../../config/paths.js";
 
@@ -52,12 +53,12 @@ export const cfg: AppConfig = {
     whisperModel: "x",
     language: "en",
     speak: "all",
-    mergeWindowSeconds: 0,
   },
   ui: { port: 0, open: false },
   permissions: { mode: "ask", reminderMinutes: 60, alwaysDestination: "localSettings" },
   budget: DEFAULT_BUDGET,
   sensors: DEFAULT_SENSORS,
+  camera: DEFAULT_CAMERA,
 };
 
 /** Which account a Claude Code process ran under, from its CLAUDE_CONFIG_DIR. */

@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import type { AppConfig } from "../config/app-config.js";
 import { errorMessage } from "../shared/errors.js";
+import { timed } from "../shared/timing.js";
 
 const run = promisify(execFile);
 
@@ -24,7 +25,7 @@ export class Transcriber {
 
   private async transcribe(wav: string): Promise<string> {
     const args = ["-m", this.cfg.whisperModel, "-f", wav, "-nt", "-np", "-l", this.cfg.language];
-    const { stdout } = await run(this.cfg.whisperBin, args, { maxBuffer: MAX_BUFFER_BYTES });
+    const { stdout } = await timed("whisper", () => run(this.cfg.whisperBin, args, { maxBuffer: MAX_BUFFER_BYTES }));
     const text = stdout
       .replace(/\[.*?\]/g, "")
       .replace(/\s+/g, " ")

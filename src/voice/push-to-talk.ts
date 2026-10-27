@@ -8,9 +8,7 @@ import type { Transcriber } from "./transcriber.js";
 import { UtteranceMerger } from "./utterance-merger.js";
 import type { VoiceInputState } from "./voice-io.js";
 
-const SECOND_MS = 1000;
-
-/** Hold the key -> sox records -> release -> whisper.cpp -> text; quick follow-ups are joined into one message. */
+/** Hold the key -> sox records -> release -> whisper.cpp -> text; a recording started while the previous one is transcribed joins it. */
 export class PushToTalk {
   private current?: Recording;
   private files = new RecordingFiles();
@@ -22,7 +20,7 @@ export class PushToTalk {
     private transcriber: Transcriber,
     private maxRecordingMs = MAX_RECORDING_MS,
   ) {
-    this.merger = new UtteranceMerger(cfg.mergeWindowSeconds * SECOND_MS, (message) => this.deliver(message));
+    this.merger = new UtteranceMerger((message) => this.deliver(message));
   }
 
   prepare(): Promise<void> {
