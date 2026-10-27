@@ -1,0 +1,41 @@
+/* ---------------------------------------------------------------- force stop */
+
+/* A small red pill next to Send: easy to find while a task runs, but quieter than Send itself. */
+button.force-stop {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  border-radius: 999px;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+button.force-stop[hidden] {
+  display: none;
+}
+button.force-stop:hover:not(:disabled),
+button.force-stop:focus-visible {
+  background: var(--danger);
+  color: #fff;
+}
+/* Stopping: greyed out until the task is gone, so it can't be clicked twice. */
+button.force-stop:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.force-stop-icon {
+  width: 7px;
+  height: 7px;
+  border-radius: 1.5px;
+  background: currentColor;
+}
