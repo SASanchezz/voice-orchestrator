@@ -221,14 +221,19 @@ says the camera works only while Gestures are on. Frames in `state/camera/` disa
 
 Commit: `sensors: look_at_camera tool`
 
-## M6: Local vision model for camera frames [ ]
+## M6: Local vision model for camera frames [~] (code done, compare on the Mac)
 
 Works: with `camera.describer: local`, frames are described by a local vision model and only the text reaches Claude.
 
-- [ ] `llama-server` with a vision GGUF + its mmproj file (e.g. a small Qwen-VL or Gemma vision build),
-      OpenAI-compatible endpoint in config.
-- [ ] `look_at_camera` returns the local description (plus "ask for the image if needed"), or the image when
-      `describer: claude`. Compare quality/latency of both and note it here.
+- [x] `llama-server` with a vision GGUF + its mmproj file (e.g. a small Qwen-VL or Gemma vision build),
+      OpenAI-compatible endpoint in config: `camera: { describer: claude | local, visionServer }`
+      (`src/config/camera-config.ts`, default `claude` and `http://127.0.0.1:8080`). Running it: docs/local-vision.md.
+- [x] `look_at_camera` takes the user's `question` and asks a `CameraView` (`src/orchestrator/tools/camera-views.ts`):
+      `PictureView` hands Claude the frame (`describer: claude`), `DescribedView` hands it the `FrameDescriber`'s text
+      plus "call again with `picture: true`" for when the text isn't enough. `src/app/build-camera.ts` picks one.
+      `LlamaDescriber` posts to `/v1/chat/completions` (30 s timeout, logs the latency); `src/camera/llama-chat.ts`
+      builds the request (frame as a data URL, answer capped at 150 tokens) and reads the reply through zod.
+- [ ] Compare quality/latency of both and note it here.
 
 Commit: `sensors: local vision describer`
 

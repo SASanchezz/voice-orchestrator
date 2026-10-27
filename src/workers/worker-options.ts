@@ -7,6 +7,14 @@ import { toolInput } from "../safety/tool-calls.js";
 import type { RunningTask } from "./running-task.js";
 import type { WorkerDirectory } from "./worker-directory.js";
 
+/**
+ * Claude Code's session lists (the VS Code extension's history, `claude --resume`) skip sessions whose entrypoint
+ * is an SDK one, which the SDK sets only when none is given. Tagging task sessions as `cli` lists them in their
+ * project's history. Unofficial: the tag isn't a documented option, so a future Claude Code version may ignore it.
+ * Only tasks get it; the handoff and summary forks and the operator stay unlisted SDK sessions.
+ */
+const LISTED_IN_HISTORY = { CLAUDE_CODE_ENTRYPOINT: "cli" };
+
 /** SDK options for a project's Claude Code process: its folder, its account, and your Claude Code settings. */
 export class WorkerOptions {
   constructor(
@@ -28,8 +36,10 @@ export class WorkerOptions {
 
   /** A task resumes its session's conversation, and asks you (permissions and questions) through canUseTool. */
   forTask(task: RunningTask, abortController: AbortController, canUseTool: CanUseTool): Options {
+    const project = this.forProject(task.project);
     return {
-      ...this.forProject(task.project),
+      ...project,
+      env: { ...project.env, ...LISTED_IN_HISTORY },
       resume: task.resume,
       abortController,
       permissionMode: "default",
