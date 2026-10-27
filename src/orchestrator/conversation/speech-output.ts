@@ -22,7 +22,7 @@ export class SpeechOutput {
     if (mode === "muted") this.voice.stopSpeaking();
   }
 
-  /** Whether you're talking, or your words are held a moment before they're sent. */
+  /** Whether you're talking, or your words are still being transcribed. */
   get voiceInput(): VoiceInputState {
     return this.voice.inputState();
   }

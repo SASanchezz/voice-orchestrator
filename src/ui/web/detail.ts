@@ -62,8 +62,6 @@ function folderLine(project: ProjectView): HTMLDivElement {
 }
 
 function statusLine(session: SessionView): HTMLDivElement {
-  const stop = button("Stop", "ghost", () => void act(`/api/sessions/${session.id}/stop`));
-  stop.disabled = !isBusy(session);
   const clear = button("Clear session", "ghost", () => clearSession(session));
   clear.title = "Delete this session's messages, history and worker conversation, keeping the session open";
   const spent = `${STATUS_LABELS[session.status]} · $${session.costUsd.toFixed(2)} spent`;
@@ -71,7 +69,7 @@ function statusLine(session: SessionView): HTMLDivElement {
     "div",
     { class: "section-row" },
     el("span", { class: "muted" }, spent),
-    el("span", { class: "row-actions" }, stop, clear),
+    el("span", { class: "row-actions" }, clear),
   );
 }
 

@@ -1,5 +1,4 @@
 import type { AttachmentFiles } from "../../attachments/attachment-files.js";
-import type { CameraSource } from "../../camera/camera-source.js";
 import type { AppConfig } from "../../config/app-config.js";
 import type { PermissionAnswers } from "../../permissions/permission-answers.js";
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
@@ -9,6 +8,7 @@ import type { StatusReport } from "../../registry/status-report.js";
 import type { TaskHistory } from "../../registry/task-history.js";
 import type { DestructiveList } from "../../safety/destructive-list.js";
 import type { ScreenSource } from "../../screen/screen-source.js";
+import type { GestureControl } from "../../sensors/gesture-switch.js";
 import type { ChangeSummarizer } from "../../workers/change-summarizer.js";
 import type { QueuedTasks } from "../../workers/queued-tasks.js";
 import type { SessionControl } from "../../workers/session-control.js";
@@ -25,8 +25,10 @@ import type { TurnContext } from "../conversation/turn-context.js";
 import type { ResetRequests } from "../lifecycle/reset-requests.js";
 import type { AssistantNotes } from "../memory/assistant-notes.js";
 import { lookAtCamera, lookAtScreen, remember, resetContext, restartOrchestrator } from "./assistant-tools.js";
+import type { CameraView } from "./camera-views.js";
 import { readAttachment } from "./attachment-tools.js";
 import { destructiveAdd, destructiveRemove, destructiveRules } from "./destructive-tools.js";
+import { setGestures } from "./gesture-tools.js";
 import { answerPermission, listPendingPermissions, setPermissionMode } from "./permission-tools.js";
 import {
   listProjects,
@@ -69,7 +71,8 @@ export interface ToolServices {
   views: PermissionViews;
   context: TurnContext;
   screen: ScreenSource;
-  camera: CameraSource;
+  cameraView: CameraView;
+  gestures: GestureControl;
   attachments: AttachmentFiles;
   destructive: DestructiveList;
 }
@@ -109,7 +112,8 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => answerPermission(s.answers, s.context),
   (s) => setProjectAccount(s.accounts, s.cfg),
   (s) => lookAtScreen(s.screen),
-  (s) => lookAtCamera(s.camera),
+  (s) => lookAtCamera(s.cameraView),
+  (s) => setGestures(s.gestures),
   (s) => readAttachment(s.attachments),
   (s) => destructiveRules(s.destructive),
   (s) => destructiveAdd(s.destructive, s.context),

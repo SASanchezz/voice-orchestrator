@@ -16,6 +16,12 @@ export interface Turn extends ReplySubject {
   mentionWaiting: boolean;
 }
 
+/** How the model learns of an exchange it sat out, e.g. a camera question the local vision model answered. */
+const ANSWERED_WITHOUT_MODEL = "[ANSWERED WITHOUT YOU, by the local vision model]";
+
+/** What your own words' turns need: your words go to the model, or are answered without it. */
+export type UserTurnTaker = Pick<TurnTaker, "take" | "showLine">;
+
 /** Gives the model a turn with your clicks since the last one, and remembers the exchange. */
 export class TurnTaker {
   constructor(
@@ -33,6 +39,17 @@ export class TurnTaker {
       : await this.presenter.askShown(content, turn);
     this.context.endTurn();
     if (reply) this.memory.record(turn.heard, onScreen(reply));
+    return reply;
+  }
+
+  /** A turn the model sits out because its reply is already known; the model reads both with your next message. */
+  async takeAnswered(turn: Turn, reply: string): Promise<string> {
+    this.context.beginTurn(turn.utterance);
+    this.presenter.showReply(reply);
+    if (turn.aloud) await this.presenter.speakReply(reply, turn);
+    this.context.endTurn();
+    this.context.addUiNote(`${ANSWERED_WITHOUT_MODEL} ${turn.heard} / replied: ${reply}`);
+    this.memory.record(turn.heard, reply);
     return reply;
   }
 

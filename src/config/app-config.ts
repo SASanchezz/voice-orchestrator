@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { budgetSchema } from "./budget-config.js";
+import { cameraSchema } from "./camera-config.js";
 import { expandHome } from "./paths.js";
 import { sensorsSchema } from "./sensor-config.js";
 import { numberOr } from "./yaml-values.js";
@@ -16,7 +17,6 @@ export type SpeechMode = (typeof SPEECH_MODES)[number];
 
 const DEFAULT_RESET_MINUTES = 60;
 const DEFAULT_ANSWER_WINDOW_SECONDS = 15;
-const DEFAULT_MERGE_WINDOW_SECONDS = 1.5;
 const DEFAULT_UI = { port: 4777, open: true };
 const DEFAULT_PERMISSIONS = { mode: "ask", reminderMinutes: 5, alwaysDestination: "localSettings" } as const;
 
@@ -49,8 +49,6 @@ const voiceSchema = z.object({
     .enum(SPEECH_MODES)
     .nullish()
     .transform((mode) => mode ?? "questions"),
-  /** Recordings started within this many seconds of the previous one's end are sent as one message. */
-  mergeWindowSeconds: numberOr(DEFAULT_MERGE_WINDOW_SECONDS),
 });
 
 const uiSchema = z
@@ -98,6 +96,7 @@ export const configFileSchema = z.object({
   permissions: permissionsSchema,
   budget: budgetSchema,
   sensors: sensorsSchema,
+  camera: cameraSchema,
 });
 
 export type AppConfig = z.infer<typeof configFileSchema>;

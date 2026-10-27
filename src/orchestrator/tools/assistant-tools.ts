@@ -1,9 +1,9 @@
 import { z } from "zod";
-import type { CameraSource } from "../../camera/camera-source.js";
-import type { Screenshot, ScreenSource } from "../../screen/screen-source.js";
+import type { ScreenSource } from "../../screen/screen-source.js";
 import type { ResetRequests } from "../lifecycle/reset-requests.js";
 import { NOTE_SECTIONS, type AssistantNotes } from "../memory/assistant-notes.js";
-import { defineTool, text, type OperatorTool, type ToolResult } from "./tool-kit.js";
+import type { CameraView } from "./camera-views.js";
+import { captioned, defineTool, text, type OperatorTool } from "./tool-kit.js";
 
 export function remember(notes: AssistantNotes): OperatorTool {
   return defineTool({
@@ -61,21 +61,18 @@ export function lookAtScreen(screen: ScreenSource): OperatorTool {
   });
 }
 
-export function lookAtCamera(camera: CameraSource): OperatorTool {
+export function lookAtCamera(view: CameraView): OperatorTool {
   return defineTool({
     name: "look_at_camera",
     description:
       "See the user's camera as it was when they started speaking: what they hold up or point at. Works only while Gestures are on.",
-    args: {},
-    run: async () => captioned("The user's camera when they started speaking:", await camera.latest()),
+    args: {
+      question: z.string().describe("What the user wants to know about it, in their words, e.g. 'what am I holding'"),
+      picture: z
+        .boolean()
+        .optional()
+        .describe("true: see the frame itself; only after a description didn't answer the question"),
+    },
+    run: ({ question, picture }) => (picture ? view.picture() : view.describe(question)),
   });
-}
-
-function captioned(caption: string, image: Screenshot): ToolResult {
-  return {
-    content: [
-      { type: "text", text: caption },
-      { type: "image", ...image },
-    ],
-  };
 }

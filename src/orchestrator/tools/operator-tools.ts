@@ -4,8 +4,9 @@ import {
   type McpSdkServerConfigWithInstance,
   type Options,
 } from "@anthropic-ai/claude-agent-sdk";
+import { timed } from "../../shared/timing.js";
 import type { ConfirmPhraseGuard } from "./confirm-phrase-guard.js";
-import type { OperatorTool } from "./tool-kit.js";
+import type { OperatorTool, ToolResult } from "./tool-kit.js";
 
 /** The operator's tools: exposed to the model via an in-process MCP server, and to tests via callTool(). */
 export class OperatorTools {
@@ -23,13 +24,16 @@ export class OperatorTools {
   }
 
   server(): McpSdkServerConfigWithInstance {
-    const tools = this.tools.map((t) =>
-      tool(t.name, t.description, t.args, async (args) => ({ ...(await t.call(args)) })),
-    );
+    const tools = this.tools.map((t) => tool(t.name, t.description, t.args, (args) => this.timedCall(t, args)));
     return createSdkMcpServer({ name: "ctl", version: "0.1.0", tools });
   }
 
   hooks(): Options["hooks"] {
     return { PreToolUse: [{ hooks: [this.guard.hook] }] };
+  }
+
+  /** The SDK takes an open record; the spread copy is one. */
+  private async timedCall(found: OperatorTool, args: unknown): Promise<ToolResult & Record<string, unknown>> {
+    return { ...(await timed(`tool ${found.name}`, () => found.call(args))) };
   }
 }

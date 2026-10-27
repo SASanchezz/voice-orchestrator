@@ -27,6 +27,7 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/attachments.css": "text/css",
   "/styles/budget.css": "text/css",
   "/styles/todo.css": "text/css",
+  "/styles/force-stop.css": "text/css",
 };
 
 /** The page, its script (compiled from src/ui/web/ at start), its stylesheets and the attached images it shows. */

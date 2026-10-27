@@ -5,7 +5,7 @@ import type { VoiceHold } from "./voice-hold.js";
 const DISCARDED = "Voice message discarded.";
 const NOTHING_TO_DISCARD = "No voice message is left to discard; the assistant may already be answering it.";
 
-/** The mic side: what you're saying, or your words held a moment before they're sent. */
+/** The mic side: what you're saying, or your words still being transcribed. */
 export type VoiceInput = Pick<VoiceIO, "inputState" | "discardInput">;
 
 /** The operator's queue, where a spoken message waits while an earlier reply is in progress. */

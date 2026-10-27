@@ -9,7 +9,7 @@ const BASE_TITLE = "Orchestrator";
 const VOICE_INPUT_NOTICE: Record<VoiceInputName, string> = {
   idle: "",
   recording: "Listening…",
-  held: "Holding your message a moment in case you keep talking…",
+  held: "Transcribing your message…",
   queued: "Your message waits for the assistant to finish its current reply…",
 };
 

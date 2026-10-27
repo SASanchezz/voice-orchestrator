@@ -3,6 +3,7 @@ import type { AppConfig } from "../../config/app-config.js";
 import { resolveProject } from "../../config/project-names.js";
 import type { Registry } from "../../registry/registry.js";
 import type { SessionState } from "../../registry/registry-schema.js";
+import type { Screenshot } from "../../screen/screen-source.js";
 import { errorMessage } from "../../shared/errors.js";
 
 type ToolContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
@@ -13,6 +14,16 @@ export interface ToolResult {
 
 export function text(message: string): ToolResult {
   return { content: [{ type: "text", text: message }] };
+}
+
+/** An image the model sees, with a line saying what it is. */
+export function captioned(caption: string, image: Screenshot): ToolResult {
+  return {
+    content: [
+      { type: "text", text: caption },
+      { type: "image", ...image },
+    ],
+  };
 }
 
 /** A tool as it is written: its name and description for the model, its arguments, and what it does. */

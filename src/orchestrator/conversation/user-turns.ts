@@ -1,12 +1,12 @@
 import type { UserInput } from "./inputs.js";
 import type { QuestionGate } from "./question-gate.js";
 import type { SpeechOutput } from "./speech-output.js";
-import type { TurnTaker } from "./turn-taker.js";
+import type { UserTurnTaker } from "./turn-taker.js";
 
 /** Your words, spoken or typed: shown, answered by the model, and spoken back only if you spoke. */
 export class UserTurns {
   constructor(
-    private turns: TurnTaker,
+    private turns: UserTurnTaker,
     private gate: QuestionGate,
     private speech: SpeechOutput,
   ) {}

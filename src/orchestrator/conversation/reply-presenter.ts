@@ -41,6 +41,15 @@ export class ReplyPresenter {
     return reply;
   }
 
+  /** A reply that didn't come from the model, shown as if it had. */
+  showReply(text: string): void {
+    this.showPiece(text, undefined);
+  }
+
+  speakReply(text: string, subject: ReplySubject): Promise<void> {
+    return this.speaker.speakWhenQuiet(text, subject);
+  }
+
   showLine(line: ConversationLine): void {
     this.lines.say(line);
   }

@@ -2,6 +2,7 @@ import { OperatorOptions } from "../orchestrator/model/operator-options.js";
 import { OperatorSession } from "../orchestrator/model/operator-session.js";
 import { SessionStream } from "../orchestrator/model/session-stream.js";
 import { TurnReplies } from "../orchestrator/model/turn-replies.js";
+import { TurnTimeline } from "../orchestrator/model/turn-timeline.js";
 import { ProjectSituation } from "../orchestrator/prompt/project-situation.js";
 import { PromptBasics } from "../orchestrator/prompt/prompt-basics.js";
 import { SystemPrompt } from "../orchestrator/prompt/system-prompt.js";
@@ -18,7 +19,7 @@ export function buildOperatorSession(
   const { cfg, status, history } = core;
   const situation = new ProjectSituation(status, history, permissions.views);
   const prompt = new SystemPrompt(new PromptBasics(cfg, devices.notes), situation, kit.memory);
-  const replies = new TurnReplies();
+  const replies = new TurnReplies(new TurnTimeline());
   const stream = new SessionStream(new OperatorOptions(cfg, prompt, tools), devices.query, replies);
   return new OperatorSession(stream, replies);
 }

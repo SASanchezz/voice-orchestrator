@@ -8,6 +8,7 @@ import { ConfirmPhraseGuard } from "../orchestrator/tools/confirm-phrase-guard.j
 import { OperatorTools } from "../orchestrator/tools/operator-tools.js";
 import { operatorToolList, type ToolServices } from "../orchestrator/tools/tool-catalog.js";
 import type { SessionControl } from "../workers/session-control.js";
+import { cameraView } from "./build-camera.js";
 import type { Core } from "./core.js";
 import type { ConversationKit, OperatorNeighbors } from "./operator-types.js";
 
@@ -33,7 +34,8 @@ function toolServices(
     requests: kit.requests,
     context: kit.context,
     screen: devices.screen,
-    camera: devices.camera,
+    cameraView: cameraView(core.cfg.camera, devices.camera),
+    gestures: devices.gestures,
   };
 }
 

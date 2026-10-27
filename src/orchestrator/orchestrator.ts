@@ -36,7 +36,7 @@ export class Orchestrator {
     return this.speech.speechMode;
   }
 
-  /** Whether you're talking, or your words are held a moment before they're sent. */
+  /** Whether you're talking, or your words are still being transcribed. */
   get voiceInput(): VoiceInputState {
     return this.speech.voiceInput;
   }

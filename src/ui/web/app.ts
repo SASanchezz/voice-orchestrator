@@ -18,6 +18,7 @@ import { wireImageViewer } from "./image-viewer.js";
 import { renderVoiceOffer } from "./voice-offer.js";
 import { wireVoiceDiscard } from "./voice-discard.js";
 import { wireTodoDialog } from "./todo-dialog.js";
+import { renderForceStop, wireForceStop } from "./force-stop.js";
 
 const chat = new ChatView();
 const tray = new AttachmentTray(byId("attachment-list", HTMLElement), reportDraft);
@@ -28,6 +29,7 @@ function renderPage(): void {
   renderApprovals();
   renderQuestions();
   renderConversation(chat);
+  renderForceStop();
   chat.showPendingApprovals(store.state.pending);
   renderDetail();
   renderVoiceOffer(tray);
@@ -55,6 +57,7 @@ wireSegment("permission-mode", "/api/permission-mode");
 wireSegment("speech-mode", "/api/speech-mode");
 wireSegment("gesture-mode", "/api/gestures");
 wireComposer(tray);
+wireForceStop();
 reportDraftWhileShown(() => tray.count);
 wireImageViewer();
 wireVoiceDiscard();

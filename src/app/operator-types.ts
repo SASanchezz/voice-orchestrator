@@ -26,7 +26,7 @@ export interface OperatorDevices {
   camera: CameraSource;
   notes: AssistantNotes;
   query: QueryFn;
-  /** Camera gestures, switched on and off from the web UI. */
+  /** Camera gestures, switched on and off from the web UI or by voice. */
   gestures: GestureControl;
   /** config/config.yaml, which a removed project is taken out of. */
   configFile: string;
