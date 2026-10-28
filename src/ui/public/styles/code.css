@@ -1,0 +1,49 @@
+/* ---------------------------------------------------------------- code view */
+
+/* VS Code takes the chat's place and the detail panel's width; approvals and session tabs stay above it. */
+.layout.code-mode {
+  grid-template-columns: 280px minmax(0, 1fr);
+}
+.layout.code-mode .detail,
+.layout.code-mode .feed-wrap,
+.layout.code-mode .voice-status,
+.layout.code-mode .attachment-list,
+.layout.code-mode .composer {
+  display: none;
+}
+
+@media (max-width: 1100px) {
+  .layout.code-mode {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+
+.view-toggle {
+  align-self: center;
+  margin-right: 8px;
+}
+
+.code-status {
+  margin: 0;
+  padding: 16px;
+  color: var(--muted);
+}
+.code-status[hidden] {
+  display: none;
+}
+
+.code-frames {
+  display: none;
+}
+.layout.code-mode .code-frames {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.code-frame {
+  flex: 1;
+  border: 0;
+}
+.code-frame[hidden] {
+  display: none;
+}

@@ -43,9 +43,14 @@ export class UiAccess {
   }
 }
 
+/** Where the token is kept; the editor server reads it too, as its connection token. */
+export function uiTokenFile(): string {
+  return resolve(STATE_DIR, "ui-token");
+}
+
 /** Kept across restarts so an open tab keeps working. */
 function loadToken(): string {
-  const file = resolve(STATE_DIR, "ui-token");
+  const file = uiTokenFile();
   if (existsSync(file)) return readFileSync(file, "utf8").trim();
   mkdirSync(STATE_DIR, { recursive: true });
   const token = randomBytes(TOKEN_BYTES).toString("hex");

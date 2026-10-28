@@ -12,7 +12,9 @@ import type { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import type { ConversationMemory } from "../orchestrator/memory/conversation-memory.js";
 import type { ScreenSource } from "../screen/screen-source.js";
 import type { GestureControl } from "../sensors/gesture-switch.js";
+import type { LiveClients } from "../ui/server/live-clients.js";
 import type { VoiceIO } from "../voice/voice-io.js";
+import type { EditorParts } from "./build-editor.js";
 import type { PermissionParts } from "./build-permissions.js";
 import type { QuestionParts } from "./build-questions.js";
 import type { TodoParts } from "./build-todo.js";
@@ -39,6 +41,10 @@ export interface OperatorNeighbors {
   workers: WorkerParts;
   todo: TodoParts;
   devices: OperatorDevices;
+  /** VS Code for the web UI's Code view, which the operator can show. */
+  editor: EditorParts;
+  /** The open web UI pages, which the operator can switch between a project's chat and code. */
+  clients: LiveClients;
 }
 
 /** What one conversation turn needs, shared by the turn handlers and the tools. */

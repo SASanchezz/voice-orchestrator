@@ -1,6 +1,7 @@
 import type { AppConfig } from "../config/app-config.js";
 import { DEFAULT_BUDGET } from "../config/budget-config.js";
 import { DEFAULT_CAMERA } from "../config/camera-config.js";
+import { DEFAULT_EDITOR_SETTINGS } from "../config/editor-config.js";
 import { DEFAULT_SENSORS } from "../config/sensor-config.js";
 
 const BASE: AppConfig = {
@@ -21,6 +22,7 @@ const BASE: AppConfig = {
   budget: DEFAULT_BUDGET,
   sensors: DEFAULT_SENSORS,
   camera: DEFAULT_CAMERA,
+  editor: DEFAULT_EDITOR_SETTINGS,
 };
 
 /** A complete config for unit tests; each test sets only the parts it is about. */

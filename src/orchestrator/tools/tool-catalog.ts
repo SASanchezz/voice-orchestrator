@@ -6,6 +6,7 @@ import type { PermissionViews } from "../../permissions/permission-views.js";
 import type { Registry } from "../../registry/registry.js";
 import type { StatusReport } from "../../registry/status-report.js";
 import type { TaskHistory } from "../../registry/task-history.js";
+import type { Editor } from "../../editor/editor.js";
 import type { DestructiveList } from "../../safety/destructive-list.js";
 import type { ScreenSource } from "../../screen/screen-source.js";
 import type { GestureControl } from "../../sensors/gesture-switch.js";
@@ -29,6 +30,7 @@ import type { CameraView } from "./camera-views.js";
 import { readAttachment } from "./attachment-tools.js";
 import { destructiveAdd, destructiveRemove, destructiveRules } from "./destructive-tools.js";
 import { setGestures } from "./gesture-tools.js";
+import { showChat, showCode, type PageClients } from "./page-view-tools.js";
 import { answerPermission, listPendingPermissions, setPermissionMode } from "./permission-tools.js";
 import {
   listProjects,
@@ -73,6 +75,8 @@ export interface ToolServices {
   screen: ScreenSource;
   cameraView: CameraView;
   gestures: GestureControl;
+  editor: Pick<Editor, "status">;
+  clients: PageClients;
   attachments: AttachmentFiles;
   destructive: DestructiveList;
 }
@@ -114,6 +118,8 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => lookAtScreen(s.screen),
   (s) => lookAtCamera(s.cameraView),
   (s) => setGestures(s.gestures),
+  (s) => showCode(s.clients, s.editor, s.cfg),
+  (s) => showChat(s.clients, s.cfg),
   (s) => readAttachment(s.attachments),
   (s) => destructiveRules(s.destructive),
   (s) => destructiveAdd(s.destructive, s.context),

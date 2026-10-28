@@ -1,15 +1,16 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import type { Duplex } from "node:stream";
 import { HTTP_STATUS, HttpError, sendError } from "./http-error.js";
+import type { SiteRouter } from "./site-router.js";
 import type { StatePublisher } from "./state-publisher.js";
 import type { UiAccess } from "./ui-access.js";
-import type { UiRouter } from "./ui-router.js";
 
-/** Local web UI: live state over server-sent events, actions over POST, on 127.0.0.1 only. */
+/** Local web UI: live state over server-sent events, actions over POST, on 127.0.0.1 only; VS Code under /editor. */
 export class UiServer {
   private server?: Server;
 
   constructor(
-    private router: UiRouter,
+    private router: SiteRouter,
     private publisher: StatePublisher,
     private access: UiAccess,
   ) {}
@@ -18,6 +19,7 @@ export class UiServer {
   async start(port: number): Promise<string> {
     await this.router.prepare();
     const server = createServer((req, res) => void this.handle(req, res));
+    server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => this.upgrade(req, socket, head));
     this.server = server;
     this.access.listeningOn(await listen(server, port));
     this.publisher.start();
@@ -41,6 +43,11 @@ export class UiServer {
     } catch (e) {
       sendError(res, e);
     }
+  }
+
+  private upgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void {
+    if (!this.access.isLocalHost(req.headers.host)) return void socket.destroy();
+    this.router.upgrade(req, socket, head);
   }
 }
 

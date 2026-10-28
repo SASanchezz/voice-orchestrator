@@ -1,7 +1,7 @@
 // What the server sends the web page. It imports only types from files that import nothing, so both the server (Node)
 // and the page (browser) compile it; the server's payloads are typed against it, so the two can't drift apart unnoticed.
 
-import type { PageTarget } from "./page-target.js";
+import type { PageTarget, ProjectTarget } from "./page-target.js";
 
 export type SessionStatus = "idle" | "running" | "waiting_permission" | "done" | "failed" | "stopped";
 export type PermissionModeName = "auto" | "ask";
@@ -10,6 +10,8 @@ export type SpeechModeName = "all" | "questions" | "muted";
 export type GestureStateName = "on" | "off" | "unavailable";
 /** queued: your spoken message waits for the assistant to finish its current reply. */
 export type VoiceInputName = "idle" | "recording" | "held" | "queued";
+/** VS Code for the Code view. off: not turned on in config; starting: its first run downloads it first. */
+export type EditorStateName = "off" | "starting" | "ready" | "failed";
 
 export interface TaskRecordView {
   task: string;
@@ -107,6 +109,7 @@ export interface UiState {
   voiceOffer?: VoiceOfferView;
   budget: BudgetView;
   todo: TodoListView;
+  editor: EditorStateName;
 }
 
 /** An item on your personal to-do list. */
@@ -173,8 +176,8 @@ export interface ServerEvents {
   feed: FeedEntryView;
   chat: SessionChatLine;
   chat_cleared: string;
-  /** A notice's button: open pages switch to this view. */
-  navigate: PageTarget;
+  /** A notice's button or a spoken "show me the code": open pages switch to this view. */
+  navigate: PageTarget | ProjectTarget;
 }
 
 /** Every POST answers with a message, or an error. */

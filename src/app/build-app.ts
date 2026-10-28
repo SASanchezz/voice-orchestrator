@@ -5,9 +5,11 @@ import type { ExplainCommand } from "../permissions/permission-types.js";
 import type { PopupActions } from "../ui/popup-actions.js";
 import { PermissionPopups, type PopupDevice } from "../ui/permission-popups.js";
 import { QuestionPopups, type QuestionPanelDevice } from "../ui/question-popups.js";
+import { LiveClients } from "../ui/server/live-clients.js";
 import { PageOpener, type BrowserPage } from "../ui/server/page-opener.js";
 import { TaskNotices, type NoticeDevice } from "../ui/task-notices.js";
 import { ToolCallGate } from "../workers/tool-call-gate.js";
+import { buildEditor, type EditorParts } from "./build-editor.js";
 import { buildOperator, type OperatorParts } from "./build-operator.js";
 import { buildPermissions, type PermissionParts } from "./build-permissions.js";
 import { buildQuestions, type QuestionParts } from "./build-questions.js";
@@ -40,6 +42,7 @@ export interface App {
   todo: TodoParts;
   operator: OperatorParts;
   ui: UiParts;
+  editor: EditorParts;
 }
 
 /** Builds everything; the operator listens to events before the timeline and the chats do. */
@@ -49,10 +52,11 @@ export function buildApp(cfg: AppConfig, adapters: Adapters): App {
   const questions = buildQuestions(core);
   const workers = buildWorkers(core, new ToolCallGate(permissions.broker, questions.broker), adapters.query);
   const todo = buildTodo(workers.intake);
-  const neighbors = { permissions, questions, workers, todo, devices: adapters };
+  const editor = buildEditor(cfg.editor);
+  const neighbors = { permissions, questions, workers, todo, devices: adapters, editor, clients: new LiveClients() };
   const operator = buildOperator(core, neighbors);
   const ui = buildUi(core, neighbors, operator);
-  const app = { core, permissions, questions, workers, todo, operator, ui };
+  const app = { core, permissions, questions, workers, todo, operator, ui, editor };
   showNatively(app, adapters);
   return app;
 }

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { budgetSchema } from "./budget-config.js";
 import { cameraSchema } from "./camera-config.js";
+import { editorSchema } from "./editor-config.js";
 import { expandHome } from "./paths.js";
 import { sensorsSchema } from "./sensor-config.js";
 import { numberOr } from "./yaml-values.js";
@@ -97,6 +98,7 @@ export const configFileSchema = z.object({
   budget: budgetSchema,
   sensors: sensorsSchema,
   camera: cameraSchema,
+  editor: editorSchema,
 });
 
 export type AppConfig = z.infer<typeof configFileSchema>;

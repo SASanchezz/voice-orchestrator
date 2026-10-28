@@ -23,6 +23,7 @@
     <link rel="stylesheet" href="/styles/budget.css" />
     <link rel="stylesheet" href="/styles/todo.css" />
     <link rel="stylesheet" href="/styles/force-stop.css" />
+    <link rel="stylesheet" href="/styles/code.css" />
   </head>
   <body>
     <header class="topbar">
@@ -94,6 +95,9 @@
         </section>
 
         <nav id="session-tabs" class="session-tabs" role="tablist" aria-label="Sessions" hidden></nav>
+
+        <p id="code-status" class="code-status" aria-live="polite" hidden></p>
+        <div id="code-frames" class="code-frames"></div>
 
         <section class="feed-wrap">
           <ol id="feed" class="feed" aria-live="polite"></ol>

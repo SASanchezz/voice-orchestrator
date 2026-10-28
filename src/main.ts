@@ -27,6 +27,7 @@ const snapshots = new SensorSnapshots(); // the camera's frames come from the ge
 const app = buildApp(cfg, await realAdapters(voice, gestures ?? new UnavailableGestures(), snapshots));
 
 await openUi(cfg, app);
+app.editor.server.start(); // once the UI has made the token file it reads
 
 startOperator(app, voice)
   .then(connectGestures) // once the mic is ready
@@ -60,6 +61,7 @@ async function openUi({ ui }: AppConfig, { ui: parts }: App): Promise<void> {
 
 function shutDown(exitCode: number): void {
   gestures?.stop();
+  app.editor.server.stop();
   app.workers.control.stopAll();
   app.ui.server.stop();
   setTimeout(() => process.exit(exitCode), WORKER_STOP_GRACE_MS);

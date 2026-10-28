@@ -1,10 +1,12 @@
 // The center: the assistant's chat, or the selected project's active session with its tabs; the message box below.
+// A project shown as code has VS Code there instead (code-view.ts).
 
 import type { ProjectView } from "../protocol.js";
 import { act } from "./api.js";
 import { wireAttachmentInput } from "./attachment-input.js";
 import { type AttachmentTray, encodeForSending } from "./attachments.js";
 import type { ChatView } from "./chat.js";
+import { viewToggle } from "./code-view.js";
 import { autoGrow, button, byId } from "./dom.js";
 import { sessionTabs } from "./session-tabs.js";
 import { activeSession, store } from "./store.js";
@@ -22,7 +24,7 @@ export function renderConversation(chat: ChatView): void {
   input.placeholder = `Task for ${project.name} · session ${session.number}…`;
   const newSession = button("+", "ghost session-new", () => void createSession(project));
   newSession.title = `New session in ${project.name}`;
-  tabs.replaceChildren(...sessionTabs(project), newSession);
+  tabs.replaceChildren(...viewToggle(project), ...sessionTabs(project), newSession);
   void chat.showSession(session.id);
 }
 

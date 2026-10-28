@@ -1,7 +1,7 @@
 import type { ServerResponse } from "node:http";
 import type { Feed } from "../feed.js";
 import type { LiveClients } from "./live-clients.js";
-import type { PageStateView } from "./page-state-view.js";
+import type { EditorStateView } from "./editor-state-view.js";
 
 const STATE_PUSH_MS = 500;
 const HEARTBEAT_MS = 15_000;
@@ -12,7 +12,7 @@ export class StatePublisher {
 
   constructor(
     private clients: LiveClients,
-    private view: PageStateView,
+    private view: EditorStateView,
     private feed: Feed,
   ) {}
 

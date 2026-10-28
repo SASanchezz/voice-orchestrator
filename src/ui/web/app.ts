@@ -8,6 +8,7 @@ import { renderProjects } from "./projects.js";
 import { renderApprovals } from "./approvals.js";
 import { renderQuestions } from "./questions.js";
 import { renderConversation, wireComposer } from "./conversation.js";
+import { renderCodeView } from "./code-view.js";
 import { renderDetail } from "./detail.js";
 import { navigate, navigateFromLink } from "./navigation.js";
 import { reloadIfRestarted, wireRestart } from "./restart.js";
@@ -29,6 +30,7 @@ function renderPage(): void {
   renderApprovals();
   renderQuestions();
   renderConversation(chat);
+  renderCodeView();
   renderForceStop();
   chat.showPendingApprovals(store.state.pending);
   renderDetail();

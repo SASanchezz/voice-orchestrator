@@ -18,17 +18,15 @@ export function buildOperatorTools(core: Core, neighbors: OperatorNeighbors, kit
   return new OperatorTools(tools, new ConfirmPhraseGuard(core.destructive, kit.context));
 }
 
-function toolServices(
-  core: Core,
-  { permissions, workers, todo, devices }: OperatorNeighbors,
-  kit: ConversationKit,
-): ToolServices {
+function toolServices(core: Core, neighbors: OperatorNeighbors, kit: ConversationKit): ToolServices {
+  const { permissions, workers, todo, devices } = neighbors;
   return {
     ...core,
     ...workers,
     ...permissions,
     ...todo,
     ...projectActions(core, workers.control, devices.configFile),
+    ...pageServices(neighbors),
     git: new GitCommands(core.cfg, core.destructive, kit.context),
     notes: devices.notes,
     requests: kit.requests,
@@ -37,6 +35,11 @@ function toolServices(
     cameraView: cameraView(core.cfg.camera, devices.camera),
     gestures: devices.gestures,
   };
+}
+
+/** The open web UI pages, and whether VS Code is there for their Code view. */
+function pageServices({ editor, clients }: OperatorNeighbors): Pick<ToolServices, "editor" | "clients"> {
+  return { editor: editor.server, clients };
 }
 
 /** Opening and removing projects, and moving them between accounts. */

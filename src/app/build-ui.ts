@@ -7,8 +7,9 @@ import { ApiRoutes } from "../ui/server/api-routes.js";
 import { AppActions } from "../ui/server/app-actions.js";
 import { AssistantActions } from "../ui/server/assistant-actions.js";
 import { AttachedText } from "../ui/server/attached-text.js";
+import { EditorStateView } from "../ui/server/editor-state-view.js";
 import { HandoffActions } from "../ui/server/handoff-actions.js";
-import { LiveClients } from "../ui/server/live-clients.js";
+import type { LiveClients } from "../ui/server/live-clients.js";
 import { relayToClients } from "../ui/server/live-relay.js";
 import { PageFiles } from "../ui/server/page-files.js";
 import { PageStateView } from "../ui/server/page-state-view.js";
@@ -18,6 +19,7 @@ import { QuestionActions } from "../ui/server/question-actions.js";
 import { ReadRoutes, SessionChatReader } from "../ui/server/read-routes.js";
 import { RouteTable, type RouteHandlers } from "../ui/server/route-table.js";
 import { SessionActions } from "../ui/server/session-actions.js";
+import { SiteRouter } from "../ui/server/site-router.js";
 import { StatePublisher } from "../ui/server/state-publisher.js";
 import { TabActions } from "../ui/server/tab-actions.js";
 import { TaskActions } from "../ui/server/task-actions.js";
@@ -61,7 +63,7 @@ export function buildUi(core: Core, neighbors: OperatorNeighbors, operator: Oper
   const waiting = new WaitingViews(views, neighbors.questions.waiting, core.sessions);
   const questionClicks = new QuestionActions(neighbors.questions.replies, waiting, reporter);
   const lookup = new UiLookup(core.projects, core.sessions, core.cfg.projects);
-  const clients = new LiveClients();
+  const { clients } = neighbors;
   const sources = { operator, feed, chats, reporter, permissionClicks, questionClicks, waiting, lookup, clients };
   return { server: uiServer(core, neighbors, sources), feed, chats, permissionClicks, questionClicks, clients };
 }
@@ -84,12 +86,12 @@ function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources):
   relayToClients(clients, sources.feed, sources.chats);
   const live = new UiStateView(lookup, sources.waiting, new VoiceViews(sources.operator, neighbors.devices.gestures));
   const budget = new TodayBudget(core.cfg.budget, neighbors.workers.spend);
-  const view = new PageStateView(live, budget, todoItemViews(neighbors.todo));
-  const publisher = new StatePublisher(clients, view, sources.feed);
+  const page = new PageStateView(live, budget, todoItemViews(neighbors.todo));
+  const publisher = new StatePublisher(clients, new EditorStateView(page, neighbors.editor.server), sources.feed);
   const table = routeTable(core, neighbors, sources);
   const reads = new ReadRoutes(access, publisher, new SessionChatReader(lookup, sources.chats));
   const router = new UiRouter(new PageFiles(access, core.attachments), reads, new ApiRoutes(access, table, publisher));
-  return new UiServer(router, publisher, access);
+  return new UiServer(new SiteRouter(neighbors.editor.route, router), publisher, access);
 }
 
 /** What each of the page's actions acts on. */

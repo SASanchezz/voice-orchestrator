@@ -88,3 +88,9 @@ sensors:
 camera:
   describer: claude # claude: Claude sees the frame; local: a local vision model describes it, only its text goes to Claude, and quick questions ("can you see me?") skip Claude
   visionServer: http://127.0.0.1:8080 # for local: llama-server with a vision model, see docs/local-vision.md
+
+# The web UI's Code view: VS Code on a project's folder in place of its chat (your installed VS Code's serve-web).
+editor:
+  enabled: false # true adds a Chat | Code switch per project; the first start downloads the VS Code server once
+  codePath: /Applications/Visual Studio Code.app/Contents/Resources/app/bin/code-tunnel # code-tunnel, not bin/code
+  port: 4778 # on 127.0.0.1; the web UI passes /editor through to it

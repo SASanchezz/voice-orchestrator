@@ -19,10 +19,11 @@ export async function openSessionById(id: string): Promise<void> {
   if (project) await openSession({ project: project.name, id });
 }
 
-/** Selects the project and makes the session its active one; a session closed since is skipped. */
+/** Selects the project and shows the session's chat as its active one; a session closed since is skipped. */
 async function openSession({ project, id }: Pick<SessionLinkView, "project" | "id">): Promise<void> {
   const view = store.state.projects.find((p) => p.name === project);
   const isOpen = view?.sessions.some((s) => s.id === id);
   if (isOpen && view?.activeSession !== id) await act(`/api/sessions/${id}/activate`);
   store.select(project);
+  store.showView(project, "chat");
 }
