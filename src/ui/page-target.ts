@@ -1,6 +1,6 @@
 // Where a notice's button takes the web UI: the assistant's reply to a session's latest task, or the session itself.
 // Written into the link's #hash for a page that opens fresh. No imports, so the page bundles it and Node tests it.
-// By voice, the web UI can also show a project's chat or its code.
+// By voice, the web UI can also show a project's chat, its code or its changes.
 
 export const PAGE_VIEWS = ["assistant", "session"] as const;
 export type PageView = (typeof PAGE_VIEWS)[number];
@@ -10,8 +10,8 @@ export interface PageTarget {
   sessionId: string;
 }
 
-export const PROJECT_VIEWS = ["chat", "code"] as const;
-/** chat: the project's session chat; code: VS Code on its folder. */
+export const PROJECT_VIEWS = ["chat", "code", "review"] as const;
+/** chat: the project's session chat; code: VS Code on its folder; review: its uncommitted changes. */
 export type ProjectViewName = (typeof PROJECT_VIEWS)[number];
 
 export interface ProjectTarget {

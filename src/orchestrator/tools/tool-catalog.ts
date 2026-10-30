@@ -30,7 +30,7 @@ import type { CameraView } from "./camera-views.js";
 import { readAttachment } from "./attachment-tools.js";
 import { destructiveAdd, destructiveRemove, destructiveRules } from "./destructive-tools.js";
 import { setGestures } from "./gesture-tools.js";
-import { showChat, showCode, type PageClients } from "./page-view-tools.js";
+import { showChanges, showChat, showCode, type PageClients } from "./page-view-tools.js";
 import { answerPermission, listPendingPermissions, setPermissionMode } from "./permission-tools.js";
 import {
   listProjects,
@@ -120,6 +120,7 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => setGestures(s.gestures),
   (s) => showCode(s.clients, s.editor, s.cfg),
   (s) => showChat(s.clients, s.cfg),
+  (s) => showChanges(s.clients, s.cfg),
   (s) => readAttachment(s.attachments),
   (s) => destructiveRules(s.destructive),
   (s) => destructiveAdd(s.destructive, s.context),

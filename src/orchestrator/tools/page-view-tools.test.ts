@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { testConfig } from "../../testing/test-config.js";
 import type { ProjectTarget } from "../../ui/page-target.js";
 import type { EditorStateName, ServerEvents } from "../../ui/protocol.js";
-import { showChat, showCode } from "./page-view-tools.js";
+import { showChanges, showChat, showCode } from "./page-view-tools.js";
 import type { ToolResult } from "./tool-kit.js";
 
 const CFG = testConfig({ projects: { webshop: { path: "/w", profile: "personal" } } });
@@ -53,5 +53,12 @@ test("show_chat: open pages are told to show the project's chat", async () => {
   const pages = new FakePages();
   await showChat(pages, CFG).call({ project: "webshop" });
   const target: ProjectTarget = { view: "chat", project: "webshop" };
+  assert.deepEqual(pages.sent, [["navigate", target]]);
+});
+
+test("show_changes: open pages are told to review the project's changes", async () => {
+  const pages = new FakePages();
+  await showChanges(pages, CFG).call({ project: "webshop" });
+  const target: ProjectTarget = { view: "review", project: "webshop" };
   assert.deepEqual(pages.sent, [["navigate", target]]);
 });

@@ -30,13 +30,29 @@ export function showChat(pages: PageClients, cfg: AppConfig): OperatorTool {
   return defineTool({
     name: "show_chat",
     description:
-      "Show a project's session chat in the web UI (next to its code), e.g. 'back to chat', 'show webshop's chat'. " +
+      "Show a project's session chat in the web UI, next to its code, e.g. 'back to chat', 'show webshop's chat'. " +
       "Say only a short confirmation.",
     args: { project: projectArg },
     run: ({ project }) => {
       const name = needProject(cfg, project);
       pages.broadcast("navigate", { view: "chat", project: name });
       return text(`The web UI shows ${name}'s chat.`);
+    },
+  });
+}
+
+/** A project's uncommitted changes in the Review view. */
+export function showChanges(pages: PageClients, cfg: AppConfig): OperatorTool {
+  return defineTool({
+    name: "show_changes",
+    description:
+      "Open the web UI's Review view on a project's uncommitted changes, where every project's diffs are in one " +
+      "place, e.g. 'show webshop's changes', 'let me review billing'. Say only a short confirmation.",
+    args: { project: projectArg },
+    run: ({ project }) => {
+      const name = needProject(cfg, project);
+      pages.broadcast("navigate", { view: "review", project: name });
+      return text(`The web UI shows ${name}'s changes.`);
     },
   });
 }
