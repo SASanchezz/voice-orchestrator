@@ -22,6 +22,12 @@ export class UiLookup {
     if (!this.sessions.hasSession(id)) throw new HttpError(HTTP_STATUS.notFound, `No session ${id}`);
   }
 
+  /** The folder of a known project. */
+  folderOf(name: string): string {
+    this.requireProject(name);
+    return this.projectConfigs[name]?.path ?? "";
+  }
+
   session(id: string): SessionState {
     return this.sessions.session(id);
   }
