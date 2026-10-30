@@ -1,6 +1,7 @@
 import type { VoiceCancel } from "../../orchestrator/conversation/voice-cancel.js";
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
 import type { GestureControl } from "../../sensors/gesture-switch.js";
+import type { DictationControl } from "../../voice/dictation.js";
 import type { AppActions } from "./app-actions.js";
 import type { AssistantActions } from "./assistant-actions.js";
 import type { AttachedText } from "./attached-text.js";
@@ -31,6 +32,8 @@ export interface RouteHandlers {
   assistant: AssistantActions;
   /** Saves the files attached to a message or task and lists them after its text. */
   attached: AttachedText;
+  /** The mic button: your words, recorded and transcribed on this Mac. */
+  dictation: DictationControl;
   gestures: GestureControl;
   handoffs: HandoffActions;
   policy: PermissionPolicy;
@@ -100,9 +103,15 @@ function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
   ];
 }
 
-/** Discarding your voice message, and whether one waiting goes with the draft's files. */
+/**
+ * Discarding your voice message, and whether one waiting goes with the draft's files. The mic button's words go back
+ * to the page, into its message box.
+ */
 function voiceRoutes(h: RouteHandlers): [RegExp, Route][] {
   return [
+    [/^\/api\/dictation\/start$/, () => h.dictation.start()],
+    [/^\/api\/dictation\/cancel$/, () => h.dictation.cancel()],
+    [/^\/api\/dictation\/finish$/, () => h.dictation.finish()],
     [/^\/api\/voice\/discard$/, () => h.voice.discardLatest()],
     [/^\/api\/draft$/, (b) => h.voiceOffers.draftChanged(b)],
     [/^\/api\/voice-offers\/(\w+)\/keep$/, (_b, m) => h.voiceOffers.keepInDraft(m[1])],

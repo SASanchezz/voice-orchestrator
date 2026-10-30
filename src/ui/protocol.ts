@@ -176,6 +176,8 @@ export interface ServerEvents {
   feed: FeedEntryView;
   chat: SessionChatLine;
   chat_cleared: string;
+  dictation: string; // your words so far, while the mic button records
+  voice_draft: string; // your words so far, while you hold the talk key or gesture
   /** A notice's button or a spoken "show me the code": open pages switch to this view. */
   navigate: PageTarget | ProjectTarget;
 }

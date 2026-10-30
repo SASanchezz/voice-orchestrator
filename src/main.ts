@@ -11,6 +11,7 @@ import { loadConfig } from "./config/load-config.js";
 import { GestureSwitch, UnavailableGestures } from "./sensors/gesture-switch.js";
 import { SensorSnapshots } from "./sensors/sensor-snapshots.js";
 import { errorMessage } from "./shared/errors.js";
+import { UnavailableDictation } from "./voice/dictation.js";
 import { TextVoice } from "./voice/text-voice.js";
 
 /** Time for workers to stop before the process exits. */
@@ -24,11 +25,12 @@ if (!process.argv.includes("--skip-auth-check")) await checkLogins(cfg);
 
 const mac = textMode ? undefined : macVoice(cfg.voice);
 const voice = mac?.voice ?? new TextVoice();
+const dictation = mac?.dictation ?? new UnavailableDictation();
 const gestures = mac ? new GestureSwitch(gestureSetting(cfg.sensors.gestures)) : undefined; // text mode has no mic
 const snapshots = new SensorSnapshots(); // the camera's frames come from the gesture sensor while it runs
 const app = buildApp(
   cfg,
-  await realAdapters({ voice, assistantAgent }, gestures ?? new UnavailableGestures(), snapshots),
+  await realAdapters({ voice, dictation, assistantAgent }, gestures ?? new UnavailableGestures(), snapshots),
 );
 
 await openUi(cfg, app);

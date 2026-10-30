@@ -12,7 +12,11 @@ export class MacVoice implements VoiceIO {
   ) {}
 
   onUtterance(cb: (text: string) => void): void {
-    this.ptt.onMessage(cb);
+    this.ptt.on("message", cb);
+  }
+
+  onDraft(cb: (words: string) => void): void {
+    this.ptt.on("draft", cb);
   }
 
   onPress(cb: () => void): void {

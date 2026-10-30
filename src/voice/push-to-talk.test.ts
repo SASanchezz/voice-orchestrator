@@ -35,7 +35,7 @@ function pushToTalk(): { ptt: PushToTalk; sent: string[] } {
   const voice = { ...testConfig({}).voice, recordBin };
   const ptt = new PushToTalk(voice, new FixedTranscriber(voice), TEST_LIMIT_MS);
   const sent: string[] = [];
-  ptt.onMessage((message) => sent.push(message));
+  ptt.on("message", (message) => sent.push(message));
   return { ptt, sent };
 }
 

@@ -3,6 +3,8 @@ export type VoiceInputState = "idle" | "recording" | "held";
 
 export interface VoiceIO {
   onUtterance(cb: (text: string) => void): void;
+  /** Your words so far, again and again while you speak; the full message still comes through onUtterance. */
+  onDraft(cb: (words: string) => void): void;
   /** Fires the moment you start talking, before your words are known. */
   onPress(cb: () => void): void;
   speak(text: string): Promise<void>;

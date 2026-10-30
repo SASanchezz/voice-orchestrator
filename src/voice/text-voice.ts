@@ -15,6 +15,8 @@ export class TextVoice implements VoiceIO {
     this.pressed = cb;
   }
 
+  onDraft(): void {} // a typed line has no words so far to show
+
   isListening(): boolean {
     return false;
   }

@@ -13,8 +13,15 @@ const NOTHING_SAID = /^\(?(blank_audio|silence|music)\)?$/i;
 export class Transcriber {
   constructor(private cfg: AppConfig["voice"]) {}
 
-  /** "" for silence or a failed transcription; the failure is logged. */
+  /** "" for silence or a failed transcription; the failure is logged, and so are the words. */
   async transcribeOrNothing(wav: string): Promise<string> {
+    const text = await timed("whisper", () => this.previewOrNothing(wav));
+    if (text) console.log(`\n🎙  ${text}`);
+    return text;
+  }
+
+  /** The same, without logging the words or the time: for drafts transcribed again and again while you speak. */
+  async previewOrNothing(wav: string): Promise<string> {
     try {
       return await this.transcribe(wav);
     } catch (e) {
@@ -25,13 +32,11 @@ export class Transcriber {
 
   private async transcribe(wav: string): Promise<string> {
     const args = ["-m", this.cfg.whisperModel, "-f", wav, "-nt", "-np", "-l", this.cfg.language];
-    const { stdout } = await timed("whisper", () => run(this.cfg.whisperBin, args, { maxBuffer: MAX_BUFFER_BYTES }));
+    const { stdout } = await run(this.cfg.whisperBin, args, { maxBuffer: MAX_BUFFER_BYTES });
     const text = stdout
       .replace(/\[.*?\]/g, "")
       .replace(/\s+/g, " ")
       .trim();
-    if (!text || NOTHING_SAID.test(text)) return "";
-    console.log(`\n🎙  ${text}`);
-    return text;
+    return NOTHING_SAID.test(text) ? "" : text;
   }
 }

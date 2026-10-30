@@ -17,15 +17,16 @@ import { PushToTalk } from "../voice/push-to-talk.js";
 import { RepeatingSpeaker } from "../voice/repeating-speaker.js";
 import { SaySpeaker } from "../voice/say-speaker.js";
 import { TalkSwitch } from "../voice/talk-switch.js";
+import { Dictation } from "../voice/dictation.js";
 import { Transcriber } from "../voice/transcriber.js";
 import type { Adapters } from "./build-app.js";
 
 /**
- * The real world: what main.ts made first (your voice, the assistant's checked agent), the screen, the camera
- * (through the gesture sensor's `snapshots`), pop-ups, your files and the Agent SDK.
+ * The real world: what main.ts made first (your voice, the page's mic, the assistant's checked agent), the screen, the
+ * camera (through the gesture sensor's `snapshots`), pop-ups, your files and the Agent SDK.
  */
 export async function realAdapters(
-  madeFirst: Pick<Adapters, "voice" | "assistantAgent">,
+  madeFirst: Pick<Adapters, "voice" | "dictation" | "assistantAgent">,
   gestures: GestureControl,
   snapshots: SensorSnapshots,
 ): Promise<Adapters> {
@@ -52,17 +53,20 @@ function filesAndModel(): Pick<Adapters, "destructive" | "configFile" | "notes" 
   return { destructive, configFile: CONFIG_PATH, notes, query: sdkQuery, explainCommands: true };
 }
 
-/** Your voice on macOS, and the mic switch that lets gestures talk as well as the hotkey. */
+/** Your voice on macOS, the mic switch that lets gestures talk as well as the hotkey, and the page's mic button. */
 export interface MacVoiceParts {
   voice: MacVoice;
   talk: TalkSwitch;
+  dictation: Dictation;
 }
 
 /** Hold the hotkey to talk; replies are spoken with `say`. */
 export function macVoice(settings: AppConfig["voice"]): MacVoiceParts {
-  const pushToTalk = new PushToTalk(settings, new Transcriber(settings));
+  const transcriber = new Transcriber(settings);
+  const pushToTalk = new PushToTalk(settings, transcriber);
   const speaker = new RepeatingSpeaker(new SaySpeaker(settings));
   const talk = new TalkSwitch(pushToTalk, () => speaker.stop());
   const hotkey = new HotkeyTalk(new MacHotkey(settings.hotkey), talk);
-  return { voice: new MacVoice(pushToTalk, speaker, hotkey), talk };
+  const dictation = new Dictation(settings.recordBin, transcriber);
+  return { voice: new MacVoice(pushToTalk, speaker, hotkey), talk, dictation };
 }

@@ -10,7 +10,7 @@ import { AttachedText } from "../ui/server/attached-text.js";
 import { EditorStateView } from "../ui/server/editor-state-view.js";
 import { HandoffActions } from "../ui/server/handoff-actions.js";
 import type { LiveClients } from "../ui/server/live-clients.js";
-import { relayToClients } from "../ui/server/live-relay.js";
+import { relayDictation, relayToClients, relayVoiceDraft } from "../ui/server/live-relay.js";
 import { PageFiles } from "../ui/server/page-files.js";
 import { PageStateView } from "../ui/server/page-state-view.js";
 import { PermissionActions } from "../ui/server/permission-actions.js";
@@ -32,12 +32,11 @@ import { VoiceOfferActions } from "../ui/server/voice-offer-actions.js";
 import { VoiceViews } from "../ui/server/voice-views.js";
 import { TodayBudget } from "../ui/server/today-budget.js";
 import { WaitingViews } from "../ui/server/waiting-views.js";
-import type { GestureControl } from "../sensors/gesture-switch.js";
 import { SessionChats } from "../ui/session-chats.js";
 import type { OperatorParts } from "./build-operator.js";
 import { todoItemHandlers, todoItemViews } from "./build-todo.js";
 import type { Core } from "./core.js";
-import type { OperatorNeighbors } from "./operator-types.js";
+import type { OperatorDevices, OperatorNeighbors } from "./operator-types.js";
 
 export interface UiParts {
   server: UiServer;
@@ -84,6 +83,8 @@ function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources):
   const access = new UiAccess();
   const { clients, lookup } = sources;
   relayToClients(clients, sources.feed, sources.chats);
+  relayDictation(clients, neighbors.devices.dictation);
+  relayVoiceDraft(clients, neighbors.devices.voice);
   const live = new UiStateView(lookup, sources.waiting, new VoiceViews(sources.operator, neighbors.devices.gestures));
   const budget = new TodayBudget(core.cfg.budget, neighbors.workers.spend);
   const page = new PageStateView(live, budget, todoItemViews(neighbors.todo));
@@ -111,14 +112,14 @@ function routeTable(core: Core, neighbors: OperatorNeighbors, sources: UiSources
     tasks: new TaskActions(workers.intake, lookup, reporter),
     todoItems: todoItemHandlers(todo, lookup, reporter),
     sessions: new SessionActions(workers.control, lookup, reporter),
-    ...voiceHandlers(sources.operator, devices.gestures),
+    ...voiceHandlers(sources.operator, devices),
   });
 }
 
-/** What the page's voice message buttons and the Gestures switch act on. */
+/** What the page's voice message buttons, its mic button and the Gestures switch act on. */
 function voiceHandlers(
   { voiceCancel, voiceHold }: OperatorParts,
-  gestures: GestureControl,
-): Pick<RouteHandlers, "voice" | "voiceOffers" | "gestures"> {
-  return { voice: voiceCancel, voiceOffers: new VoiceOfferActions(voiceHold), gestures };
+  { gestures, dictation }: Pick<OperatorDevices, "gestures" | "dictation">,
+): Pick<RouteHandlers, "voice" | "voiceOffers" | "gestures" | "dictation"> {
+  return { voice: voiceCancel, voiceOffers: new VoiceOfferActions(voiceHold), gestures, dictation };
 }

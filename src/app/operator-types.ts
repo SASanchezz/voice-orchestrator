@@ -13,6 +13,7 @@ import type { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import type { ConversationMemory } from "../orchestrator/memory/conversation-memory.js";
 import type { ScreenSource } from "../screen/screen-source.js";
 import type { GestureControl } from "../sensors/gesture-switch.js";
+import type { DictationControl } from "../voice/dictation.js";
 import type { LiveClients } from "../ui/server/live-clients.js";
 import type { VoiceIO } from "../voice/voice-io.js";
 import type { EditorParts } from "./build-editor.js";
@@ -33,6 +34,8 @@ export interface OperatorDevices {
   query: QueryFn;
   /** Camera gestures, switched on and off from the web UI or by voice. */
   gestures: GestureControl;
+  /** The web UI's mic button, recording and transcribing on this Mac. */
+  dictation: DictationControl;
   /** config/config.yaml, which a removed project is taken out of. */
   configFile: string;
 }
