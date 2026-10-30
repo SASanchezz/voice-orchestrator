@@ -51,7 +51,7 @@ export function buildApp(cfg: AppConfig, adapters: Adapters): App {
   const permissions = buildPermissions(core, commandExplanations(core, adapters));
   const questions = buildQuestions(core);
   const workers = buildWorkers(core, new ToolCallGate(permissions.broker, questions.broker), adapters.query);
-  const todo = buildTodo(workers.intake);
+  const todo = buildTodo(core, workers.intake);
   const editor = buildEditor(cfg.editor);
   const neighbors = { permissions, questions, workers, todo, devices: adapters, editor, clients: new LiveClients() };
   const operator = buildOperator(core, neighbors);

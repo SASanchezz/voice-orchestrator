@@ -1,26 +1,61 @@
 /* ---------------------------------------------------------------- code view */
 
-/* VS Code takes the chat's place and the detail panel's width; approvals and session tabs stay above it. */
-.layout.code-mode {
-  grid-template-columns: 280px minmax(0, 1fr);
+/*
+ * With a project selected there is no detail panel. When VS Code is available it fills the middle and the project's
+ * sessions and chat sit in a panel on its right, as Claude Code does inside VS Code; otherwise the chat fills the middle.
+ */
+.chat-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
-.layout.code-mode .detail,
-.layout.code-mode .feed-wrap,
-.layout.code-mode .voice-status,
-.layout.code-mode .attachment-list,
-.layout.code-mode .composer {
+.code-panel {
   display: none;
 }
 
+.layout.project-mode {
+  grid-template-columns: var(--projects-column) minmax(0, 1fr);
+}
+.layout.project-mode .detail {
+  display: none;
+}
+
+.layout.ide-mode .center {
+  flex-direction: row;
+}
+.layout.ide-mode .code-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.layout.ide-mode .chat-panel {
+  flex: 0 0 var(--chat-column);
+  min-width: 0;
+  border-left: 1px solid var(--border);
+}
+
 @media (max-width: 1100px) {
-  .layout.code-mode {
-    grid-template-columns: 240px minmax(0, 1fr);
+  .layout.project-mode {
+    grid-template-columns: var(--projects-column) minmax(0, 1fr);
   }
 }
 
-.view-toggle {
-  align-self: center;
-  margin-right: 8px;
+/* Too narrow for side by side: VS Code above, the chat below. */
+@media (max-width: 720px) {
+  .layout.ide-mode .center {
+    flex-direction: column;
+  }
+  .layout.ide-mode .code-panel {
+    min-height: 60vh;
+  }
+  .layout.ide-mode .chat-panel {
+    flex-basis: auto;
+    min-height: 70vh;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
 }
 
 .code-status {
@@ -33,9 +68,6 @@
 }
 
 .code-frames {
-  display: none;
-}
-.layout.code-mode .code-frames {
   flex: 1;
   min-height: 0;
   display: flex;

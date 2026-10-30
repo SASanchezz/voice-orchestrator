@@ -1,20 +1,24 @@
-// A session tab's badge: how full its context is once that's high, and its cost once it's over the limit.
+// A session tab's badge: a small bar with how full its context is; the tooltip spells out the tokens.
 
 import type { SessionView } from "../protocol.js";
-import { badgeText, type SessionBudget, sessionBudget } from "../session-budget.js";
+import { contextLine, contextPercentText, type SessionBudget, sessionBudget } from "../session-budget.js";
 import { el } from "./dom.js";
 import { store } from "./store.js";
 
+const FULL_PERCENT = 100;
+
 export function budgetBadge(session: SessionView): HTMLSpanElement | "" {
   const standing = sessionBudget(session, store.state.budget);
-  const text = badgeText(session, standing);
-  if (!text) return "";
-  const title = "Large sessions cost more with every turn; see the session panel";
-  return el("span", { class: `budget-badge ${badgeLevel(standing)}`, title }, text);
+  const percent = contextPercentText(session, standing);
+  if (!percent) return "";
+  const title = contextLine(session, standing);
+  return el("span", { class: "budget-badge", title }, ...contextMeter(standing, percent));
 }
 
-/** Red when the context is critical; amber when it is high or the session is over its cost limit. */
-export function badgeLevel(standing: SessionBudget): string {
-  if (standing.contextLevel === "critical") return "critical";
-  return standing.contextLevel === "warn" || standing.overCost ? "warn" : "ok";
+/** Green while low, amber when high, red when critical. */
+function contextMeter(standing: SessionBudget, percent: string): HTMLSpanElement[] {
+  const fill = el("span", { class: `context-fill ${standing.contextLevel}` });
+  fill.style.width = `${Math.min(standing.contextPercent, FULL_PERCENT)}%`;
+  const meter = el("span", { class: "context-meter" }, fill);
+  return [meter, el("span", { class: `context-percent ${standing.contextLevel}` }, percent)];
 }

@@ -25,5 +25,4 @@ async function openSession({ project, id }: Pick<SessionLinkView, "project" | "i
   const isOpen = view?.sessions.some((s) => s.id === id);
   if (isOpen && view?.activeSession !== id) await act(`/api/sessions/${id}/activate`);
   store.select(project);
-  store.showView(project, "chat");
 }

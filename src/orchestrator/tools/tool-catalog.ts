@@ -101,7 +101,7 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => setTodoItemDone(s.todoItems),
   (s) => deleteTodoItem(s.todoItems, s.todoTrash),
   (s) => restoreTodoItem(s.todoTrash),
-  (s) => sendTodoItem(s.todoItems, s.todoSender),
+  (s) => sendTodoItem(s.todoItems, s.todoSender, s.cfg),
   (s) => projectHistory(s.history, s.cfg),
   (s) => remember(s.notes),
   (s) => resetContext(s.requests),

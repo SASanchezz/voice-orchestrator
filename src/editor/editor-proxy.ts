@@ -1,8 +1,10 @@
 import { request, type IncomingMessage, type ServerResponse } from "node:http";
 import { connect } from "node:net";
 import type { Duplex } from "node:stream";
+import { text } from "node:stream/consumers";
 import type { EditorRoute } from "../ui/server/editor-route.js";
-import { isEditorPath } from "./editor-url.js";
+import { EDITOR_BASE_PATH, isEditorPath } from "./editor-url.js";
+import { withDefaultTheme } from "./workbench-page.js";
 
 const EDITOR_HOST = "127.0.0.1";
 const BAD_GATEWAY = 502;
@@ -11,19 +13,26 @@ const NOT_RUNNING = "VS Code isn't running yet.";
 /**
  * Passes the editor's requests to its server unchanged, Host included, so VS Code sees the web UI's origin.
  * The editor checks its own connection token, so the web UI's token check isn't repeated here.
+ * Only the editor's page itself is changed: it gets `theme` as its default color theme.
  */
 export class EditorProxy implements EditorRoute {
-  constructor(private port: number) {}
+  constructor(
+    private port: number,
+    private theme: string,
+  ) {}
 
   handles(pathname: string): boolean {
     return isEditorPath(pathname);
   }
 
   forward(req: IncomingMessage, res: ServerResponse): void {
-    const target = { host: EDITOR_HOST, port: this.port, method: req.method, path: req.url, headers: req.headers };
+    const isPage = isWorkbenchPage(req);
+    // the page is asked for uncompressed, so it can be read and changed
+    const headers = isPage ? { ...req.headers, "accept-encoding": "identity" } : req.headers;
+    const target = { host: EDITOR_HOST, port: this.port, method: req.method, path: req.url, headers };
     const upstream = request(target, (reply) => {
-      res.writeHead(reply.statusCode ?? BAD_GATEWAY, reply.headers);
-      reply.pipe(res);
+      if (isPage && isHtml(reply)) void this.sendThemedPage(reply, res);
+      else passOn(reply, res);
     });
     upstream.on("error", () => sendNotRunning(res));
     res.on("close", () => upstream.destroy());
@@ -42,6 +51,27 @@ export class EditorProxy implements EditorRoute {
     socket.on("error", () => upstream.destroy());
     socket.on("close", () => upstream.destroy());
   }
+
+  private async sendThemedPage(reply: IncomingMessage, res: ServerResponse): Promise<void> {
+    const page = Buffer.from(withDefaultTheme(await text(reply), this.theme));
+    res.writeHead(reply.statusCode ?? BAD_GATEWAY, { ...reply.headers, "content-length": String(page.length) });
+    res.end(page);
+  }
+}
+
+function passOn(reply: IncomingMessage, res: ServerResponse): void {
+  res.writeHead(reply.statusCode ?? BAD_GATEWAY, reply.headers);
+  reply.pipe(res);
+}
+
+/** The editor's page itself, at the editor's base path; everything else it loads lies below it. */
+function isWorkbenchPage({ method, url }: IncomingMessage): boolean {
+  const pathname = new URL(url ?? "/", "http://editor").pathname;
+  return method === "GET" && (pathname === EDITOR_BASE_PATH || pathname === `${EDITOR_BASE_PATH}/`);
+}
+
+function isHtml(reply: IncomingMessage): boolean {
+  return reply.headers["content-type"]?.startsWith("text/html") ?? false;
 }
 
 function sendNotRunning(res: ServerResponse): void {

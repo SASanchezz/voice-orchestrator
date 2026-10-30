@@ -2,6 +2,7 @@ import type { EditorSettings } from "../config/editor-config.js";
 import { OffEditor, type Editor } from "../editor/editor.js";
 import { EditorProxy } from "../editor/editor-proxy.js";
 import { editorCommand, EditorServer } from "../editor/editor-server.js";
+import { desktopColorTheme } from "../editor/editor-theme.js";
 import { NoEditorRoute, type EditorRoute } from "../ui/server/editor-route.js";
 import { uiTokenFile } from "../ui/server/ui-access.js";
 
@@ -16,5 +17,5 @@ export interface EditorParts {
 export function buildEditor(settings: EditorSettings): EditorParts {
   if (!settings.enabled) return { server: new OffEditor(), route: new NoEditorRoute() };
   const server = new EditorServer(editorCommand(settings, uiTokenFile()));
-  return { server, route: new EditorProxy(settings.port) };
+  return { server, route: new EditorProxy(settings.port, desktopColorTheme()) };
 }

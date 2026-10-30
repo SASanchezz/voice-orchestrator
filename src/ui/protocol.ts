@@ -121,6 +121,18 @@ export interface TodoItemView {
   done: boolean;
   /** ISO time. */
   createdAt: string;
+  /** Where it was sent, oldest first; the page reads each run's progress off its session. */
+  runs: TodoRunView[];
+}
+
+/** One time a to-do item was sent to a worker session. */
+export interface TodoRunView {
+  project: string;
+  sessionId: string;
+  /** The task as sent, which tells it apart from the session's other tasks. */
+  instruction: string;
+  /** ISO time. */
+  sentAt: string;
 }
 
 export interface TodoListView {

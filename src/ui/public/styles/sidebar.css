@@ -151,3 +151,9 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.badge.unseen-badge {
+  color: var(--bg);
+  background: var(--ok);
+  font-weight: 600;
+}

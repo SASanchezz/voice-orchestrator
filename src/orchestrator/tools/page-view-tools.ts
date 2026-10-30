@@ -30,7 +30,7 @@ export function showChat(pages: PageClients, cfg: AppConfig): OperatorTool {
   return defineTool({
     name: "show_chat",
     description:
-      "Show a project's session chat in the web UI instead of its code, e.g. 'back to chat', 'show webshop's chat'. " +
+      "Show a project's session chat in the web UI (next to its code), e.g. 'back to chat', 'show webshop's chat'. " +
       "Say only a short confirmation.",
     args: { project: projectArg },
     run: ({ project }) => {

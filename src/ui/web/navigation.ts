@@ -13,9 +13,9 @@ export async function navigate(target: PageTarget | ProjectTarget, chat: ChatVie
   chat.revealTaskReply(target.sessionId);
 }
 
-function showProject({ project, view }: ProjectTarget): void {
+/** Chat and code are side by side, so either target just shows the project. */
+function showProject({ project }: ProjectTarget): void {
   store.select(project);
-  store.showView(project, view);
 }
 
 /** A page opened from a notice's link goes there once its chat has loaded; the #hash is cleared after. */

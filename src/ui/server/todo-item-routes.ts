@@ -19,5 +19,7 @@ export function todoItemRoutes({ actions, deletions, sends }: TodoItemHandlers):
     [/^\/api\/todo-items\/(\d+)\/delete$/, (_b, m) => deletions.remove(id(m))],
     [/^\/api\/todo-items\/(\d+)\/restore$/, (_b, m) => deletions.restore(id(m))],
     [/^\/api\/todo-items\/(\d+)\/send$/, (_b, m) => sends.send(id(m))],
+    [/^\/api\/todo-items\/(\d+)\/send-to-session$/, (b, m) => sends.sendToSession(id(m), b)],
+    [/^\/api\/todo-items\/(\d+)\/send-to-new-session$/, (b, m) => sends.sendToNewSession(id(m), b)],
   ];
 }

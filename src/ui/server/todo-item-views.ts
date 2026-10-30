@@ -16,6 +16,6 @@ export class TodoItemViews {
   }
 }
 
-function itemView({ id, title, description, project, done, createdAt }: TodoItemView): TodoItemView {
-  return { id, title, description, ...(project && { project }), done, createdAt };
+function itemView({ id, title, description, project, done, createdAt, runs }: TodoItemView): TodoItemView {
+  return { id, title, description, ...(project && { project }), done, createdAt, runs };
 }

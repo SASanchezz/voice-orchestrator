@@ -1,14 +1,13 @@
-// The Code view: VS Code on the selected project's folder, in place of its chat. Each project's frame is made once and
-// kept, because the page re-renders on every state push and a new frame would reload VS Code and lose its open tabs.
+// The Code view: VS Code on the selected project's folder, with the project's chat in a panel on its right. Each
+// project's frame is made once and kept, because the page re-renders on every state push and a new frame would reload
+// VS Code and lose its open tabs.
 
 import { editorUrl } from "../../editor/editor-url.js";
-import { PROJECT_VIEWS, type ProjectViewName } from "../page-target.js";
 import type { EditorStateName, ProjectView } from "../protocol.js";
 import { token } from "./api.js";
-import { button, byId, bySelector, el } from "./dom.js";
+import { byId, bySelector, el } from "./dom.js";
 import { store } from "./store.js";
 
-const VIEW_LABELS: Record<ProjectViewName, string> = { chat: "Chat", code: "Code" };
 const EDITOR_NOTICES: Record<EditorStateName, string> = {
   off: "",
   starting: "Starting VS Code… (its first run downloads it)",
@@ -19,31 +18,16 @@ const EDITOR_NOTICES: Record<EditorStateName, string> = {
 /** Each project's VS Code frame, by project name. */
 const frames = new Map<string, HTMLIFrameElement>();
 
+/** A selected project gets VS Code next to its chat, unless the editor is off; then its chat fills the middle. */
 export function renderCodeView(): void {
   const project = store.selectedProject();
-  const shown = project && isCodeShown(project) ? project : undefined;
-  bySelector("main.layout", HTMLElement).classList.toggle("code-mode", shown !== undefined);
+  const shown = project && store.state.editor !== "off" ? project : undefined;
+  const layout = bySelector("main.layout", HTMLElement);
+  layout.classList.toggle("project-mode", project !== undefined);
+  layout.classList.toggle("ide-mode", shown !== undefined);
   dropRemovedProjects();
   renderNotice(shown);
   showFrame(shown);
-}
-
-/** "Chat | Code" before the session tabs; there is no Code view while the editor is off. */
-export function viewToggle(project: ProjectView): HTMLElement[] {
-  if (store.state.editor === "off") return [];
-  const options = PROJECT_VIEWS.map((view) => viewOption(project, view));
-  return [el("div", { class: "segmented view-toggle", role: "radiogroup", "aria-label": "Chat or code" }, ...options)];
-}
-
-function viewOption(project: ProjectView, view: ProjectViewName): HTMLButtonElement {
-  const option = button(VIEW_LABELS[view], "view-option", () => store.showView(project.name, view));
-  option.setAttribute("role", "radio");
-  option.setAttribute("aria-checked", String(store.viewOf(project.name) === view));
-  return option;
-}
-
-function isCodeShown(project: ProjectView): boolean {
-  return store.state.editor !== "off" && store.viewOf(project.name) === "code";
 }
 
 function dropRemovedProjects(): void {

@@ -1,66 +1,38 @@
 /* ---------------------------------------------------------------- budget */
 
-/* A session tab's badge: the context fill or the cost, amber when high, red when critical. */
+/* A session tab's badge: a bar with the context fill and its percent. */
 .budget-badge {
   flex: none;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 0 6px;
-  border-radius: 999px;
-  color: #fff;
-  background: var(--idle);
-}
-.budget-badge.warn {
-  background: var(--warn);
-}
-.budget-badge.critical {
-  background: var(--danger);
-}
-
-/* The session panel: a context meter, the session's and today's cost, and the handoff offer. */
-.budget-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-  font-size: 12px;
-  overflow-wrap: anywhere;
+  gap: 4px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
 }
-.budget-meter {
-  flex: 0 0 120px;
-  height: 6px;
+.context-meter {
+  width: 28px;
+  height: 5px;
   border-radius: 999px;
   background: var(--surface-2);
   overflow: hidden;
 }
-.budget-fill {
+.context-fill {
+  display: block;
   height: 100%;
   background: var(--ok);
 }
-.budget-fill.warn {
+.context-fill.warn {
   background: var(--warn);
 }
-.budget-fill.critical {
+.context-fill.critical {
   background: var(--danger);
 }
-.budget-text.warn {
+.context-percent.warn {
   color: var(--warn);
   font-weight: 600;
 }
-.budget-text.critical {
+.context-percent.critical {
   color: var(--danger);
   font-weight: 600;
-}
-.budget-offer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: var(--radius);
-  background: var(--danger-soft);
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
-.budget-offer button {
-  flex: none;
 }

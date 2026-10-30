@@ -10,6 +10,10 @@ import { renderQuestions } from "./questions.js";
 import { renderConversation, wireComposer } from "./conversation.js";
 import { renderCodeView } from "./code-view.js";
 import { renderDetail } from "./detail.js";
+import { renderMicButton, showDictatedWords, wireMicButton } from "./mic-button.js";
+import { renderProjectTodo } from "./project-todo.js";
+import { noteShownSession, wireSeenResults } from "./seen-results.js";
+import { renderVoiceDraft, showVoiceDraft } from "./voice-draft.js";
 import { navigate, navigateFromLink } from "./navigation.js";
 import { reloadIfRestarted, wireRestart } from "./restart.js";
 import { AttachmentTray } from "./attachments.js";
@@ -20,21 +24,27 @@ import { renderVoiceOffer } from "./voice-offer.js";
 import { wireVoiceDiscard } from "./voice-discard.js";
 import { wireTodoDialog } from "./todo-dialog.js";
 import { renderForceStop, wireForceStop } from "./force-stop.js";
+import { wirePanelResize } from "./panel-resize.js";
+import { wirePanelFolds } from "./panel-fold.js";
 
 const chat = new ChatView();
 const tray = new AttachmentTray(byId("attachment-list", HTMLElement), reportDraft);
 
 function renderPage(): void {
+  noteShownSession(); // first, so the session on screen doesn't shine
   renderIndicators();
   renderProjects();
   renderApprovals();
   renderQuestions();
   renderConversation(chat);
+  renderProjectTodo();
   renderCodeView();
   renderForceStop();
   chat.showPendingApprovals(store.state.pending);
   renderDetail();
   renderVoiceOffer(tray);
+  renderMicButton();
+  renderVoiceDraft();
 }
 
 function connect(): void {
@@ -51,6 +61,8 @@ function connect(): void {
   onServerEvent(events, "feed", (entry) => chat.addOrchestratorEntry(entry));
   onServerEvent(events, "chat", (line) => chat.addSessionMessage(line));
   onServerEvent(events, "chat_cleared", (sessionId) => chat.clearSession(sessionId));
+  onServerEvent(events, "dictation", showDictatedWords);
+  onServerEvent(events, "voice_draft", showVoiceDraft);
   onServerEvent(events, "navigate", (target) => void navigate(target, chat));
 }
 
@@ -62,7 +74,11 @@ wireComposer(tray);
 wireForceStop();
 reportDraftWhileShown(() => tray.count);
 wireImageViewer();
+wireSeenResults(renderPage);
+wireMicButton(); // before wireVoiceDiscard: Esc discards the recording first
 wireVoiceDiscard();
 wireTodoDialog();
 wireRestart();
+wirePanelResize();
+wirePanelFolds();
 connect();

@@ -4,6 +4,7 @@ import { shortFolder } from "../folder-path.js";
 import type { ProjectView, SessionStatus, SessionView } from "../protocol.js";
 import { act } from "./api.js";
 import { button, byId, el } from "./dom.js";
+import { isUnseen } from "./seen-results.js";
 import { store, activeSession, STATUS_LABELS } from "./store.js";
 
 // a project's dot shows its most pressing session
@@ -70,9 +71,19 @@ function projectHead(project: ProjectView): HTMLDivElement {
     { class: "project-head" },
     el("span", { class: `dot ${status}`, title: STATUS_LABELS[status] }),
     el("span", { class: "project-name" }, project.name),
+    ...unseenBadge(project),
     sessionCount,
     el("span", { class: "badge" }, project.profile),
   );
+}
+
+/** "2 new": sessions with finished work you haven't seen. */
+function unseenBadge(project: ProjectView): HTMLSpanElement[] {
+  const count = project.sessions.filter(isUnseen).length;
+  if (!count) return [];
+  const badge = el("span", { class: "badge unseen-badge" }, `${count} new`);
+  badge.title = "Sessions with finished work you haven't looked at yet";
+  return [badge];
 }
 
 function projectStatus(project: ProjectView): SessionStatus {

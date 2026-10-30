@@ -20,11 +20,20 @@ export function wireTodoDialog(): void {
 }
 
 export function openTodoDialog(item?: TodoItemView): void {
+  openDialog(item, item?.project ?? NO_PROJECT);
+}
+
+/** A new item, already set on the project. */
+export function openTodoDialogIn(project: string): void {
+  openDialog(undefined, project);
+}
+
+function openDialog(item: TodoItemView | undefined, project: string): void {
   editing = item;
   byId("todo-dialog-title", HTMLElement).textContent = item ? `Edit #${item.id}` : "New to-do item";
   byId("todo-title-input", HTMLInputElement).value = item?.title ?? "";
   byId("todo-description-input", HTMLTextAreaElement).value = item?.description ?? "";
-  fillProjects(item?.project ?? NO_PROJECT);
+  fillProjects(project);
   const dialog = byId("todo-dialog", HTMLDialogElement);
   dialog.returnValue = "";
   dialog.showModal();

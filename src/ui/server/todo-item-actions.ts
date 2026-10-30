@@ -4,7 +4,7 @@ import type { TodoItemSender } from "../../todo-items/todo-item-sender.js";
 import type { TodoItems } from "../../todo-items/todo-items.js";
 import type { TodoTrash } from "../../todo-items/todo-trash.js";
 import type { ActionReporter } from "./action-reporter.js";
-import { todoDoneBody, todoItemBody, type TodoItemBody } from "./todo-item-body.js";
+import { todoDoneBody, todoItemBody, todoProjectBody, todoSessionBody, type TodoItemBody } from "./todo-item-body.js";
 import type { UiLookup } from "./ui-lookup.js";
 
 /** What the timeline shows the page's to-do changes under. */
@@ -63,17 +63,32 @@ export class TodoItemDeletions {
   }
 }
 
-/** Sending an item to its project's worker as a task, with one click. */
+/** Sending an item to a worker as a task with one click: its project's active session, any open session, or a new one. */
 export class TodoItemSends {
   constructor(
-    private items: TodoItems,
     private sender: TodoItemSender,
+    private lookup: UiLookup,
     private reporter: ActionReporter,
   ) {}
 
   send(id: number): string {
-    const message = this.sender.send(id);
-    const { project = "" } = this.items.find(id);
-    return this.reporter.reportTask(project, this.sender.instructionFor(id), message);
+    return this.reportSent(id, this.sender.send(id));
+  }
+
+  sendToSession(id: number, body: unknown): string {
+    const { session } = todoSessionBody.parse(body);
+    this.lookup.requireSession(session);
+    return this.reportSent(id, this.sender.sendToSession(id, session));
+  }
+
+  sendToNewSession(id: number, body: unknown): string {
+    const { project } = todoProjectBody.parse(body);
+    this.lookup.requireProject(project);
+    return this.reportSent(id, this.sender.sendToNewSession(id, project));
+  }
+
+  private reportSent(id: number, message: string): string {
+    const { project, instruction } = this.sender.lastRunOf(id);
+    return this.reporter.reportTask(project, instruction, message);
   }
 }

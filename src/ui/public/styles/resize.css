@@ -1,0 +1,71 @@
+/* ---------------------------------------------------------------- panel resize handles */
+
+/*
+ * A thin strip over the border between two panels, placed by the same width variable that sizes its panel, so it
+ * follows the border while dragged. The chat handle sits in the middle section, the other two on the whole layout.
+ */
+.layout,
+.center {
+  position: relative;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+}
+.resize-handle:hover::after,
+.resize-handle:active::after {
+  background: var(--accent);
+}
+
+.resize-handle[data-panel="projects"] {
+  left: calc(var(--projects-column) - 4px);
+}
+.resize-handle[data-panel="detail"] {
+  right: calc(var(--detail-column) - 4px);
+}
+.resize-handle[data-panel="chat"] {
+  right: calc(var(--chat-column) - 4px);
+  display: none;
+}
+.layout.ide-mode .resize-handle[data-panel="chat"] {
+  display: block;
+}
+.layout.project-mode .resize-handle[data-panel="detail"] {
+  display: none;
+}
+
+/* VS Code's frame would swallow the pointer while it passes over it. */
+.layout.resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+.layout.resizing iframe {
+  pointer-events: none;
+}
+
+/* The detail panel moves below the others here, and nothing sits side by side below 720px. */
+@media (max-width: 1100px) {
+  .resize-handle[data-panel="detail"] {
+    display: none;
+  }
+}
+@media (max-width: 720px) {
+  .resize-handle,
+  .layout.ide-mode .resize-handle[data-panel="chat"] {
+    display: none;
+  }
+}

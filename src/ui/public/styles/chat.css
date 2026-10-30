@@ -24,6 +24,7 @@
 .session-tab.active {
   background: var(--bg);
   border-color: var(--border);
+  box-shadow: inset 0 2px 0 var(--accent); /* VS Code marks the active tab with a top line */
 }
 .session-open {
   min-width: 0;
@@ -214,7 +215,7 @@ details.steps summary {
   padding: 6px 16px;
   border-top: 1px solid var(--border);
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 13px;
 }
 .voice-status[hidden] {
@@ -222,6 +223,16 @@ details.steps summary {
 }
 .voice-status-text {
   animation: voice-status-pulse 1.6s ease-in-out infinite;
+}
+/* your words so far, growing as you speak */
+.voice-draft {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.voice-draft[hidden] {
+  display: none;
 }
 @keyframes voice-status-pulse {
   50% {
@@ -243,4 +254,38 @@ details.steps summary {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   background: var(--accent-soft);
+}
+
+/* the composer's mic: records on this Mac and writes your words into the message box as you speak */
+.mic-button,
+.mic-cancel {
+  flex-shrink: 0;
+}
+.mic-button.recording {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--text);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.mic-button.transcribing {
+  cursor: progress;
+}
+
+/* a session with finished work you haven't seen: its tab shines until you open it */
+.session-tab.unseen {
+  --shine: var(--ok);
+  border-color: var(--shine);
+  animation: tab-shine 2s ease-in-out infinite;
+}
+.session-tab.unseen.failed {
+  --shine: var(--danger);
+}
+.session-tab.unseen .session-name::after {
+  content: " ●";
+  color: var(--shine);
+}
+@keyframes tab-shine {
+  50% {
+    box-shadow: 0 0 10px 1px var(--shine);
+  }
 }

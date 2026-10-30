@@ -14,11 +14,23 @@ export const NO_PROJECT = "";
 /** An edit: only the fields given change; `project: NO_PROJECT` takes the item off its project. */
 export type TodoChanges = Partial<TodoDraft>;
 
+/** One time the item was sent to a worker: the project and session it went to, and the instruction it went as. */
+const todoRunSchema = z.object({
+  project: z.string(),
+  sessionId: z.string(),
+  instruction: z.string(),
+  /** ISO time. */
+  sentAt: z.string(),
+});
+export type TodoRun = z.infer<typeof todoRunSchema>;
+
 const todoItemSchema = todoDraftSchema.extend({
   id: z.number().int().positive(),
   done: z.boolean(),
   /** ISO time. */
   createdAt: z.string(),
+  /** Oldest first; items saved before runs were kept have none. */
+  runs: z.array(todoRunSchema).default([]),
 });
 export type TodoItem = z.infer<typeof todoItemSchema>;
 

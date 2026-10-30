@@ -24,6 +24,8 @@
     <link rel="stylesheet" href="/styles/todo.css" />
     <link rel="stylesheet" href="/styles/force-stop.css" />
     <link rel="stylesheet" href="/styles/code.css" />
+    <link rel="stylesheet" href="/styles/resize.css" />
+    <link rel="stylesheet" href="/styles/fold.css" />
   </head>
   <body>
     <header class="topbar">
@@ -80,7 +82,7 @@
     </header>
 
     <main class="layout">
-      <aside class="projects">
+      <aside id="projects-panel" class="projects">
         <div id="assistant-entry" class="assistant-entry"></div>
         <hr class="sidebar-divider" />
         <h2 class="section-title">Projects</h2>
@@ -88,53 +90,96 @@
       </aside>
 
       <section class="center">
-        <section id="approvals" class="approvals" hidden>
-          <h2 class="section-title">Waiting for you</h2>
-          <div id="question-list" class="approval-list"></div>
-          <div id="approval-list" class="approval-list"></div>
-        </section>
-
-        <nav id="session-tabs" class="session-tabs" role="tablist" aria-label="Sessions" hidden></nav>
-
-        <p id="code-status" class="code-status" aria-live="polite" hidden></p>
-        <div id="code-frames" class="code-frames"></div>
-
-        <section class="feed-wrap">
-          <ol id="feed" class="feed" aria-live="polite"></ol>
-        </section>
-
-        <div id="voice-status" class="voice-status" hidden>
-          <span id="voice-status-text" class="voice-status-text" aria-live="polite"></span>
-          <button type="button" id="voice-discard" class="ghost" title="Discard this voice message (Esc)">
-            Cancel
-          </button>
+        <div class="code-panel">
+          <p id="code-status" class="code-status" aria-live="polite" hidden></p>
+          <div id="code-frames" class="code-frames"></div>
         </div>
 
-        <ul id="attachment-list" class="attachment-list" aria-label="Attached files" hidden></ul>
+        <div id="chat-panel" class="chat-panel">
+          <section id="approvals" class="approvals" hidden>
+            <h2 class="section-title">Waiting for you</h2>
+            <div id="question-list" class="approval-list"></div>
+            <div id="approval-list" class="approval-list"></div>
+          </section>
 
-        <form id="composer" class="composer">
-          <button
-            type="button"
-            id="attach-button"
-            class="ghost attach-button"
-            title="Attach files (up to 10, 10 MB each), or drop them on the chat"
-          >
-            Attach
-          </button>
-          <input type="file" id="attach-input" multiple hidden />
-          <textarea
-            id="composer-input"
-            rows="1"
-            placeholder="Message the orchestrator…"
-            title="Enter sends, Shift+Enter adds a line"
-          ></textarea>
-          <button type="submit" class="primary">Send</button>
-        </form>
+          <nav id="session-tabs" class="session-tabs" role="tablist" aria-label="Sessions" hidden></nav>
+
+          <section id="project-todo" class="project-todo" aria-label="Project to-do list"></section>
+
+          <section class="feed-wrap">
+            <ol id="feed" class="feed" aria-live="polite"></ol>
+          </section>
+
+          <div id="voice-status" class="voice-status" hidden>
+            <span id="voice-status-text" class="voice-status-text" aria-live="polite"></span>
+            <span id="voice-draft" class="voice-draft" hidden></span>
+            <button type="button" id="voice-discard" class="ghost" title="Discard this voice message (Esc)">
+              Cancel
+            </button>
+          </div>
+
+          <ul id="attachment-list" class="attachment-list" aria-label="Attached files" hidden></ul>
+
+          <form id="composer" class="composer">
+            <button
+              type="button"
+              id="attach-button"
+              class="ghost attach-button"
+              title="Attach files (up to 10, 10 MB each), or drop them on the chat"
+            >
+              Attach
+            </button>
+            <input type="file" id="attach-input" multiple hidden />
+            <textarea
+              id="composer-input"
+              rows="1"
+              placeholder="Message the orchestrator…"
+              title="Enter sends, Shift+Enter adds a line"
+            ></textarea>
+            <button type="button" id="mic-cancel" class="ghost mic-cancel" title="Discard this recording (Esc)" hidden>
+              ✕
+            </button>
+            <button type="button" id="mic-button" class="ghost mic-button" aria-label="Record your words">🎙</button>
+            <button type="submit" id="composer-send" class="primary">Send</button>
+          </form>
+        </div>
+
+        <div
+          class="resize-handle"
+          data-panel="chat"
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize the chat panel"
+          title="Drag to resize"
+        ></div>
+        <button type="button" class="panel-fold" data-panel="chat" aria-controls="chat-panel">
+          <span class="panel-fold-icon" aria-hidden="true">›</span>
+        </button>
       </section>
 
       <aside id="detail" class="detail">
         <p class="empty">Select a project to chat with its sessions and see their history.</p>
       </aside>
+
+      <div
+        class="resize-handle"
+        data-panel="projects"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the projects panel"
+        title="Drag to resize"
+      ></div>
+      <div
+        class="resize-handle"
+        data-panel="detail"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the sessions panel"
+        title="Drag to resize"
+      ></div>
+      <button type="button" class="panel-fold" data-panel="projects" aria-controls="projects-panel">
+        <span class="panel-fold-icon" aria-hidden="true">‹</span>
+      </button>
     </main>
 
     <dialog id="confirm-dialog" class="confirm-dialog">

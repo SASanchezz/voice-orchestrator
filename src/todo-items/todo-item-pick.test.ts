@@ -10,6 +10,7 @@ const item = (id: number, title: string, done = false): TodoItem => ({
   description: id === 2 ? "Overlapping links on mobile" : "",
   done,
   createdAt: CREATED,
+  runs: [],
 });
 const ITEMS = [item(1, "Fix the header"), item(2, "Fix the footer"), item(3, "Fix the header again", true)];
 

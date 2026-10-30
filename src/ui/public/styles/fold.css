@@ -1,0 +1,104 @@
+/* ---------------------------------------------------------------- panel fold buttons */
+
+/*
+ * A small tab on the inner side of a side panel's border folds the panel. A folded panel's column shrinks to a lane
+ * the button then fills with just its icon, so the whole lane unfolds it. The tabs sit beside the resize handles and are placed by the
+ * same width variables; the chat panel folds only next to VS Code, and nothing folds below 720px.
+ */
+.panel-fold {
+  display: none;
+}
+
+@media (min-width: 721px) {
+  .layout {
+    --fold-lane-width: 28px;
+  }
+
+  .panel-fold {
+    position: absolute;
+    top: 50%;
+    z-index: 6;
+    width: 14px;
+    height: 48px;
+    transform: translateY(-50%);
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0;
+    border-radius: 0;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+  }
+  .panel-fold:hover {
+    color: var(--accent);
+  }
+  .panel-fold[data-panel="projects"] {
+    display: flex;
+    left: calc(var(--projects-column) - 14px);
+    border-right: 0;
+    border-radius: 6px 0 0 6px;
+  }
+  .panel-fold[data-panel="chat"] {
+    right: calc(var(--chat-column) - 14px);
+    border-left: 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .layout.ide-mode .panel-fold[data-panel="chat"] {
+    display: flex;
+  }
+
+  /* ------------------------------------------------ folded */
+
+  .layout.projects-folded {
+    --projects-column: var(--fold-lane-width);
+  }
+  .layout.chat-folded {
+    --chat-column: var(--fold-lane-width);
+  }
+
+  /* Clipped and hidden twice over, so no text in a folded panel shows past its lane. */
+  .layout.projects-folded .projects,
+  .layout.ide-mode.chat-folded .chat-panel {
+    min-width: 0;
+    padding: 0;
+    overflow: hidden;
+    visibility: hidden;
+  }
+  .layout.projects-folded .projects > *,
+  .layout.ide-mode.chat-folded .chat-panel > *,
+  .layout.projects-folded .resize-handle[data-panel="projects"],
+  .layout.chat-folded .resize-handle[data-panel="chat"] {
+    display: none;
+  }
+
+  .layout.projects-folded .panel-fold[data-panel="projects"],
+  .layout.ide-mode.chat-folded .panel-fold[data-panel="chat"] {
+    top: 0;
+    bottom: 0;
+    width: var(--fold-lane-width);
+    height: auto;
+    transform: none;
+    font-size: 16px;
+    border: 0;
+    border-radius: 0;
+    background: var(--surface);
+    visibility: visible;
+  }
+  .layout.projects-folded .panel-fold[data-panel="projects"] {
+    left: 0;
+    border-right: 1px solid var(--border);
+  }
+  .layout.ide-mode.chat-folded .panel-fold[data-panel="chat"] {
+    right: 0;
+    border-left: 1px solid var(--border);
+  }
+  .layout.projects-folded .panel-fold[data-panel="projects"]:hover,
+  .layout.ide-mode.chat-folded .panel-fold[data-panel="chat"]:hover {
+    background: var(--surface-2);
+  }
+  .layout.projects-folded .panel-fold[data-panel="projects"] .panel-fold-icon,
+  .layout.ide-mode.chat-folded .panel-fold[data-panel="chat"] .panel-fold-icon {
+    transform: rotate(180deg);
+  }
+}

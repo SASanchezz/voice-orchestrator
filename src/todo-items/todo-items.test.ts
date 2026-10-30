@@ -82,3 +82,21 @@ test("todo items: a damaged file stops the app instead of being overwritten", ()
   writeFileSync(file, "{not json");
   assert.throws(() => listIn(file), /todo-items\.json can't be read/);
 });
+
+test("todo items: a list saved before runs were kept still loads, with no runs", () => {
+  const file = freshFile();
+  const item = { id: 1, ...CALL, done: false, createdAt: "2026-10-16T09:00:00.000Z" };
+  writeFileSync(file, JSON.stringify({ nextId: 2, items: [item], deleted: [] }));
+  assert.deepEqual(listIn(file).find(1).runs, []);
+});
+
+function runIn(sessionId: string) {
+  return { project: "webshop", sessionId, instruction: FOOTER.title, sentAt: "" };
+}
+
+test("todo items: only the last few runs of an item are kept", () => {
+  const items = listIn();
+  items.add(FOOTER);
+  for (let at = 1; at <= 12; at++) items.addRun(1, runIn(`s${at}`));
+  assert.equal(items.find(1).runs[0]?.sessionId, "s3");
+});

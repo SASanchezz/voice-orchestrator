@@ -12,3 +12,7 @@ export const todoItemBody = z.object({
 export type TodoItemBody = z.infer<typeof todoItemBody>;
 
 export const todoDoneBody = z.object({ done: z.boolean() });
+
+/** Where "Run on…" sends an item: an open session, or a new session in a project. */
+export const todoSessionBody = z.object({ session: z.string().min(1) });
+export const todoProjectBody = z.object({ project: z.string().min(1) });

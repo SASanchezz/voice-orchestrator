@@ -1,9 +1,10 @@
 import { z } from "zod";
+import type { AppConfig } from "../../config/app-config.js";
 import { pickTodoItem, todoItemLabel } from "../../todo-items/todo-item-pick.js";
 import type { TodoItemSender } from "../../todo-items/todo-item-sender.js";
 import type { TodoItems } from "../../todo-items/todo-items.js";
 import type { TodoTrash } from "../../todo-items/todo-trash.js";
-import { defineTool, text, type OperatorTool } from "./tool-kit.js";
+import { defineTool, needProject, text, type OperatorTool } from "./tool-kit.js";
 import { todoItemArg } from "./todo-item-tools.js";
 
 export function setTodoItemDone(items: TodoItems): OperatorTool {
@@ -46,12 +47,26 @@ export function restoreTodoItem(trash: TodoTrash): OperatorTool {
   });
 }
 
-export function sendTodoItem(items: TodoItems, sender: TodoItemSender): OperatorTool {
+const sendArgs = {
+  item: todoItemArg,
+  project: z.string().optional().describe("The project to run it on; the item's own project if left out"),
+  newSession: z
+    .boolean()
+    .optional()
+    .describe("true: open a new session for it, so it runs beside the project's busy session instead of queueing"),
+};
+
+export function sendTodoItem(items: TodoItems, sender: TodoItemSender, cfg: AppConfig): OperatorTool {
   return defineTool({
     name: "send_todo_item",
     description:
-      "Send a to-do item to its project's worker as a task (its title and description), like run_task. The item stays open.",
-    args: { item: todoItemArg },
-    run: ({ item }) => text(sender.send(pickTodoItem(items.list(), item).id)),
+      "Send a to-do item to a project's worker as a task (its title and description), like run_task. The item stays open. " +
+      "It may run on several projects, and several items on one project, each in its own session.",
+    args: sendArgs,
+    run: ({ item, project, newSession }) => {
+      const { id } = pickTodoItem(items.list(), item);
+      const chosen = project && needProject(cfg, project);
+      return text(newSession ? sender.sendToNewSession(id, chosen) : sender.send(id, chosen));
+    },
   });
 }

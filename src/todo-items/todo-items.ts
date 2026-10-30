@@ -1,5 +1,8 @@
 import type { TodoItemFile } from "./todo-item-file.js";
-import { NO_PROJECT, type TodoChanges, type TodoDraft, type TodoItem } from "./todo-item-schema.js";
+import { NO_PROJECT, type TodoChanges, type TodoDraft, type TodoItem, type TodoRun } from "./todo-item-schema.js";
+
+/** How many sends of one item are remembered. */
+const KEPT_RUNS = 10;
 
 /** Your personal to-do list: items added, edited, ticked off and reopened, saved on every change. */
 export class TodoItems {
@@ -18,7 +21,7 @@ export class TodoItems {
 
   add(draft: TodoDraft): TodoItem {
     const saved = this.file.current;
-    const item: TodoItem = { ...draft, id: saved.nextId, done: false, createdAt: new Date().toISOString() };
+    const item: TodoItem = { ...draft, id: saved.nextId, done: false, createdAt: new Date().toISOString(), runs: [] };
     this.file.write({ ...saved, nextId: item.id + 1, items: [...saved.items, item] });
     return item;
   }
@@ -29,6 +32,12 @@ export class TodoItems {
 
   setDone(id: number, done: boolean): TodoItem {
     return this.replace({ ...this.find(id), done });
+  }
+
+  /** Remembers where the item was sent; only the last few sends are kept. */
+  addRun(id: number, run: TodoRun): TodoItem {
+    const item = this.find(id);
+    return this.replace({ ...item, runs: [...item.runs, run].slice(-KEPT_RUNS) });
   }
 
   private replace(item: TodoItem): TodoItem {
