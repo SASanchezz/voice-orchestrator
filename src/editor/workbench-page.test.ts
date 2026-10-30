@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { z } from "zod";
-import { withDefaultTheme } from "./workbench-page.js";
+import { withWorkbenchDefaults } from "./workbench-page.js";
 
 const THEME = "Default Dark Modern";
+const DEFAULTS = { "workbench.activityBar.location": "top", "workbench.colorTheme": THEME };
 
 /** A page as `code serve-web` writes it: the startup options as escaped JSON in a meta tag. */
 function page(options: object): string {
@@ -19,14 +20,14 @@ function optionsOf(html: string): Record<string, unknown> {
   return z.record(z.string(), z.unknown()).parse(parsed);
 }
 
-test("workbench page: the editor's default color theme is set", () => {
-  const html = withDefaultTheme(page({ remoteAuthority: "127.0.0.1:4777" }), THEME);
-  assert.deepEqual(optionsOf(html).configurationDefaults, { "workbench.colorTheme": THEME });
+test("workbench page: the default theme and room-saving settings are set", () => {
+  const html = withWorkbenchDefaults(page({ remoteAuthority: "127.0.0.1:4777" }), THEME);
+  assert.deepEqual(optionsOf(html).configurationDefaults, DEFAULTS);
 });
 
 test("workbench page: the editor's other startup options are kept", () => {
   const options = { remoteAuthority: "127.0.0.1:4777", serverBasePath: "/editor", folderUri: { path: "/a&b" } };
-  const html = withDefaultTheme(page(options), THEME);
+  const html = withWorkbenchDefaults(page(options), THEME);
   assert.deepEqual(
     { ...optionsOf(html), configurationDefaults: undefined },
     { ...options, configurationDefaults: undefined },
@@ -34,11 +35,11 @@ test("workbench page: the editor's other startup options are kept", () => {
 });
 
 test("workbench page: other default settings are kept", () => {
-  const html = withDefaultTheme(page({ configurationDefaults: { "editor.fontSize": 15 } }), THEME);
-  assert.deepEqual(optionsOf(html).configurationDefaults, { "editor.fontSize": 15, "workbench.colorTheme": THEME });
+  const html = withWorkbenchDefaults(page({ configurationDefaults: { "editor.fontSize": 15 } }), THEME);
+  assert.deepEqual(optionsOf(html).configurationDefaults, { "editor.fontSize": 15, ...DEFAULTS });
 });
 
 test("workbench page: a page without startup options is left as it is", () => {
   const html = "<html><body>Not found</body></html>";
-  assert.equal(withDefaultTheme(html, THEME), html);
+  assert.equal(withWorkbenchDefaults(html, THEME), html);
 });

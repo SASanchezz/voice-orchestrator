@@ -4,7 +4,7 @@ import type { Duplex } from "node:stream";
 import { text } from "node:stream/consumers";
 import type { EditorRoute } from "../ui/server/editor-route.js";
 import { EDITOR_BASE_PATH, isEditorPath } from "./editor-url.js";
-import { withDefaultTheme } from "./workbench-page.js";
+import { withWorkbenchDefaults } from "./workbench-page.js";
 
 const EDITOR_HOST = "127.0.0.1";
 const BAD_GATEWAY = 502;
@@ -53,7 +53,7 @@ export class EditorProxy implements EditorRoute {
   }
 
   private async sendThemedPage(reply: IncomingMessage, res: ServerResponse): Promise<void> {
-    const page = Buffer.from(withDefaultTheme(await text(reply), this.theme));
+    const page = Buffer.from(withWorkbenchDefaults(await text(reply), this.theme));
     res.writeHead(reply.statusCode ?? BAD_GATEWAY, { ...reply.headers, "content-length": String(page.length) });
     res.end(page);
   }
