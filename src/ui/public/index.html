@@ -11,7 +11,9 @@
     />
     <link rel="stylesheet" href="/styles/base.css" />
     <link rel="stylesheet" href="/styles/layout.css" />
-    <link rel="stylesheet" href="/styles/sidebar.css" />
+    <link rel="stylesheet" href="/styles/tabs.css" />
+    <link rel="stylesheet" href="/styles/strip.css" />
+    <link rel="stylesheet" href="/styles/review.css" />
     <link rel="stylesheet" href="/styles/approvals.css" />
     <link rel="stylesheet" href="/styles/questions.css" />
     <link rel="stylesheet" href="/styles/chat.css" />
@@ -26,83 +28,92 @@
     <link rel="stylesheet" href="/styles/force-stop.css" />
     <link rel="stylesheet" href="/styles/code.css" />
     <link rel="stylesheet" href="/styles/resize.css" />
-    <link rel="stylesheet" href="/styles/fold.css" />
   </head>
   <body>
     <header class="topbar">
-      <div class="brand">
-        <span class="connection" id="connection" title="Disconnected"></span>
-        <h1>Orchestrator</h1>
-        <button
-          type="button"
-          id="restart-button"
-          class="ghost"
-          title="Restart the whole orchestrator app; projects, sessions, history and notes are kept"
-        >
-          Restart
-        </button>
+      <span class="connection" id="connection" title="Disconnected"></span>
+      <nav id="project-tabs" class="project-tabs" aria-label="Projects"></nav>
+      <div id="plan-usage" class="plan-usage" hidden></div>
+      <button type="button" id="review-button" class="ghost review-button" title="Every project's changes in one place">
+        Review
+      </button>
+      <div class="segmented" id="view-mode" role="radiogroup" aria-label="View" hidden>
+        <button data-value="code" title="Only the code; the chat slides over it when you ask">Code</button>
+        <button data-value="split" title="Code with the chat beside it">Split</button>
+        <button data-value="agent" title="Only the chat">Agent</button>
       </div>
-      <div class="controls">
-        <div class="control">
-          <span class="control-label">Permissions</span>
-          <div class="segmented" id="permission-mode" role="radiogroup" aria-label="Permission mode">
-            <button
-              data-value="auto"
-              title="Workers run everything without asking, except destructive commands and reading secrets"
-            >
-              Auto
-            </button>
-            <button data-value="ask" title="Every permission request comes to you, except read-only commands">
-              Ask
-            </button>
+      <details id="settings" class="settings">
+        <summary title="Settings" aria-label="Settings">⚙</summary>
+        <div class="settings-menu">
+          <div class="control">
+            <span class="control-label">Permissions</span>
+            <div class="segmented" id="permission-mode" role="radiogroup" aria-label="Permission mode">
+              <button
+                data-value="auto"
+                title="Workers run everything without asking, except destructive commands and reading secrets"
+              >
+                Auto
+              </button>
+              <button data-value="ask" title="Every permission request comes to you, except read-only commands">
+                Ask
+              </button>
+            </div>
           </div>
-        </div>
-        <div class="control">
-          <span class="control-label">Speech</span>
-          <div class="segmented" id="speech-mode" role="radiogroup" aria-label="Speech">
-            <button data-value="all" title="Speak every notification">All</button>
-            <button
-              data-value="questions"
-              title="Speak permission requests, short task done/failed notices and replies to your voice"
-            >
-              Questions
-            </button>
-            <button data-value="muted" title="Speak nothing">Muted</button>
+          <div class="control">
+            <span class="control-label">Speech</span>
+            <div class="segmented" id="speech-mode" role="radiogroup" aria-label="Speech">
+              <button data-value="all" title="Speak every notification">All</button>
+              <button
+                data-value="questions"
+                title="Speak permission requests, short task done/failed notices and replies to your voice"
+              >
+                Questions
+              </button>
+              <button data-value="muted" title="Speak nothing">Muted</button>
+            </div>
           </div>
-        </div>
-        <div class="control" id="gestures-control" hidden>
-          <span class="control-label">Gestures</span>
-          <div class="segmented" id="gesture-mode" role="radiogroup" aria-label="Camera gestures">
-            <button data-value="on" title="Watch the camera for talk and discard gestures">On</button>
-            <button data-value="off" title="Camera off: nothing is captured or processed, which saves battery">
-              Off
-            </button>
+          <div class="control" id="gestures-control" hidden>
+            <span class="control-label">Gestures</span>
+            <div class="segmented" id="gesture-mode" role="radiogroup" aria-label="Camera gestures">
+              <button data-value="on" title="Watch the camera for talk and discard gestures">On</button>
+              <button data-value="off" title="Camera off: nothing is captured or processed, which saves battery">
+                Off
+              </button>
+            </div>
           </div>
+          <button
+            type="button"
+            id="assistant-clear"
+            class="ghost"
+            title="Clear the assistant's chat; it first saves a short summary of what mattered"
+          >
+            Clear assistant chat
+          </button>
+          <button
+            type="button"
+            id="restart-button"
+            class="ghost"
+            title="Restart the whole orchestrator app; projects, sessions, history and notes are kept"
+          >
+            Restart
+          </button>
         </div>
-      </div>
+      </details>
     </header>
 
     <main class="layout">
-      <aside id="projects-panel" class="projects">
-        <div id="assistant-entry" class="assistant-entry"></div>
-        <hr class="sidebar-divider" />
-        <h2 class="section-title">Projects</h2>
-        <ul id="project-list" class="project-list"></ul>
-      </aside>
-
       <section class="center">
         <div class="code-panel">
           <p id="code-status" class="code-status" aria-live="polite" hidden></p>
           <div id="code-frames" class="code-frames"></div>
         </div>
 
-        <div id="chat-panel" class="chat-panel">
-          <section id="approvals" class="approvals" hidden>
-            <h2 class="section-title">Waiting for you</h2>
-            <div id="question-list" class="approval-list"></div>
-            <div id="approval-list" class="approval-list"></div>
-          </section>
+        <section id="review-panel" class="review" aria-label="Review changes" hidden>
+          <div id="change-list" class="change-list"></div>
+          <div id="diff-pane" class="diff-pane"></div>
+        </section>
 
+        <div id="chat-panel" class="chat-panel">
           <nav id="session-tabs" class="session-tabs" role="tablist" aria-label="Sessions" hidden></nav>
 
           <section id="project-todo" class="project-todo" aria-label="Project to-do list"></section>
@@ -110,14 +121,6 @@
           <section class="feed-wrap">
             <ol id="feed" class="feed" aria-live="polite"></ol>
           </section>
-
-          <div id="voice-status" class="voice-status" hidden>
-            <span id="voice-status-text" class="voice-status-text" aria-live="polite"></span>
-            <span id="voice-draft" class="voice-draft" hidden></span>
-            <button type="button" id="voice-discard" class="ghost" title="Discard this voice message (Esc)">
-              Cancel
-            </button>
-          </div>
 
           <ul id="attachment-list" class="attachment-list" aria-label="Attached files" hidden></ul>
 
@@ -153,9 +156,6 @@
           aria-label="Resize the chat panel"
           title="Drag to resize"
         ></div>
-        <button type="button" class="panel-fold" data-panel="chat" aria-controls="chat-panel">
-          <span class="panel-fold-icon" aria-hidden="true">›</span>
-        </button>
       </section>
 
       <aside id="detail" class="detail">
@@ -164,24 +164,29 @@
 
       <div
         class="resize-handle"
-        data-panel="projects"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize the projects panel"
-        title="Drag to resize"
-      ></div>
-      <div
-        class="resize-handle"
         data-panel="detail"
         role="separator"
         aria-orientation="vertical"
         aria-label="Resize the sessions panel"
         title="Drag to resize"
       ></div>
-      <button type="button" class="panel-fold" data-panel="projects" aria-controls="projects-panel">
-        <span class="panel-fold-icon" aria-hidden="true">‹</span>
-      </button>
     </main>
+
+    <section id="approvals" class="approvals" hidden>
+      <h2 class="section-title">Waiting for you</h2>
+      <div id="question-list" class="approval-list"></div>
+      <div id="approval-list" class="approval-list"></div>
+    </section>
+
+    <footer class="strip">
+      <div id="voice-status" class="voice-status" hidden>
+        <span id="voice-status-text" class="voice-status-text" aria-live="polite"></span>
+        <span id="voice-draft" class="voice-draft" hidden></span>
+        <button type="button" id="voice-discard" class="ghost" title="Discard this voice message (Esc)">Cancel</button>
+      </div>
+      <p id="latest-reply" class="latest-reply"></p>
+      <button type="button" id="chat-toggle" class="ghost chat-toggle" hidden>Chat</button>
+    </footer>
 
     <dialog id="confirm-dialog" class="confirm-dialog">
       <form method="dialog">

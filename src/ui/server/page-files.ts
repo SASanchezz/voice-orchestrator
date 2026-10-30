@@ -16,7 +16,9 @@ const ATTACHED_IMAGE_CACHE = "private, max-age=604800, immutable";
 const STATIC_FILES: Record<string, string> = {
   "/styles/base.css": "text/css",
   "/styles/layout.css": "text/css",
-  "/styles/sidebar.css": "text/css",
+  "/styles/tabs.css": "text/css",
+  "/styles/strip.css": "text/css",
+  "/styles/review.css": "text/css",
   "/styles/approvals.css": "text/css",
   "/styles/questions.css": "text/css",
   "/styles/chat.css": "text/css",
@@ -31,7 +33,6 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/force-stop.css": "text/css",
   "/styles/code.css": "text/css",
   "/styles/resize.css": "text/css",
-  "/styles/fold.css": "text/css",
 };
 
 /** The page, its script (compiled from src/ui/web/ at start), its stylesheets and the attached images it shows. */

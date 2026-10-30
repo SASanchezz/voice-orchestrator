@@ -2,7 +2,7 @@
 
 /*
  * A thin strip over the border between two panels, placed by the same width variable that sizes its panel, so it
- * follows the border while dragged. The chat handle sits in the middle section, the other two on the whole layout.
+ * follows the border while dragged. The chat handle sits in the middle section, the detail handle on the whole layout.
  */
 .layout,
 .center {
@@ -31,9 +31,6 @@
   background: var(--accent);
 }
 
-.resize-handle[data-panel="projects"] {
-  left: calc(var(--projects-column) - 4px);
-}
 .resize-handle[data-panel="detail"] {
   right: calc(var(--detail-column) - 4px);
 }
@@ -41,10 +38,12 @@
   right: calc(var(--chat-column) - 4px);
   display: none;
 }
-.layout.ide-mode .resize-handle[data-panel="chat"] {
+.layout.ide-mode.mode-split .resize-handle[data-panel="chat"],
+.layout.ide-mode.mode-code.chat-overlaid .resize-handle[data-panel="chat"] {
   display: block;
 }
-.layout.project-mode .resize-handle[data-panel="detail"] {
+.layout.project-mode .resize-handle[data-panel="detail"],
+.layout.review-shown .resize-handle {
   display: none;
 }
 
@@ -65,7 +64,8 @@
 }
 @media (max-width: 720px) {
   .resize-handle,
-  .layout.ide-mode .resize-handle[data-panel="chat"] {
+  .layout.ide-mode.mode-split .resize-handle[data-panel="chat"],
+  .layout.ide-mode.mode-code.chat-overlaid .resize-handle[data-panel="chat"] {
     display: none;
   }
 }

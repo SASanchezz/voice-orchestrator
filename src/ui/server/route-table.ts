@@ -5,6 +5,7 @@ import type { DictationControl } from "../../voice/dictation.js";
 import type { AppActions } from "./app-actions.js";
 import type { AssistantActions } from "./assistant-actions.js";
 import type { AttachedText } from "./attached-text.js";
+import type { ChangeActions } from "./change-actions.js";
 import type { HandoffActions } from "./handoff-actions.js";
 import { MAX_ATTACHED_BODY_BYTES } from "./attachment-body.js";
 import type { PermissionActions } from "./permission-actions.js";
@@ -32,6 +33,7 @@ export interface RouteHandlers {
   assistant: AssistantActions;
   /** Saves the files attached to a message or task and lists them after its text. */
   attached: AttachedText;
+  changes: ChangeActions;
   /** The mic button: your words, recorded and transcribed on this Mac. */
   dictation: DictationControl;
   gestures: GestureControl;
@@ -64,6 +66,7 @@ export class RouteTable {
       [/^\/api\/sessions\/([\w-]+)\/tasks$/, runTask],
       [/^\/api\/voice-offers\/(\w+)\/attach$/, attachToVoice],
       ...fileFreeRoutes(h),
+      [/^\/api\/projects\/([^/]+)\/changes\/stage$/, (b, m) => h.changes.stage(decodeURIComponent(m[1]), b)],
       ...todoItemRoutes(h.todoItems),
     ];
   }

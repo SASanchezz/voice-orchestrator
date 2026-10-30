@@ -58,6 +58,20 @@
 .session-stop:hover {
   color: var(--danger);
 }
+.session-close.confirming {
+  flex: none;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.session-close-note {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 4px 2px;
+  color: var(--danger);
+  font-size: 12px;
+}
 .session-stop {
   font-size: 10px;
 }
@@ -204,40 +218,6 @@ details.steps summary {
 }
 .step-approval.pending .approval-tag {
   color: var(--warn);
-}
-
-.voice-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 0;
-  padding: 6px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--accent-soft);
-  color: var(--accent-text);
-  font-size: 13px;
-}
-.voice-status[hidden] {
-  display: none;
-}
-.voice-status-text {
-  animation: voice-status-pulse 1.6s ease-in-out infinite;
-}
-/* your words so far, growing as you speak */
-.voice-draft {
-  flex: 1;
-  min-width: 0;
-  color: var(--text);
-  overflow-wrap: anywhere;
-}
-.voice-draft[hidden] {
-  display: none;
-}
-@keyframes voice-status-pulse {
-  50% {
-    opacity: 0.6;
-  }
 }
 
 /* An assistant reply opened from a task pop-up. */

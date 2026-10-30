@@ -1,0 +1,70 @@
+/* ---------------------------------------------------------------- bottom strip */
+
+/* What you and the assistant are saying, always in the same place, so voice works with the chat hidden. */
+.strip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
+  padding: 3px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+}
+
+.latest-reply {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.latest-reply[hidden] {
+  display: none;
+}
+
+.chat-toggle {
+  flex: none;
+  margin-left: auto;
+  padding: 2px 10px;
+}
+.chat-toggle[hidden] {
+  display: none;
+}
+
+.voice-status {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 2px 10px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.voice-status[hidden] {
+  display: none;
+}
+.voice-status-text {
+  flex: none;
+  animation: voice-status-pulse 1.6s ease-in-out infinite;
+}
+/* your words so far, growing as you speak */
+.voice-draft {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.voice-draft[hidden] {
+  display: none;
+}
+@keyframes voice-status-pulse {
+  50% {
+    opacity: 0.6;
+  }
+}

@@ -1,4 +1,4 @@
-// Small status displays: the connection dot, the mode switches, the listening strip and the tab title.
+// Small status displays: the connection dot, the mode switches, the bottom strip's listening notice and the tab title.
 
 import type { VoiceInputName } from "../protocol.js";
 import { act } from "./api.js";
@@ -24,7 +24,7 @@ export function renderIndicators(): void {
   document.title = pending.length ? `(${pending.length}) ${BASE_TITLE}` : BASE_TITLE;
 }
 
-function markSegment(id: string, value: string): void {
+export function markSegment(id: string, value: string): void {
   for (const option of byId(id, HTMLElement).querySelectorAll<HTMLButtonElement>("button"))
     option.setAttribute("aria-checked", String(option.dataset.value === value));
 }

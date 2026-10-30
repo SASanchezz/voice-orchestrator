@@ -1,5 +1,8 @@
 import { resolve } from "node:path";
 import { STATE_DIR } from "../config/paths.js";
+import { PlanUsageReader } from "../limits/plan-usage-reader.js";
+import { RecentPlanUsage } from "../limits/recent-plan-usage.js";
+import { GitChanges } from "../review/git-changes.js";
 import { ChatFiles } from "../ui/chat-files.js";
 import { Feed } from "../ui/feed.js";
 import { ActionReporter } from "../ui/server/action-reporter.js";
@@ -7,13 +10,17 @@ import { ApiRoutes } from "../ui/server/api-routes.js";
 import { AppActions } from "../ui/server/app-actions.js";
 import { AssistantActions } from "../ui/server/assistant-actions.js";
 import { AttachedText } from "../ui/server/attached-text.js";
+import { ChangeActions } from "../ui/server/change-actions.js";
+import { ChangesRoutes } from "../ui/server/changes-routes.js";
 import { EditorStateView } from "../ui/server/editor-state-view.js";
 import { HandoffActions } from "../ui/server/handoff-actions.js";
+import { GetRoutes } from "../ui/server/get-routes.js";
 import type { LiveClients } from "../ui/server/live-clients.js";
 import { relayDictation, relayToClients, relayVoiceDraft } from "../ui/server/live-relay.js";
 import { PageFiles } from "../ui/server/page-files.js";
 import { PageStateView } from "../ui/server/page-state-view.js";
 import { PermissionActions } from "../ui/server/permission-actions.js";
+import { PlanUsageRoute } from "../ui/server/plan-usage-route.js";
 import { QueueActions } from "../ui/server/queue-actions.js";
 import { QuestionActions } from "../ui/server/question-actions.js";
 import { ReadRoutes, SessionChatReader } from "../ui/server/read-routes.js";
@@ -63,7 +70,9 @@ export function buildUi(core: Core, neighbors: OperatorNeighbors, operator: Oper
   const questionClicks = new QuestionActions(neighbors.questions.replies, waiting, reporter);
   const lookup = new UiLookup(core.projects, core.sessions, core.cfg.projects);
   const { clients } = neighbors;
-  const sources = { operator, feed, chats, reporter, permissionClicks, questionClicks, waiting, lookup, clients };
+  const changes = new GitChanges();
+  const clicks = { permissionClicks, questionClicks };
+  const sources = { operator, feed, chats, reporter, ...clicks, waiting, lookup, clients, changes };
   return { server: uiServer(core, neighbors, sources), feed, chats, permissionClicks, questionClicks, clients };
 }
 
@@ -77,6 +86,7 @@ interface UiSources {
   waiting: WaitingViews;
   lookup: UiLookup;
   clients: LiveClients;
+  changes: GitChanges;
 }
 
 function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources): UiServer {
@@ -91,7 +101,10 @@ function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources):
   const publisher = new StatePublisher(clients, new EditorStateView(page, neighbors.editor.server), sources.feed);
   const table = routeTable(core, neighbors, sources);
   const reads = new ReadRoutes(access, publisher, new SessionChatReader(lookup, sources.chats));
-  const router = new UiRouter(new PageFiles(access, core.attachments), reads, new ApiRoutes(access, table, publisher));
+  const changesRoutes = new ChangesRoutes(access, lookup, sources.changes);
+  const gets = new GetRoutes(new PageFiles(access, core.attachments), reads, changesRoutes);
+  const usage = new PlanUsageRoute(access, new RecentPlanUsage(new PlanUsageReader(core.cfg)));
+  const router = new UiRouter(gets, new ApiRoutes(access, table, publisher), usage);
   return new UiServer(new SiteRouter(neighbors.editor.route, router), publisher, access);
 }
 
@@ -103,6 +116,7 @@ function routeTable(core: Core, neighbors: OperatorNeighbors, sources: UiSources
     app: new AppActions(sources.operator.lifecycle),
     assistant: new AssistantActions(sources.operator.orchestrator, sources.feed),
     attached: new AttachedText(core.attachments),
+    changes: new ChangeActions(lookup, sources.changes),
     handoffs: new HandoffActions(workers.handoff, lookup, reporter),
     policy: permissions.policy,
     permissions: sources.permissionClicks,

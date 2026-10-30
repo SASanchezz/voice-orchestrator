@@ -1,0 +1,100 @@
+/* ---------------------------------------------------------------- project tabs */
+
+/* Projects run along the top, so they don't cost a column beside VS Code. */
+.project-tabs {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.project-tab {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 200px;
+  padding: 4px 10px;
+  border-color: transparent;
+  background: transparent;
+}
+.project-tab.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.project-tab.assistant-tab {
+  color: var(--assistant);
+  font-weight: 600;
+}
+.project-tab.assistant-tab.selected {
+  border-color: var(--assistant);
+  background: var(--assistant-soft);
+}
+.project-tab-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-tabs .empty {
+  margin: 0;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--idle);
+}
+.dot.running {
+  background: var(--accent);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+.dot.waiting_permission {
+  background: var(--warn);
+}
+.dot.done {
+  background: var(--ok);
+}
+.dot.failed {
+  background: var(--danger);
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.badge {
+  flex: none;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.badge.unseen-badge {
+  color: var(--bg);
+  background: var(--ok);
+  font-weight: 600;
+}
+.badge.changes-badge {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+.review-button {
+  flex: none;
+}
+.review-button.shown {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}

@@ -8,6 +8,7 @@ import { type AttachmentTray, encodeForSending } from "./attachments.js";
 import type { ChatView } from "./chat.js";
 import { autoGrow, button, byId } from "./dom.js";
 import { openTodoCountOf } from "./project-todo.js";
+import { closeNote } from "./session-close.js";
 import { sessionTabs, todoTab } from "./session-tabs.js";
 import { activeSession, store } from "./store.js";
 
@@ -24,7 +25,8 @@ export function renderConversation(chat: ChatView): void {
   input.placeholder = `Task for ${project.name} · session ${session.number}…`;
   const newSession = button("+", "ghost session-new", () => void createSession(project));
   newSession.title = `New session in ${project.name}`;
-  tabs.replaceChildren(todoTab(project, openTodoCountOf(project.name)), ...sessionTabs(project), newSession);
+  const todo = todoTab(project, openTodoCountOf(project.name));
+  tabs.replaceChildren(todo, ...sessionTabs(project), newSession, ...closeNote(project));
   void chat.showSession(session.id);
 }
 

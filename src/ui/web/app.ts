@@ -4,7 +4,7 @@ import { openEvents, onServerEvent } from "./api.js";
 import { store } from "./store.js";
 import { ChatView } from "./chat.js";
 import { renderIndicators, wireSegment, setConnected } from "./indicators.js";
-import { renderProjects } from "./projects.js";
+import { renderProjectTabs, wireAssistantClear } from "./project-tabs.js";
 import { renderApprovals } from "./approvals.js";
 import { renderQuestions } from "./questions.js";
 import { renderConversation, wireComposer } from "./conversation.js";
@@ -25,7 +25,12 @@ import { wireVoiceDiscard } from "./voice-discard.js";
 import { wireTodoDialog } from "./todo-dialog.js";
 import { renderForceStop, wireForceStop } from "./force-stop.js";
 import { wirePanelResize } from "./panel-resize.js";
-import { wirePanelFolds } from "./panel-fold.js";
+import { wireChangePoll } from "./change-poll.js";
+import { renderPlanUsage, wirePlanUsagePoll } from "./plan-usage.js";
+import { showLatestReply, showLatestReplyOf, renderLatestReply } from "./latest-reply.js";
+import { renderReview, wireReview } from "./review.js";
+import { wireSessionClose } from "./session-close.js";
+import { renderViewMode, wireViewMode } from "./view-mode.js";
 
 const chat = new ChatView();
 const tray = new AttachmentTray(byId("attachment-list", HTMLElement), reportDraft);
@@ -33,18 +38,22 @@ const tray = new AttachmentTray(byId("attachment-list", HTMLElement), reportDraf
 function renderPage(): void {
   noteShownSession(); // first, so the session on screen doesn't shine
   renderIndicators();
-  renderProjects();
+  renderProjectTabs();
+  renderPlanUsage();
   renderApprovals();
   renderQuestions();
   renderConversation(chat);
   renderProjectTodo();
   renderCodeView();
+  renderViewMode();
+  renderReview();
   renderForceStop();
   chat.showPendingApprovals(store.state.pending);
   renderDetail();
   renderVoiceOffer(tray);
   renderMicButton();
   renderVoiceDraft();
+  renderLatestReply();
 }
 
 function connect(): void {
@@ -53,17 +62,29 @@ function connect(): void {
   events.addEventListener("open", reloadIfRestarted);
   events.addEventListener("open", () => reportDraft(tray.count)); // a restarted server knows of no draft
   events.addEventListener("error", () => setConnected(false)); // EventSource reconnects by itself
-  onServerEvent(events, "state", (state) => store.receive(state));
-  onServerEvent(events, "backlog", (entries) => {
-    chat.setOrchestratorBacklog(entries);
-    navigateFromLink(chat); // the state came just before the backlog, so sessions are known
-  });
-  onServerEvent(events, "feed", (entry) => chat.addOrchestratorEntry(entry));
-  onServerEvent(events, "chat", (line) => chat.addSessionMessage(line));
-  onServerEvent(events, "chat_cleared", (sessionId) => chat.clearSession(sessionId));
+  followState(events);
+  followChats(events);
   onServerEvent(events, "dictation", showDictatedWords);
   onServerEvent(events, "voice_draft", showVoiceDraft);
   onServerEvent(events, "navigate", (target) => void navigate(target, chat));
+}
+
+function followState(events: EventSource): void {
+  onServerEvent(events, "state", (state) => store.receive(state));
+  onServerEvent(events, "backlog", (entries) => {
+    chat.setOrchestratorBacklog(entries);
+    showLatestReplyOf(entries);
+    navigateFromLink(chat); // the state came just before the backlog, so sessions are known
+  });
+}
+
+function followChats(events: EventSource): void {
+  onServerEvent(events, "feed", (entry) => {
+    chat.addOrchestratorEntry(entry);
+    showLatestReply(entry);
+  });
+  onServerEvent(events, "chat", (line) => chat.addSessionMessage(line));
+  onServerEvent(events, "chat_cleared", (sessionId) => chat.clearSession(sessionId));
 }
 
 store.onChange(renderPage);
@@ -80,5 +101,10 @@ wireVoiceDiscard();
 wireTodoDialog();
 wireRestart();
 wirePanelResize();
-wirePanelFolds();
+wireViewMode();
+wireReview();
+wireAssistantClear();
+wireSessionClose();
+wireChangePoll();
+wirePlanUsagePoll();
 connect();

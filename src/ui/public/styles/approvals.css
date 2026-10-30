@@ -1,8 +1,11 @@
 /* ---------------------------------------------------------------- approvals */
 
+/* Above the bottom strip in every view, so a request can't be hidden with the chat. */
 .approvals {
-  padding: 16px 16px 4px;
-  border-bottom: 1px solid var(--border);
+  flex: none;
+  padding: 10px 16px 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
   max-height: 40vh;
   overflow-x: hidden;
   overflow-y: auto;

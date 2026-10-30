@@ -1,5 +1,6 @@
 // The page's state: the server's latest snapshot and what you selected. Every change re-renders the page.
 
+import type { ProjectChangesView } from "../change-views.js";
 import type { ProjectView, SessionStatus, SessionView, UiState } from "../protocol.js";
 import { localRead, localWrite } from "./dom.js";
 
@@ -12,6 +13,12 @@ export const STATUS_LABELS: Record<SessionStatus, string> = {
   stopped: "stopped",
 };
 
+/** With VS Code: code alone (chat slides over it on demand), code beside chat, or chat alone. */
+export type ViewMode = "code" | "split" | "agent";
+
+const VIEW_MODES: ViewMode[] = ["code", "split", "agent"];
+const DEFAULT_VIEW_MODE: ViewMode = "code";
+const VIEW_MODE_KEY = "viewMode";
 const SELECTED_PROJECT_KEY = "selectedProject";
 const INITIAL_STATE: UiState = {
   projects: [],
@@ -41,6 +48,12 @@ class PageStore {
   private clearing = false;
   /** True while the selected project's To-do tab is open instead of its session's chat. */
   private projectTodo = false;
+  private mode = VIEW_MODES.find((known) => known === localRead(VIEW_MODE_KEY)) ?? DEFAULT_VIEW_MODE;
+  /** In Code mode: the chat is slid over the editor. */
+  private chatOver = false;
+  /** The Review view is showing in place of the code and chat. */
+  private reviewing = false;
+  private changesByProject: ProjectChangesView[] = [];
   private listeners: (() => void)[] = [];
 
   get state(): UiState {
@@ -57,6 +70,22 @@ class PageStore {
 
   get projectTodoShown(): boolean {
     return this.projectTodo;
+  }
+
+  get viewMode(): ViewMode {
+    return this.mode;
+  }
+
+  get chatOverlaid(): boolean {
+    return this.chatOver;
+  }
+
+  get reviewShown(): boolean {
+    return this.reviewing;
+  }
+
+  get changes(): ProjectChangesView[] {
+    return this.changesByProject;
   }
 
   /** The selected project, or undefined when the assistant's chat is selected. */
@@ -88,6 +117,41 @@ class PageStore {
 
   showProjectChat() {
     this.projectTodo = false;
+    this.changed();
+  }
+
+  setViewMode(mode: ViewMode) {
+    this.mode = mode;
+    this.chatOver = false;
+    this.reviewing = false;
+    localWrite(VIEW_MODE_KEY, mode);
+    this.changed();
+  }
+
+  toggleChatOverlay() {
+    this.chatOver = !this.chatOver;
+    this.changed();
+  }
+
+  showReview() {
+    this.reviewing = true;
+    this.changed();
+  }
+
+  hideReview() {
+    this.reviewing = false;
+    this.changed();
+  }
+
+  /** Polled, so the page re-renders only when something really changed. */
+  receiveChanges(next: ProjectChangesView[]) {
+    if (JSON.stringify(next) === JSON.stringify(this.changesByProject)) return;
+    this.changesByProject = next;
+    this.changed();
+  }
+
+  /** Something the store doesn't hold changed, such as a file marked reviewed. */
+  rerender() {
     this.changed();
   }
 

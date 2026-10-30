@@ -1,8 +1,9 @@
 /* ---------------------------------------------------------------- code view */
 
 /*
- * With a project selected there is no detail panel. When VS Code is available it fills the middle and the project's
- * sessions and chat sit in a panel on its right, as Claude Code does inside VS Code; otherwise the chat fills the middle.
+ * With a project selected there is no detail panel. When VS Code is available, the view mode decides: Code gives it
+ * the whole width with the chat sliding over it on demand, Split puts the chat on its right, Agent shows only the
+ * chat. Without VS Code the chat fills the middle.
  */
 .chat-panel {
   flex: 1;
@@ -15,7 +16,7 @@
 }
 
 .layout.project-mode {
-  grid-template-columns: var(--projects-column) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 .layout.project-mode .detail {
   display: none;
@@ -36,21 +37,39 @@
   border-left: 1px solid var(--border);
 }
 
-@media (max-width: 1100px) {
-  .layout.project-mode {
-    grid-template-columns: var(--projects-column) minmax(0, 1fr);
-  }
+/* Over the editor rather than beside it, so opening it doesn't reflow your code. */
+.layout.ide-mode.mode-code .chat-panel {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  width: var(--chat-column);
+  background: var(--bg);
+  box-shadow: var(--shadow);
+}
+.layout.ide-mode.mode-code.chat-overlaid .chat-panel {
+  display: flex;
+}
+
+.layout.ide-mode.mode-agent .code-panel {
+  display: none;
+}
+.layout.ide-mode.mode-agent .chat-panel {
+  flex: 1;
+  border-left: 0;
 }
 
 /* Too narrow for side by side: VS Code above, the chat below. */
 @media (max-width: 720px) {
-  .layout.ide-mode .center {
+  .layout.ide-mode.mode-split .center {
     flex-direction: column;
   }
-  .layout.ide-mode .code-panel {
+  .layout.ide-mode.mode-split .code-panel {
     min-height: 60vh;
   }
-  .layout.ide-mode .chat-panel {
+  .layout.ide-mode.mode-split .chat-panel {
     flex-basis: auto;
     min-height: 70vh;
     border-left: 0;

@@ -1,5 +1,5 @@
 // Going where a notice's button points: the assistant's reply to a session's latest task, or the session itself.
-// By voice: a project's chat or its code.
+// By voice: a project's chat, its code or its changes.
 
 import { isProjectTarget, parsePageHash, type PageTarget, type ProjectTarget } from "../page-target.js";
 import type { ChatView } from "./chat.js";
@@ -8,14 +8,16 @@ import { store } from "./store.js";
 
 export async function navigate(target: PageTarget | ProjectTarget, chat: ChatView): Promise<void> {
   if (isProjectTarget(target)) return showProject(target);
+  store.hideReview();
   if (target.view === "session") return openSessionById(target.sessionId);
   store.select(""); // the assistant's chat
   chat.revealTaskReply(target.sessionId);
 }
 
-/** Chat and code are side by side, so either target just shows the project. */
-function showProject({ project }: ProjectTarget): void {
+function showProject({ view, project }: ProjectTarget): void {
   store.select(project);
+  if (view === "review") return store.showReview();
+  store.setViewMode(view === "code" ? "code" : "split");
 }
 
 /** A page opened from a notice's link goes there once its chat has loaded; the #hash is cleared after. */

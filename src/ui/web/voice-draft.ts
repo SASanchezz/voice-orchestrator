@@ -1,4 +1,4 @@
-// Your words so far while you hold the talk key or a talk gesture, in the listening strip above the message box, so you
+// Your words so far while you hold the talk key or a talk gesture, in the bottom strip, so you
 // see what the assistant will get as you speak. The strip's own text says whether it is listening or transcribing.
 
 import { byId } from "./dom.js";

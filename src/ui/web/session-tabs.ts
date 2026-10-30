@@ -6,6 +6,7 @@ import { act } from "./api.js";
 import { budgetBadge } from "./budget-badge.js";
 import { button, el } from "./dom.js";
 import { isUnseen } from "./seen-results.js";
+import { closeButton } from "./session-close.js";
 import { STATUS_LABELS, store } from "./store.js";
 
 export function sessionTabs(project: ProjectView): HTMLDivElement[] {
@@ -59,13 +60,6 @@ function openButton(session: SessionView, active: boolean): HTMLButtonElement {
   return open;
 }
 
-function closeButton(session: SessionView): HTMLButtonElement {
-  const close = button("×", "ghost session-close", () => closeSession(session));
-  close.title = `Close session ${session.number}`;
-  close.setAttribute("aria-label", `Close session ${session.number}`);
-  return close;
-}
-
 function openTitle(session: SessionView): string {
   return isUnseen(session) ? `Finished; open it to see the result. ${sessionTitle(session)}` : sessionTitle(session);
 }
@@ -73,9 +67,4 @@ function openTitle(session: SessionView): string {
 /** Like a VS Code tab: named after what the session is about. */
 function sessionTitle(session: SessionView): string {
   return session.task ?? session.history[0]?.task ?? "new";
-}
-
-function closeSession(session: SessionView): void {
-  const warning = `Close session ${session.number}?${isBusy(session) ? " Its worker will be stopped." : ""} Its messages, queue and history are deleted.`;
-  if (confirm(warning)) void act(`/api/sessions/${session.id}/close`);
 }

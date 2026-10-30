@@ -9,14 +9,11 @@ interface ResizablePanel {
   name: string;
   selector: string;
   variable: string;
-  /** 1 when dragging the handle right widens the panel (a panel on the left), -1 when it narrows it. */
-  growth: 1 | -1;
 }
 
 const PANELS: ResizablePanel[] = [
-  { name: "projects", selector: ".projects", variable: "--projects-width", growth: 1 },
-  { name: "chat", selector: ".chat-panel", variable: "--chat-width", growth: -1 },
-  { name: "detail", selector: "#detail", variable: "--detail-width", growth: -1 },
+  { name: "chat", selector: ".chat-panel", variable: "--chat-width" },
+  { name: "detail", selector: "#detail", variable: "--detail-width" },
 ];
 
 const RESIZING_CLASS = "resizing";
@@ -56,8 +53,7 @@ class PanelHandle {
   };
 
   private readonly drag = (event: PointerEvent): void => {
-    const dragged = (event.clientX - this.startX) * this.panel.growth;
-    this.resize(clampPanelWidth(this.startWidth + dragged));
+    this.resize(clampPanelWidth(this.startWidth + this.startX - event.clientX)); // both panels sit on the right
   };
 
   private readonly end = (): void => {

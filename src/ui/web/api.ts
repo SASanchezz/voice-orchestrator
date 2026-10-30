@@ -1,5 +1,7 @@
 // Talking to the server: the access token, actions over POST, live events over server-sent events.
 
+import type { FileDiffView, ProjectChangesView } from "../change-views.js";
+import type { AccountUsageView } from "../plan-usage-views.js";
 import type { ActionReply, ChatMessageView, ServerEvents } from "../protocol.js";
 
 export const token = document.querySelector<HTMLMetaElement>('meta[name="ui-token"]')?.content ?? "";
@@ -28,6 +30,28 @@ export async function act(path: string, body: object = {}): Promise<string | und
 export async function fetchSessionMessages(sessionId: string): Promise<ChatMessageView[]> {
   const res = await fetch(`/api/sessions/${sessionId}/messages?token=${encodeURIComponent(token)}`);
   return res.ok ? fromServer<ChatMessageView[]>(await res.json()) : [];
+}
+
+/** Every project's uncommitted changes. */
+export async function fetchChanges(): Promise<ProjectChangesView[]> {
+  const res = await fetch(`/api/changes?token=${encodeURIComponent(token)}`);
+  if (!res.ok) throw new Error(res.statusText);
+  return fromServer<ProjectChangesView[]>(await res.json());
+}
+
+/** What each account has left of its plan. */
+export async function fetchPlanUsage(): Promise<AccountUsageView[]> {
+  const res = await fetch(`/api/plan-usage?token=${encodeURIComponent(token)}`);
+  if (!res.ok) throw new Error(res.statusText);
+  return fromServer<AccountUsageView[]>(await res.json());
+}
+
+/** One changed file's diff; a file that stopped being changed has none. */
+export async function fetchFileDiff(project: string, path: string): Promise<FileDiffView> {
+  const query = `path=${encodeURIComponent(path)}&token=${encodeURIComponent(token)}`;
+  const res = await fetch(`/api/projects/${encodeURIComponent(project)}/changes/diff?${query}`);
+  if (res.ok) return fromServer<FileDiffView>(await res.json());
+  return { path, patch: "", notShownReason: "This file has no changes any more." };
 }
 
 /** A report the page makes on its own, which may outlive the page; a failure is not yours to see. */

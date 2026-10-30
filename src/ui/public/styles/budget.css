@@ -10,6 +10,19 @@
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
+/* The top bar's readout of what the selected project's account has left. */
+.plan-usage {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.plan-usage[hidden] {
+  display: none;
+}
 .context-meter {
   width: 28px;
   height: 5px;
