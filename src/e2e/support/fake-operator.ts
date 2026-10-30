@@ -41,11 +41,6 @@ const call = (name: string, args: Record<string, unknown> = {}): Promise<string>
 /** Notifications, by the message the operator receives. */
 const NOTIFICATION_RULES: Rule[] = [
   [/^\[PERMISSION (p\d+)\] (.*)$/s, (m) => askAboutPermission(m[1], m[2])],
-  [
-    /^\[EVENT\] (\S+) finished its task\. Worker's closing note: (.*)\nTask \(session \d+\): question:/,
-    (m) => `Short answer from ${m[1]}.\n[SCREEN]\nFull answer: ${m[2]}`,
-  ],
-  [/^\[EVENT\] (\S+) finished/, (m) => `[SCREEN]\n${m[1]} finished. Want details?`],
   [/^\[EVENT\] (\S+) failed: (.*)/, (m) => `[SCREEN]\n${m[1]} failed: ${m[2]}`],
   [/^\[SYSTEM\] Context reset/, () => "Handoff: user wants to be told when acme-web finishes."],
 ];
@@ -89,9 +84,13 @@ function askAboutPermission(id: string, request: string): string {
     : `${request}. Allow once, always, or deny?`;
 }
 
+/** Where the message itself starts, after the "[UI]" and "[NOTICE]" notes ahead of it (which may span lines). */
+const MESSAGE_TAG = /^\[(USER|EVENT|PERMISSION|SYSTEM)\b/m;
+
 /** Very small rule-based stand-in for the LLM. */
 async function reply(raw: string): Promise<string> {
-  const notes = raw.match(/^(\[(UI|NOTICE)\][^\n]*\n)+/)?.[0] ?? "";
+  const messageStart = raw.search(MESSAGE_TAG);
+  const notes = messageStart > 0 ? raw.slice(0, messageStart) : "";
   brain.notesSeen.push(...notes.split("\n").filter(Boolean));
   const message = raw.slice(notes.length);
   const notification = await applyRules(NOTIFICATION_RULES, message);

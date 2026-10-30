@@ -11,30 +11,36 @@ import { taskHeadline } from "./gist.js";
 import type { Input } from "./inputs.js";
 import type { EventVoices } from "./event-voices.js";
 
+/** How much of a finished task's closing note the model reads; the whole note is in the web UI. */
+const NOTE_CHARS = 400;
+
 /**
  * What an app event becomes for the operator: a notification turn, or a notice said once
- * for a usage limit, and for a worker's questions, which you answer on screen.
+ * for a usage limit, a finished task (its headline, without a model call),
+ * and for a worker's questions, which you answer on screen.
  */
 export function inputFor(e: AppEvent, voices: Pick<EventVoices, "voiceOf">): Input {
   if (e.kind === "usage_limit") return { kind: "notice", text: describeEvent(e), spoken: usageLimitMessage(e) };
   if (e.kind === "context_full") return { kind: "notice", text: describeEvent(e), spoken: contextAnnouncement(e) };
   if (e.kind === "question")
     return { kind: "notice", text: describeEvent(e), spoken: questionAnnouncement(e), voice: voices.voiceOf(e) };
-  const ended = taskEndOf(e);
+  if (e.kind === "task_done")
+    return { kind: "notice", text: describeEvent(e), spoken: taskHeadline(e), voice: voices.voiceOf(e) };
+  const failed = failedTaskOf(e);
   return {
     kind: "event",
     text: describeEvent(e),
     permissionId: e.kind === "permission" ? e.id : undefined,
     session: e.kind === "permission" ? undefined : sessionLinkOf(e),
-    urgent: e.kind !== "task_done",
-    announcement: ended && taskHeadline(ended),
-    voice: ended && voices.voiceOf(ended),
+    urgent: true,
+    announcement: failed && taskHeadline(failed),
+    voice: failed && voices.voiceOf(failed),
   };
 }
 
 function describeEvent(e: AppEvent): string {
   if (e.kind === "task_done")
-    return `[EVENT] ${e.label} finished its task. Worker's closing note: ${e.result}\nTask (session ${e.sessionNumber}): ${e.task}`;
+    return `[NOTICE] ${e.label} finished its task. End of the worker's closing note: ${e.result.slice(-NOTE_CHARS)}\nTask (session ${e.sessionNumber}): ${e.task}`;
   if (e.kind === "task_failed")
     return `[EVENT] ${e.label} failed: ${e.error}\nTask (session ${e.sessionNumber}): ${e.task}`;
   if (e.kind === "permission") return describePermission(e);
@@ -68,9 +74,9 @@ function questionAnnouncement(e: QuestionEvent): string {
 }
 
 /**
- * A task's end has a short announcement, e.g. "acme-web session 2 done: …", said if the model's reply has nothing
+ * A failed task has a short announcement, e.g. "acme-web session 2 failed: …", said if the model's reply has nothing
  * to say aloud in time, and a voice its pop-up can silence.
  */
-function taskEndOf(e: AppEvent): TaskEndEvent | undefined {
-  return e.kind === "task_done" || e.kind === "task_failed" ? e : undefined;
+function failedTaskOf(e: AppEvent): TaskEndEvent | undefined {
+  return e.kind === "task_failed" ? e : undefined;
 }

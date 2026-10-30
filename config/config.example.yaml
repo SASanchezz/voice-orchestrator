@@ -6,7 +6,7 @@ orchestrator:
   profile: personal # which Claude account the orchestrator itself runs on
   model: sonnet # routing model; haiku is cheaper, sonnet understands messy speech better
   resetMinutes: 20 # context reset with a short handoff, only when idle
-  answerWindowSeconds: 15 # after "X finished, want details?", the next notification waits this long for your answer (permission questions wait until answered)
+  answerWindowSeconds: 15 # after a spoken notification (e.g. a failed task), the next one waits this long for your answer (permission questions wait until answered)
   rules: # standing instructions the orchestrator always follows; they can't override the destructive checks
     - "Always ask the worker to run the tests after a code change."
     - "Answer in English, even if I mix in another language."

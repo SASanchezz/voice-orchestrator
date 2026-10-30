@@ -92,32 +92,35 @@ test("two permission requests are asked one at a time", async () => {
   await heardTimes(/^\S+ session \d+ done: /, 2, i);
 });
 
-test("after 'want details?', the next notification waits for the answer window", async () => {
+/** A failed task is put to the model, whose spoken turn opens the answer window. */
+const FAILED_ANNOUNCEMENT = /^\S+ session \d+ failed: /;
+
+test("after a spoken notification, the next one waits for the answer window", async () => {
   cfg.orchestrator.answerWindowSeconds = 1;
   const i = mark();
-  workers.intake.run("dbadmin", "sleep: 10");
-  workers.intake.run("acme-web", "sleep: 10");
-  await heardTimes(/^\S+ session \d+ done: /, 1, i);
+  workers.intake.run("dbadmin", "error: boom");
+  workers.intake.run("acme-web", "error: boom");
+  await heardTimes(FAILED_ANNOUNCEMENT, 1, i);
   await pause(400);
-  assert.equal(countSince(i, /^\S+ session \d+ done: /), 1, "held inside the window");
-  await heardTimes(/^\S+ session \d+ done: /, 2, i);
+  assert.equal(countSince(i, FAILED_ANNOUNCEMENT), 1, "held inside the window");
+  await heardTimes(FAILED_ANNOUNCEMENT, 2, i);
   cfg.orchestrator.answerWindowSeconds = 0;
 });
 
 test("speaking ends the answer window early", async () => {
   cfg.orchestrator.answerWindowSeconds = 60;
   const i = mark();
-  workers.intake.run("dbadmin", "sleep: 10");
-  workers.intake.run("acme-web", "sleep: 10");
-  await heardTimes(/^\S+ session \d+ done: /, 1, i);
+  workers.intake.run("dbadmin", "error: boom");
+  workers.intake.run("acme-web", "error: boom");
+  await heardTimes(FAILED_ANNOUNCEMENT, 1, i);
   voice.say("status");
-  await heardTimes(/^\S+ session \d+ done: /, 2, i);
+  await heardTimes(FAILED_ANNOUNCEMENT, 2, i);
   cfg.orchestrator.answerWindowSeconds = 0;
 });
 
 test("a finished task is announced with its session number and a few words of the task", async () => {
   const before = mark();
-  voice.say("status"); // answers the last "want details?", so the next announcement isn't held back
+  voice.say("status"); // answers the last notification, so the next announcement isn't held back
   await voice.heard(/dbadmin \[personal\]/, before);
   const i = mark();
   workers.intake.run("dbadmin", "Please add a resend countdown on sign-up.\nsleep: 5");

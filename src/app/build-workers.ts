@@ -69,7 +69,7 @@ export function buildWorkers(core: Core, gate: ToolCallGate, query: QueryFn): Wo
     control: new SessionControl(core.registry, kit.directory, runs),
     queuedTasks: new QueuedTasks(queue, kit.directory, kit.chat),
     todos: new TodoRunner(kit.todo, kit.limits, intake),
-    summarizer: new ChangeSummarizer(kit.options, kit.directory, query),
+    summarizer: new ChangeSummarizer(kit.options, query),
     handoff: new SessionHandoff(writer, runs, successor),
     spend: kit.budget.daily,
     todo: kit.todo,

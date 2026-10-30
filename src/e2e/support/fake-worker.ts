@@ -37,7 +37,7 @@ interface StepContext {
 export async function* fakeWorker(prompt: string, options: Options): AsyncGenerator<object> {
   const { account, cwd, sessionId } = recordCall(options);
   yield { type: "system", subtype: "init", session_id: sessionId };
-  if (options.forkSession) {
+  if (isSideCall(options)) {
     yield summaryResult(cwd, account, sessionId);
     return;
   }
@@ -47,11 +47,16 @@ export async function* fakeWorker(prompt: string, options: Options): AsyncGenera
   yield { type: "result", subtype: "success", is_error: false, result, total_cost_usd: 0.01, session_id: sessionId };
 }
 
-/** Remembers the call; a summary is a fork, so it never takes over the session it reads. */
+/** A summary or handoff: it runs without asking, and never takes over the session it reads. */
+function isSideCall(options: Options): boolean {
+  return options.permissionMode === "dontAsk";
+}
+
+/** Remembers the call. */
 function recordCall(options: Options): { account: string; cwd: string; sessionId: string } {
   const account = accountOf(options.env?.CLAUDE_CONFIG_DIR);
   const cwd = options.cwd ?? "";
-  const summary = !!options.forkSession;
+  const summary = isSideCall(options);
   workerCalls.push({ cwd, account, resume: options.resume, bin: options.pathToClaudeCodeExecutable, summary });
   const sessionId = options.resume && !summary ? options.resume : `sess-${Math.random().toString(36).slice(2, 8)}`;
   if (!summary) sessionsByCwd.set(cwd, sessionId);
