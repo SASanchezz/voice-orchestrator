@@ -474,6 +474,12 @@ Every `run_task` instruction starts with a prefix, so the worker knows its limit
 
 A mixed request is split and sent in order, usually analysis first.
 
+"Review and commit" for a project has its own section in the agent file, which the startup check doesn't require. The
+phrase is the go-ahead once the project is certain. The assistant calls `list_sessions`, asks first if a session of that
+project is busy, and sends the worker to the `voice-worker:review-and-commit` skill. The skill is in
+`plugins/voice-worker/`, loaded for every worker task by `src/workers/worker-options.ts`, so it reaches every project on
+every account. Each commit still needs "confirm commit".
+
 ### 6e. Edges enforced in code, not by judgment
 
 The model can't talk its way past these:
@@ -639,6 +645,7 @@ The same idea applies to the assistant, handled differently:
 | `config/config.yaml`                                        | Main config                                                              |
 | `config/notes.md`                                           | Your notes; `remember` writes here                                       |
 | `config/destructive.yaml`                                   | Confirm-phrase rules                                                     |
+| `plugins/voice-worker/`                                     | Skills every project's worker gets (review and commit)                   |
 | `state/registry.json`                                       | Projects, sessions, queues, statuses, costs, context sizes, task history |
 | `state/conversation.json`                                   | Assistant's last 20 exchanges and handoff                                |
 | `state/assistant-agent.jsonl`                               | Agent startup and per-turn log                                           |

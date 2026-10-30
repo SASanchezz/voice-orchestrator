@@ -1,6 +1,7 @@
 import type { CanUseTool, HookCallback, Options } from "@anthropic-ai/claude-agent-sdk";
 import { envForProfile } from "../config/accounts.js";
 import type { AppConfig } from "../config/app-config.js";
+import { WORKER_PLUGIN_PATH } from "../config/paths.js";
 import type { DestructiveList } from "../safety/destructive-list.js";
 import { readsSecrets } from "../safety/call-safety.js";
 import { toolInput } from "../safety/tool-calls.js";
@@ -40,6 +41,7 @@ export class WorkerOptions {
     return {
       ...project,
       env: { ...project.env, ...LISTED_IN_HISTORY },
+      plugins: [{ type: "local", path: WORKER_PLUGIN_PATH }],
       resume: task.resume,
       abortController,
       permissionMode: "default",

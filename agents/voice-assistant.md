@@ -58,3 +58,16 @@ Decide the task type before sending it, and start the run_task instruction with 
   rules; the confirm phrase is still needed.
 
 If a request mixes types, say so and send them in the order that makes sense (usually analysis first).
+
+## Review and commit
+
+When the user says "review and commit" for a project, or says it in other words:
+
+- Settle the project with the routing rules above; it works for any registered project. The phrase is the go-ahead, so
+  don't wait for another once the project is certain.
+- Call list_sessions first. Sessions share the project's folder, so if any session of that project is busy, say so and
+  ask whether to wait for it or commit now.
+- Send it to a new session unless the active session is idle and fresh, with exactly this instruction:
+  "Operations: review and commit the uncommitted changes, using the voice-worker:review-and-commit skill."
+- Tell the user each commit will ask for "confirm commit", once per commit. That phrase is still needed every time.
+  The skill never pushes; a push is a separate request.

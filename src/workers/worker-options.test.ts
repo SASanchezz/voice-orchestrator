@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { copyFileSync, mkdtempSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Options } from "@anthropic-ai/claude-agent-sdk";
-import { DESTRUCTIVE_PATH, setStateDir } from "../config/paths.js";
+import { DESTRUCTIVE_PATH, setStateDir, WORKER_PLUGIN_PATH } from "../config/paths.js";
 import { AppEvents } from "../events/app-events.js";
 import { openRegistry } from "../registry/open-registry.js";
 import { DestructiveList } from "../safety/destructive-list.js";
@@ -41,6 +41,14 @@ test("worker options: a task's session is tagged to show in Claude Code's sessio
 
 test("worker options: a task keeps its account's environment", () => {
   assert.equal(taskOptions().env?.CLAUDE_CONFIG_DIR, "/c");
+});
+
+test("worker options: a task gets the worker skills", () => {
+  assert.deepEqual(taskOptions().plugins, [{ type: "local", path: WORKER_PLUGIN_PATH }]);
+});
+
+test("worker options: the worker skills ship the review-and-commit skill", () => {
+  assert.ok(existsSync(join(WORKER_PLUGIN_PATH, "skills/review-and-commit/SKILL.md")));
 });
 
 test("worker options: the handoff and summary forks keep the tag they would get anyway", () => {

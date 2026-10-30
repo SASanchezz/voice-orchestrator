@@ -8,6 +8,8 @@ export const DESTRUCTIVE_PATH = resolve(APP_DIR, "config/destructive.yaml");
 export const NOTES_PATH = resolve(APP_DIR, "config/notes.md");
 /** The specialized agent every assistant chat runs as; the app doesn't start without it. */
 export const ASSISTANT_AGENT_PATH = resolve(APP_DIR, "agents/voice-assistant.md");
+/** Skills every project's worker gets: a project's own skills reach one folder, and a user's reach one account. */
+export const WORKER_PLUGIN_PATH = resolve(APP_DIR, "plugins/voice-worker");
 export let STATE_DIR = process.env.VO_STATE_DIR ?? resolve(APP_DIR, "state");
 
 /** Points everything kept in state/ at another folder (tests use a temporary one). */
