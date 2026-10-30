@@ -240,15 +240,6 @@ details.steps summary {
   }
 }
 
-.composer {
-  display: flex;
-  gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  align-items: flex-end;
-}
-
 /* An assistant reply opened from a task pop-up. */
 .entry.highlighted .entry-text {
   outline: 2px solid var(--accent);
@@ -257,10 +248,6 @@ details.steps summary {
 }
 
 /* the composer's mic: records on this Mac and writes your words into the message box as you speak */
-.mic-button,
-.mic-cancel {
-  flex-shrink: 0;
-}
 .mic-button.recording {
   background: var(--danger);
   border-color: var(--danger);

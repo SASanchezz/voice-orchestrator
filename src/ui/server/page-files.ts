@@ -24,6 +24,7 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/detail.css": "text/css",
   "/styles/dialogs.css": "text/css",
   "/styles/markdown.css": "text/css",
+  "/styles/composer.css": "text/css",
   "/styles/attachments.css": "text/css",
   "/styles/budget.css": "text/css",
   "/styles/todo.css": "text/css",

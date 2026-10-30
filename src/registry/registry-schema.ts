@@ -27,6 +27,8 @@ const sessionStateSchema = z.object({
   claudeSessionId: z.string().optional(),
   task: z.string().optional(),
   queued: z.array(z.string()),
+  /** When an instruction was last queued; the page lists projects by their latest activity. */
+  queuedAt: z.string().optional(),
   lastResult: z.string().optional(),
   lastError: z.string().optional(),
   startedAt: z.string().optional(),

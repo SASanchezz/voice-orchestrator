@@ -1,6 +1,7 @@
-// The left column: the assistant's chat, then one card per project.
+// The left column: the assistant's chat, then one card per project, busiest and most recently active first.
 
 import { shortFolder } from "../folder-path.js";
+import { byRecentActivity } from "../project-recency.js";
 import type { ProjectView, SessionStatus, SessionView } from "../protocol.js";
 import { act } from "./api.js";
 import { button, byId, el } from "./dom.js";
@@ -13,7 +14,7 @@ const STATUS_URGENCY: SessionStatus[] = ["waiting_permission", "running", "faile
 export function renderProjects(): void {
   const { projects } = store.state;
   const items = projects.length
-    ? projects.map((p) => el("li", {}, projectCard(p)))
+    ? byRecentActivity(projects).map((p) => el("li", {}, projectCard(p)))
     : [el("li", { class: "empty" }, "No projects yet. Ask the assistant to open one.")];
   byId("project-list", HTMLElement).replaceChildren(...items);
   byId("assistant-entry", HTMLElement).replaceChildren(assistantCard());

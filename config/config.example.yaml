@@ -55,7 +55,10 @@ voice:
   whisperBin: whisper-cli # from `brew install whisper-cpp`
   whisperModel: ~/.whisper/ggml-small.en.bin # for several languages: ~/.whisper/ggml-small.bin with language: auto
   language: en # "auto" if you switch between languages
-  sayVoice: "Ava (Premium)" # `say -v '?'` lists voices; download Premium ones in System Settings > Accessibility > Spoken Content
+  engine: kokoro # kokoro: natural voice inside the app (model ~90 MB, downloaded on first start) | say: macOS `say`, also used if Kokoro fails to load
+  kokoroVoice: af_heart # English voices: af_heart, af_bella, af_nicole, am_michael, am_fenrir, bf_emma, bm_george, …
+  kokoroSpeed: 1
+  sayVoice: Samantha # built into macOS; `say -v '?'` lists voices, and Premium ones download in System Settings > Accessibility > Spoken Content
   sayRate: 200
   speak: questions # all | questions (permission requests, failures, replies to your voice) | muted. Switchable in the UI
 

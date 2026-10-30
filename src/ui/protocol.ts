@@ -26,6 +26,10 @@ export interface SessionView {
   status: SessionStatus;
   task?: string;
   queued: string[];
+  /** ISO times of the latest task start, task end and queued instruction. */
+  startedAt?: string;
+  finishedAt?: string;
+  queuedAt?: string;
   lastActivity?: string;
   lastError?: string;
   costUsd: number;

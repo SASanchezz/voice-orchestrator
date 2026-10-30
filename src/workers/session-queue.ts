@@ -7,7 +7,7 @@ export class SessionQueue {
   /** Returns the instruction's place in the queue, from 1. */
   add(sessionId: string, instruction: string): number {
     const queued = [...this.sessions.session(sessionId).queued, instruction];
-    this.sessions.updateSession(sessionId, { queued });
+    this.sessions.updateSession(sessionId, { queued, queuedAt: new Date().toISOString() });
     return queued.length;
   }
 

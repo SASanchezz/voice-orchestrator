@@ -122,10 +122,6 @@
   font-size: 12px;
 }
 
-.attach-button {
-  flex-shrink: 0;
-}
-
 /* Files dragged over the chat. */
 .center.dropping {
   outline: 2px dashed var(--accent);

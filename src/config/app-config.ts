@@ -8,6 +8,9 @@ import { numberOr } from "./yaml-values.js";
 
 export const PERMISSION_MODES = ["auto", "ask"] as const;
 export const SPEECH_MODES = ["all", "questions", "muted"] as const;
+/** kokoro: the Kokoro-82M model inside the app; say: macOS `say`, also used if Kokoro fails to load. */
+export const SPEECH_ENGINES = ["kokoro", "say"] as const;
+const DEFAULT_KOKORO_VOICE = "af_heart";
 const ALWAYS_DESTINATIONS = ["localSettings", "projectSettings", "userSettings", "session"] as const;
 
 /** auto: workers run everything except destructive commands without asking; ask: every request goes to you. */
@@ -44,6 +47,12 @@ const voiceSchema = z.object({
   whisperBin: z.string(),
   whisperModel: z.string().transform(expandHome),
   language: z.string(),
+  engine: z
+    .enum(SPEECH_ENGINES)
+    .nullish()
+    .transform((engine) => engine ?? "kokoro"),
+  kokoroVoice: optionalString.transform((voice) => voice ?? DEFAULT_KOKORO_VOICE),
+  kokoroSpeed: numberOr(1),
   sayVoice: optionalString,
   sayRate: z.preprocess((rate) => rate ?? undefined, z.number().optional()),
   speak: z

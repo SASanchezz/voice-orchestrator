@@ -3,7 +3,7 @@ import type { PushToTalk } from "./push-to-talk.js";
 import type { RepeatingSpeaker } from "./repeating-speaker.js";
 import type { VoiceInputState, VoiceIO } from "./voice-io.js";
 
-/** macOS: push-to-talk on a hotkey, whisper.cpp for your words, `say` for the replies. */
+/** macOS: push-to-talk on a hotkey, whisper.cpp for your words, Kokoro or `say` for the replies. */
 export class MacVoice implements VoiceIO {
   constructor(
     private ptt: PushToTalk,

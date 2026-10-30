@@ -1,0 +1,31 @@
+/* ---------------------------------------------------------------- composer */
+
+/* The message box gets the row's spare width; the buttons keep their natural size. */
+.composer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  align-items: flex-end;
+  container-type: inline-size;
+}
+.composer > button {
+  flex-shrink: 0;
+}
+#composer-input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Too narrow for the box and every button on one line: the box takes a full row, the buttons go below it. */
+@container (max-width: 560px) {
+  #composer-input {
+    order: -1;
+    flex-basis: 100%;
+  }
+  .composer > .attach-button {
+    margin-right: auto;
+  }
+}

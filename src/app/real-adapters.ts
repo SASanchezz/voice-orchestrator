@@ -15,7 +15,7 @@ import { HotkeyTalk } from "../voice/hotkey-talk.js";
 import { MacVoice } from "../voice/mac-voice.js";
 import { PushToTalk } from "../voice/push-to-talk.js";
 import { RepeatingSpeaker } from "../voice/repeating-speaker.js";
-import { SaySpeaker } from "../voice/say-speaker.js";
+import { createSpeaker } from "../voice/speaker-factory.js";
 import { TalkSwitch } from "../voice/talk-switch.js";
 import { Dictation } from "../voice/dictation.js";
 import { Transcriber } from "../voice/transcriber.js";
@@ -60,11 +60,11 @@ export interface MacVoiceParts {
   dictation: Dictation;
 }
 
-/** Hold the hotkey to talk; replies are spoken with `say`. */
+/** Hold the hotkey to talk; replies are spoken with Kokoro or `say`, as `voice.engine` says. */
 export function macVoice(settings: AppConfig["voice"]): MacVoiceParts {
   const transcriber = new Transcriber(settings);
   const pushToTalk = new PushToTalk(settings, transcriber);
-  const speaker = new RepeatingSpeaker(new SaySpeaker(settings));
+  const speaker = new RepeatingSpeaker(createSpeaker(settings));
   const talk = new TalkSwitch(pushToTalk, () => speaker.stop());
   const hotkey = new HotkeyTalk(new MacHotkey(settings.hotkey), talk);
   const dictation = new Dictation(settings.recordBin, transcriber);
