@@ -18,15 +18,14 @@ import { RepeatingSpeaker } from "../voice/repeating-speaker.js";
 import { SaySpeaker } from "../voice/say-speaker.js";
 import { TalkSwitch } from "../voice/talk-switch.js";
 import { Transcriber } from "../voice/transcriber.js";
-import type { VoiceIO } from "../voice/voice-io.js";
 import type { Adapters } from "./build-app.js";
 
 /**
- * The real world: the screen, the camera (through the gesture sensor's `snapshots`), pop-ups, your files and the
- * Agent SDK.
+ * The real world: what main.ts made first (your voice, the assistant's checked agent), the screen, the camera
+ * (through the gesture sensor's `snapshots`), pop-ups, your files and the Agent SDK.
  */
 export async function realAdapters(
-  voice: VoiceIO,
+  madeFirst: Pick<Adapters, "voice" | "assistantAgent">,
   gestures: GestureControl,
   snapshots: SensorSnapshots,
 ): Promise<Adapters> {
@@ -34,7 +33,7 @@ export async function realAdapters(
   const popups = await MacPopups.create();
   const questionPanels = await MacQuestionPanels.create(); // after MacPopups: the helper is built by then
   const devices = {
-    voice,
+    ...madeFirst,
     screen,
     camera: SensorCamera.create(snapshots),
     gestures,

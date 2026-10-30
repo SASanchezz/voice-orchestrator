@@ -5,6 +5,7 @@
   "scripts": {
     "start": "tsx src/supervisor.ts",
     "start:text": "tsx src/supervisor.ts --text",
+    "agent-log": "touch state/assistant-agent.jsonl && tail -n 30 -f state/assistant-agent.jsonl",
     "typecheck": "tsc --noEmit && tsc --noEmit -p src/ui/web",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "lint": "oxlint --type-aware",

@@ -1,4 +1,5 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
+import type { AgentTurnLog } from "./agent-turn-log.js";
 import type { TurnTimeline } from "./turn-timeline.js";
 
 type OnText = (text: string) => void;
@@ -9,7 +10,10 @@ export class TurnReplies {
   private onText?: OnText;
   private resolve?: (reply: string) => void;
 
-  constructor(private timeline: TurnTimeline) {}
+  constructor(
+    private timeline: TurnTimeline,
+    private agentTurns: AgentTurnLog,
+  ) {}
 
   /**
    * The next turn's whole reply; `onText` hears each piece as the model writes it, before its tool calls run.
@@ -32,6 +36,7 @@ export class TurnReplies {
 
   receive(msg: SDKMessage): void {
     this.timeline.receive(msg);
+    this.agentTurns.receive(msg);
     if (msg.type === "assistant")
       for (const block of msg.message.content) if (block.type === "text") this.receiveText(block.text);
     if (msg.type === "result") this.finish(this.text.trim() || (msg.subtype === "success" ? msg.result : ""));

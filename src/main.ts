@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { requireAssistantAgent } from "./app/assistant-agent-check.js";
 import { buildApp, startOperator, type App } from "./app/build-app.js";
 import { buildGestures, gestureActions, gestureSetting } from "./app/build-gestures.js";
 import { checkLogins } from "./app/login-check.js";
@@ -15,6 +16,7 @@ import { TextVoice } from "./voice/text-voice.js";
 /** Time for workers to stop before the process exits. */
 const WORKER_STOP_GRACE_MS = 300;
 
+const assistantAgent = requireAssistantAgent(); // strict: nothing starts without it
 const cfg = loadConfig();
 const textMode = process.argv.includes("--text");
 
@@ -24,7 +26,10 @@ const mac = textMode ? undefined : macVoice(cfg.voice);
 const voice = mac?.voice ?? new TextVoice();
 const gestures = mac ? new GestureSwitch(gestureSetting(cfg.sensors.gestures)) : undefined; // text mode has no mic
 const snapshots = new SensorSnapshots(); // the camera's frames come from the gesture sensor while it runs
-const app = buildApp(cfg, await realAdapters(voice, gestures ?? new UnavailableGestures(), snapshots));
+const app = buildApp(
+  cfg,
+  await realAdapters({ voice, assistantAgent }, gestures ?? new UnavailableGestures(), snapshots),
+);
 
 await openUi(cfg, app);
 app.editor.server.start(); // once the UI has made the token file it reads

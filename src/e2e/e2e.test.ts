@@ -6,6 +6,7 @@ import { after, test } from "node:test";
 import assert from "node:assert/strict";
 import { execSync } from "node:child_process";
 import "./flows/operator-setup.flow.js";
+import "./flows/assistant-agent.flow.js";
 import "./flows/project-work.flow.js";
 import "./flows/notifications.flow.js";
 import "./flows/queue-removal.flow.js";

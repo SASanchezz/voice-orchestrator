@@ -6,7 +6,10 @@ import { accountOf } from "./sandbox.js";
 /** What each operator session was started with. */
 export interface OperatorSessionStart {
   account: string;
+  /** The prompt the main thread runs with: its agent's when it has one, as in the SDK. */
   systemPrompt: string;
+  /** The agent the main thread runs as. */
+  agent?: string;
   bin?: string;
   tools: unknown;
   preToolUse: HookCallback[];
@@ -108,6 +111,7 @@ async function applyRules(rules: Rule[], text: string): Promise<string | undefin
 export async function* fakeOperator(inbox: AsyncIterable<SDKUserMessage>, options: Options): AsyncGenerator<object> {
   recordStart(options);
   for await (const message of inbox) {
+    yield { type: "system", subtype: "init", agents: Object.keys(options.agents ?? {}) }; // as the SDK does each turn
     const content = asText(message.message.content);
     if (content === "[USER] crash") throw new Error("session died");
     const slow = content.match(/^\[USER\] slow: (.+)$/);
@@ -118,11 +122,13 @@ export async function* fakeOperator(inbox: AsyncIterable<SDKUserMessage>, option
 
 function recordStart(options: Options): void {
   const preToolUse = (options.hooks?.PreToolUse ?? []).flatMap((matcher) => matcher.hooks);
-  const systemPrompt = typeof options.systemPrompt === "string" ? options.systemPrompt : "";
+  const agentPrompt = options.agent ? options.agents?.[options.agent]?.prompt : undefined;
+  const systemPrompt = agentPrompt ?? (typeof options.systemPrompt === "string" ? options.systemPrompt : "");
   const account = accountOf(options.env?.CLAUDE_CONFIG_DIR);
   operatorSessions.push({
     account,
     systemPrompt,
+    agent: options.agent,
     bin: options.pathToClaudeCodeExecutable,
     tools: options.tools,
     preToolUse,

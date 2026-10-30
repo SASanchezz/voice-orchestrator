@@ -8,6 +8,7 @@ import type { SpeechOutput } from "../orchestrator/conversation/speech-output.js
 import type { EventVoices } from "../orchestrator/conversation/event-voices.js";
 import type { TurnContext } from "../orchestrator/conversation/turn-context.js";
 import type { ResetRequests } from "../orchestrator/lifecycle/reset-requests.js";
+import type { AssistantAgent } from "../config/assistant-agent.js";
 import type { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import type { ConversationMemory } from "../orchestrator/memory/conversation-memory.js";
 import type { ScreenSource } from "../screen/screen-source.js";
@@ -27,6 +28,8 @@ export interface OperatorDevices {
   /** Frames from the gesture sensor's camera, while Gestures are on. */
   camera: CameraSource;
   notes: AssistantNotes;
+  /** The specialized agent every assistant chat runs as, checked at startup (agents/voice-assistant.md). */
+  assistantAgent: AssistantAgent;
   query: QueryFn;
   /** Camera gestures, switched on and off from the web UI or by voice. */
   gestures: GestureControl;
