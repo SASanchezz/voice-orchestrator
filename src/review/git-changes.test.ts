@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { StaleFileError } from "./file-lines.js";
 import { GitChanges } from "./git-changes.js";
 
 const IDENTITY = ["-c", "user.name=test", "-c", "user.email=test@example.com"];
@@ -101,4 +102,63 @@ test("staging a file marks it fully staged", async () => {
   writeFileSync(join(folder, "a.txt"), "edited\n");
   await changes.stage(folder, "a.txt");
   assert.equal((await changes.ofProject("shop", folder)).files[0].staged, true);
+});
+
+const TEN_LINES = "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n";
+
+/** A repository whose committed ten-line file was just edited on its first line. */
+function editedRepository(): string {
+  const folder = repository();
+  writeFileSync(join(folder, "a.txt"), TEN_LINES);
+  git(folder, "add", ".");
+  git(folder, "commit", "-m", "ten lines");
+  writeFileSync(join(folder, "a.txt"), `one${TEN_LINES.slice(1)}`);
+  return folder;
+}
+
+async function fingerprintOfDiff(folder: string, path: string): Promise<string> {
+  const { expansion } = await new GitChanges().diffOf(folder, path);
+  return expansion?.fingerprint ?? "";
+}
+
+test("a diff says how many lines its file has", async () => {
+  const { expansion } = await new GitChanges().diffOf(editedRepository(), "a.txt");
+  assert.equal(expansion?.lineCount, 10);
+});
+
+test("a deleted file offers no lines to expand", async () => {
+  const folder = repository();
+  git(folder, "rm", "-f", "a.txt");
+  assert.equal((await new GitChanges().diffOf(folder, "a.txt")).expansion, undefined);
+});
+
+test("hidden lines come from the file, both ends included", async () => {
+  const folder = editedRepository();
+  const fingerprint = await fingerprintOfDiff(folder, "a.txt");
+  assert.deepEqual(await new GitChanges().hiddenLines(folder, "a.txt", { from: 8, to: 10, fingerprint }), [
+    "8",
+    "9",
+    "10",
+  ]);
+});
+
+test("hidden lines of a file that moved on since its diff are refused", async () => {
+  const folder = editedRepository();
+  const fingerprint = await fingerprintOfDiff(folder, "a.txt");
+  writeFileSync(join(folder, "a.txt"), "shorter now\n");
+  const reading = new GitChanges().hiddenLines(folder, "a.txt", { from: 8, to: 10, fingerprint });
+  await assert.rejects(reading, StaleFileError);
+});
+
+test("hidden lines of a secrets file are refused", async () => {
+  const folder = repository();
+  writeFileSync(join(folder, ".env"), "KEY=1\n");
+  const reading = new GitChanges().hiddenLines(folder, ".env", { from: 1, to: 1, fingerprint: "any" });
+  await assert.rejects(reading, /secrets file/);
+});
+
+test("a symlink offers no lines to expand", async () => {
+  const folder = repository();
+  symlinkSync(join(folder, "a.txt"), join(folder, "link.txt"));
+  assert.equal((await new GitChanges().diffOf(folder, "link.txt")).expansion, undefined);
 });

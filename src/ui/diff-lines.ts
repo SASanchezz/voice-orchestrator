@@ -1,5 +1,5 @@
-// One file's unified diff as lines to show, with the line number each has in the new file. No imports, so the page
-// bundles it and Node tests it.
+// One file's unified diff as lines to show, with the line number each has in the new file, and the stretches of the
+// file it leaves out. No imports, so the page bundles it and Node tests it.
 
 export type DiffLineKind = "hunk" | "added" | "removed" | "context";
 
@@ -8,6 +8,13 @@ export interface DiffLine {
   text: string;
   /** Where it sits in the new file; removed lines and hunk headers have no place there. */
   newLine?: number;
+}
+
+/** Lines of the new file, both ends included, that the diff doesn't show because they didn't change. */
+export interface HiddenRange {
+  kind: "hidden";
+  from: number;
+  to: number;
 }
 
 const HUNK_HEAD = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
@@ -35,4 +42,24 @@ function bodyLine(raw: string, newLine: number): DiffLine | undefined {
   if (raw.startsWith("-")) return { kind: "removed", text };
   if (raw.startsWith(" ")) return { kind: "context", text, newLine };
   return undefined;
+}
+
+/** The diff's lines with the hidden ranges among them: each before its hunk, the file's tail last. */
+export function withHiddenRanges(lines: DiffLine[], lineCount: number): (DiffLine | HiddenRange)[] {
+  if (!lines.length) return [];
+  const entries: (DiffLine | HiddenRange)[] = [];
+  let nextShown = 1;
+  let hunkEntry = 0;
+  for (const line of lines) {
+    if (line.kind === "hunk") hunkEntry = entries.length;
+    entries.push(line);
+    if (line.newLine === undefined) continue;
+    if (line.newLine > nextShown) entries.splice(hunkEntry, 0, hiddenRange(nextShown, line.newLine - 1));
+    nextShown = line.newLine + 1;
+  }
+  return lineCount < nextShown ? entries : [...entries, hiddenRange(nextShown, lineCount)];
+}
+
+function hiddenRange(from: number, to: number): HiddenRange {
+  return { kind: "hidden", from, to };
 }
