@@ -29,4 +29,29 @@ export interface FileDiffView {
   path: string;
   patch: string;
   notShownReason?: string;
+  /** Missing when the lines the diff leaves out can't be shown. */
+  expansion?: LineExpansionView;
+}
+
+/** What the page needs to ask for the lines a diff leaves out. */
+export interface LineExpansionView {
+  lineCount: number;
+  /** Sent back with the request, so lines from a newer file never land in an older diff. */
+  fingerprint: string;
+}
+
+/** A place in a project where a name is defined, implemented or a member of something, best first. */
+export interface DefinitionView {
+  path: string;
+  line: number;
+  kind: DefinitionKind;
+  /** The lines around it. */
+  snippet: SnippetLine[];
+}
+
+export type DefinitionKind = "definition" | "implementation" | "member";
+
+export interface SnippetLine {
+  line: number;
+  text: string;
 }
