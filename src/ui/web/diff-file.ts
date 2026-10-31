@@ -1,12 +1,15 @@
 // One changed file in the Review view: its name and counts, what you can do with it, its diff and a comment box.
 
-import { diffLines, type DiffLine } from "../diff-lines.js";
+import { diffLines, withHiddenRanges } from "../diff-lines.js";
 import type { ChangedFileView, FileDiffView } from "../change-views.js";
-import { act } from "./api.js";
+import { act, fetchHiddenLines } from "./api.js";
 import { refreshChanges } from "./change-poll.js";
 import { CommentBox } from "./diff-comment.js";
+import { diffEntryRow, diffRow, type LinesLoader } from "./diff-rows.js";
 import { button, el } from "./dom.js";
 import { isMarkedReviewed, setMarkedReviewed } from "./review-marks.js";
+import { onSymbolModifierClick } from "./symbol-links.js";
+import { showDefinitions } from "./definition-peek.js";
 
 const LOADING = "Loading…";
 
@@ -57,18 +60,20 @@ export function syncDiffFile(section: HTMLDetailsElement, project: string, file:
 }
 
 /** The diff, or why there is none. All of it goes in as text. */
-export function fillDiff(section: HTMLDetailsElement, diff: FileDiffView): void {
+export function fillDiff(section: HTMLDetailsElement, project: string, diff: FileDiffView): void {
   const body = section.querySelector(".diff-body");
   if (!body) return;
   if (diff.notShownReason) return body.replaceChildren(el("p", { class: "diff-note" }, diff.notShownReason));
   const comment = new CommentBox(diff.path);
-  const rows = diffLines(diff.patch).map((line) => diffRow(line, comment));
-  body.replaceChildren(el("div", { class: "diff-lines" }, ...rows), comment.box);
+  const rows = el("div", { class: "diff-lines" }, ...diffRows(project, diff, comment));
+  onSymbolModifierClick(rows, (symbol) => void showDefinitions(project, symbol, diff.path));
+  body.replaceChildren(rows, comment.box);
 }
 
-function diffRow(line: DiffLine, comment: CommentBox): HTMLDivElement {
-  const number = el("span", { class: "diff-number" }, line.newLine === undefined ? "" : String(line.newLine));
-  const row = el("div", { class: `diff-line ${line.kind}` }, number, el("span", { class: "diff-text" }, line.text));
-  if (line.kind !== "hunk") row.addEventListener("click", () => comment.aimAt(row, line.newLine));
-  return row;
+function diffRows(project: string, diff: FileDiffView, comment: CommentBox): HTMLElement[] {
+  const lines = diffLines(diff.patch);
+  if (!diff.expansion) return lines.map((line) => diffRow(line, comment));
+  const { lineCount, fingerprint } = diff.expansion;
+  const loadLines: LinesLoader = (range) => fetchHiddenLines(project, diff.path, { ...range, fingerprint });
+  return withHiddenRanges(lines, lineCount).map((entry) => diffEntryRow(entry, comment, loadLines));
 }

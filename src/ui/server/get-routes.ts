@@ -1,18 +1,16 @@
 import type { ServerResponse } from "node:http";
-import type { ChangesRoutes } from "./changes-routes.js";
 import { ATTACHED_IMAGE_PATH, SCRIPT_PATH, type PageFiles } from "./page-files.js";
 import type { ReadRoutes } from "./read-routes.js";
+import type { ReviewRoutes } from "./review-routes.js";
 
 const SESSION_MESSAGES_PATH = /^\/api\/sessions\/([\w-]+)\/messages$/;
-const ALL_CHANGES_PATH = "/api/changes";
-const FILE_DIFF_PATH = /^\/api\/projects\/([^/]+)\/changes\/diff$/;
 
 /** Sends each GET to the page files, the live events and chats, or the projects' changes. */
 export class GetRoutes {
   constructor(
     private pages: PageFiles,
     private reads: ReadRoutes,
-    private changes: ChangesRoutes,
+    private review: ReviewRoutes,
   ) {}
 
   prepare(): Promise<void> {
@@ -20,9 +18,7 @@ export class GetRoutes {
   }
 
   async route(url: URL, res: ServerResponse): Promise<void> {
-    if (url.pathname === ALL_CHANGES_PATH) return await this.changes.all(url, res);
-    const fileDiff = url.pathname.match(FILE_DIFF_PATH);
-    if (fileDiff) return await this.changes.fileDiff(url, decodeURIComponent(fileDiff[1]), res);
+    if (this.review.handles(url)) return await this.review.route(url, res);
     this.pageOrChat(url, res);
   }
 

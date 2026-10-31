@@ -2,19 +2,23 @@
 
 import type { ChangedFileView, ProjectChangesView } from "../change-views.js";
 import { fetchFileDiff } from "./api.js";
+import { closeDefinitions } from "./definition-peek.js";
 import { button, byId, el } from "./dom.js";
 import { diffFile, fillDiff, syncDiffFile } from "./diff-file.js";
 
 /** Starts loading a little before a file scrolls into view. */
 const LOAD_AHEAD = "600px";
 
+const MODIFIER_KEY = navigator.platform.startsWith("Mac") ? "⌘" : "Ctrl";
+
 let observer: IntersectionObserver | undefined;
 
 export function showDiffsOf({ project, files }: ProjectChangesView): void {
   observer?.disconnect();
+  closeDefinitions();
   observer = new IntersectionObserver((entries) => loadVisible(project, entries), { rootMargin: LOAD_AHEAD });
   const sections = files.map((file) => diffFile(project, file));
-  byId("diff-pane", HTMLElement).replaceChildren(refreshBar(), ...sections);
+  byId("diff-pane", HTMLElement).replaceChildren(refreshBar(), symbolHint(), ...sections);
   for (const section of sections) observer.observe(section);
 }
 
@@ -28,7 +32,11 @@ function loadVisible(project: string, entries: IntersectionObserverEntry[]): voi
 
 async function loadInto(project: string, section: HTMLDetailsElement): Promise<void> {
   const path = section.dataset.path ?? "";
-  fillDiff(section, await fetchFileDiff(project, path));
+  fillDiff(section, project, await fetchFileDiff(project, path));
+}
+
+function symbolHint(): HTMLParagraphElement {
+  return el("p", { class: "diff-hint" }, `${MODIFIER_KEY}-click a name to go to its definition.`);
 }
 
 function refreshBar(): HTMLDivElement {
@@ -47,6 +55,7 @@ export function markDiffsOutdated(isOutdated: boolean, refresh: () => void): voi
 
 export function showNoDiffs(project: string | undefined): void {
   observer?.disconnect();
+  closeDefinitions();
   const message = project ? `${project} has no uncommitted changes.` : "Pick a project to see its changes.";
   byId("diff-pane", HTMLElement).replaceChildren(el("p", { class: "empty" }, message));
 }

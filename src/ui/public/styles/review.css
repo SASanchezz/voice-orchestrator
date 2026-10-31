@@ -6,6 +6,7 @@
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 .review[hidden] {
   display: none;
@@ -20,6 +21,7 @@
 }
 
 .change-list {
+  grid-row: 1 / -1;
   overflow-y: auto;
   padding: 10px;
   border-right: 1px solid var(--border);
@@ -99,6 +101,11 @@
 .diff-refresh[hidden] {
   display: none;
 }
+.diff-hint {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
 .diff-file {
   margin-bottom: 12px;
   border: 1px solid var(--border);
@@ -171,6 +178,29 @@
   cursor: default;
 }
 
+.diff-hidden {
+  background: var(--surface-2);
+}
+.diff-expand {
+  width: 100%;
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent-text);
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: left;
+}
+
+/* A name links only while ⌘ or Ctrl is held, as in VS Code: a plain click on a line still aims a comment at it. */
+.symbol-keys-held .diff-symbol:hover,
+.definition-peek .diff-symbol:hover {
+  color: var(--accent-text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .diff-comment {
   display: flex;
   gap: 8px;
@@ -179,4 +209,84 @@
 }
 .diff-comment button {
   flex: none;
+}
+
+/* Under the diffs, as VS Code's peek: where the name is defined, and the code there. */
+.definition-peek {
+  grid-column: 2;
+  height: 42vh;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 2px solid var(--accent);
+  background: var(--surface);
+}
+.definition-peek[hidden] {
+  display: none;
+}
+.peek-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.peek-head .muted {
+  flex: 1;
+}
+.peek-head button {
+  padding: 1px 8px;
+}
+.peek-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+}
+.peek-places {
+  overflow-y: auto;
+  border-right: 1px solid var(--border);
+}
+.peek-place {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: left;
+}
+.peek-place.selected {
+  background: var(--accent-soft);
+}
+.peek-place span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl; /* a long path keeps its file name in view */
+}
+.peek-code {
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.peek-code .diff-line {
+  cursor: text;
+}
+.peek-code .diff-line:hover {
+  outline: 0;
+}
+.peek-code .peek-target {
+  background: var(--accent-soft);
+}
+.definition-peek .diff-note {
+  padding: 12px;
 }

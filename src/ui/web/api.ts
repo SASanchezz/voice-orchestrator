@@ -1,8 +1,14 @@
 // Talking to the server: the access token, actions over POST, live events over server-sent events.
 
-import type { FileDiffView, ProjectChangesView } from "../change-views.js";
+import type { DefinitionView, FileDiffView, ProjectChangesView } from "../change-views.js";
 import type { AccountUsageView } from "../plan-usage-views.js";
 import type { ActionReply, ChatMessageView, ServerEvents } from "../protocol.js";
+
+export interface HiddenLinesRequest {
+  from: number;
+  to: number;
+  fingerprint: string;
+}
 
 export const token = document.querySelector<HTMLMetaElement>('meta[name="ui-token"]')?.content ?? "";
 
@@ -52,6 +58,26 @@ export async function fetchFileDiff(project: string, path: string): Promise<File
   const res = await fetch(`/api/projects/${encodeURIComponent(project)}/changes/diff?${query}`);
   if (res.ok) return fromServer<FileDiffView>(await res.json());
   return { path, patch: "", notShownReason: "This file has no changes any more." };
+}
+
+/** Lines a diff left out; refuses, with the reason, when the file moved on from `request.fingerprint`. */
+export async function fetchHiddenLines(project: string, path: string, request: HiddenLinesRequest): Promise<string[]> {
+  const { from, to, fingerprint } = request;
+  const range = `from=${from}&to=${to}&fingerprint=${encodeURIComponent(fingerprint)}`;
+  const query = `path=${encodeURIComponent(path)}&${range}&token=${encodeURIComponent(token)}`;
+  const res = await fetch(`/api/projects/${encodeURIComponent(project)}/changes/lines?${query}`);
+  const reply: unknown = await res.json();
+  if (!res.ok) throw new Error(fromServer<ActionReply>(reply).error ?? res.statusText);
+  return fromServer<string[]>(reply);
+}
+
+/** Where a name in `file` may be defined, best first. */
+export async function fetchDefinitions(project: string, symbol: string, file: string): Promise<DefinitionView[]> {
+  const query = `symbol=${encodeURIComponent(symbol)}&file=${encodeURIComponent(file)}`;
+  const url = `/api/projects/${encodeURIComponent(project)}/definitions?${query}&token=${encodeURIComponent(token)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(res.statusText);
+  return fromServer<DefinitionView[]>(await res.json());
 }
 
 /** A report the page makes on its own, which may outlive the page; a failure is not yours to see. */

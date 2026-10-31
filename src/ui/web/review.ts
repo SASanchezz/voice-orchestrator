@@ -8,12 +8,14 @@ import { renderChangeList } from "./change-list.js";
 import { markDiffsOutdated, showDiffsOf, showNoDiffs } from "./diff-pane.js";
 import { byId } from "./dom.js";
 import { store } from "./store.js";
+import { wireSymbolKeys } from "./symbol-links.js";
 
 let loadedVersion = "";
 let loadedProject = "";
 
 export function wireReview(): void {
   byId("review-button", HTMLButtonElement).addEventListener("click", toggleReview);
+  wireSymbolKeys();
 }
 
 function toggleReview(): void {
