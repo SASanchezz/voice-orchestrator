@@ -28,3 +28,9 @@ test("page opener: the browser gets the link with the target in its hash, for a 
   await opener.open(SESSION_TARGET);
   assert.deepEqual(browser.focusedLinks, [`${LINK}#open=session:s1`]);
 });
+
+test("page opener: a project's Review goes in the link's hash too", async () => {
+  const { opener, browser } = pageOpener();
+  await opener.open({ view: "review", project: "kaggle" });
+  assert.deepEqual(browser.focusedLinks, [`${LINK}#open=review:kaggle`]);
+});

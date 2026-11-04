@@ -2,7 +2,7 @@ import { spawn, type ChildProcessByStdio } from "node:child_process";
 import { createInterface } from "node:readline";
 import type { Readable, Writable } from "node:stream";
 import type { Popup, PopupContent, PopupDevice } from "../ui/permission-popups.js";
-import type { Notice, NoticeDevice } from "../ui/task-notices.js";
+import type { Notice, NoticeButton, NoticeDevice } from "../ui/task-notices.js";
 import { buildNativeHelper } from "./native-helper.js";
 
 /** Long enough to notice from across the room; the page keeps its own pop-up until you've seen it. */
@@ -34,7 +34,7 @@ export class MacPopups implements PopupDevice, NoticeDevice {
 
   /** In the bottom-right corner, clear of permission requests; closes by itself. */
   notify(notice: Notice, chosen: (answer: string) => void): void {
-    const buttons = notice.buttons.flatMap(({ answer, label }) => ["--button", answer, label]);
+    const buttons = notice.buttons.flatMap(buttonOptions);
     const options = [...buttons, "--bottom", "--close-after", String(NOTICE_SECONDS)];
     const panel = this.show([notice.title, "", "", "", ...options]);
     createInterface({ input: panel.stdout }).once("line", (line) => {
@@ -46,4 +46,10 @@ export class MacPopups implements PopupDevice, NoticeDevice {
   private show(args: string[]): Panel {
     return spawn(this.helperPath, args, { stdio: ["pipe", "pipe", "inherit"] });
   }
+}
+
+/** "--button <answer> <label>", then "--look <answer> <color> <symbol>" for a button with a look of its own. */
+function buttonOptions({ answer, label, look }: NoticeButton): string[] {
+  const button = ["--button", answer, label];
+  return look ? [...button, "--look", answer, look.color, look.symbol] : button;
 }

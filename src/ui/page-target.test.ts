@@ -11,6 +11,11 @@ test("page target: the assistant view is written as such", () => {
   assert.equal(pageHash({ view: "assistant", sessionId: "s1" }), "#open=assistant:s1");
 });
 
+test("page target: a project's Review survives the link's hash", () => {
+  const target = { view: "review", project: "my shop" } as const;
+  assert.deepEqual(parsePageHash(pageHash(target)), target);
+});
+
 test("page target: an unknown view or another hash is no target", () => {
   assert.deepEqual(
     [parsePageHash("#open=settings:s1"), parsePageHash("#top"), parsePageHash("")],

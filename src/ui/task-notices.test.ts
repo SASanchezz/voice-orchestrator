@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { AppEvents, type AppEvent } from "../events/app-events.js";
 import { TestNotices } from "../testing/test-notices.js";
-import type { PageTarget } from "./page-target.js";
+import type { NavigationTarget } from "./page-target.js";
 import { TaskNotices } from "./task-notices.js";
 
 const KAGGLE_1 = {
@@ -17,10 +17,10 @@ const TASK_DONE: AppEvent = { kind: "task_done", ...KAGGLE_1, result: "ok" };
 function noticesFor(...events: AppEvent[]) {
   const appEvents = new AppEvents();
   const notices = new TestNotices();
-  const opened: PageTarget[] = [];
+  const opened: NavigationTarget[] = [];
   const silenced: AppEvent[] = [];
   const actions = {
-    openPage: async (target: PageTarget) => void opened.push(target),
+    openPage: async (target: NavigationTarget) => void opened.push(target),
     silence: (event: AppEvent) => void silenced.push(event),
   };
   new TaskNotices(notices, actions).follow(appEvents);
@@ -45,12 +45,17 @@ test("task notices: one ended task, one notice", () => {
   assert.equal(noticesFor(TASK_DONE).notices.shown.length, 1);
 });
 
-test("task notices: Close, Open assistant and Open session, left to right", () => {
+test("task notices: Close, Open assistant, Open session and Review changes, left to right", () => {
   const { notices } = noticesFor(TASK_DONE);
   assert.deepEqual(
     notices.shown[0].buttons.map((b) => b.label),
-    ["Close", "Open assistant", "Open session"],
+    ["Close", "Open assistant", "Open session", "Review changes"],
   );
+});
+
+test("task notices: each button has a colour of its own", () => {
+  const colors = noticesFor(TASK_DONE).notices.shown[0].buttons.map((b) => b.look?.color);
+  assert.equal(new Set(colors).size, colors.length);
 });
 
 test("task notices: Open assistant opens the assistant's reply to that session's task", () => {
@@ -65,13 +70,19 @@ test("task notices: Open session opens the worker's session", () => {
   assert.deepEqual(opened, [{ view: "session", sessionId: "s1" }]);
 });
 
+test("task notices: Review changes opens the project's changes in Review", () => {
+  const { notices, opened } = noticesFor(TASK_DONE);
+  notices.shown[0].click("review");
+  assert.deepEqual(opened, [{ view: "review", project: "kaggle" }]);
+});
+
 test("task notices: Close opens nothing", () => {
   const { notices, opened } = noticesFor(TASK_DONE);
   notices.shown[0].click("close");
   assert.deepEqual(opened, []);
 });
 
-for (const answer of ["close", "assistant", "session"]) {
+for (const answer of ["close", "assistant", "session", "review"]) {
   test(`task notices: clicking ${answer} silences that task's spoken announcement`, () => {
     const { notices, silenced } = noticesFor(TASK_DONE);
     notices.shown[0].click(answer);
