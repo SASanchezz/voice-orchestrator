@@ -7,6 +7,9 @@ import { byId, el } from "./dom.js";
 import { isMarkedReviewed, setMarkedReviewed } from "./review-marks.js";
 import { store } from "./store.js";
 
+/** The one project whose files are listed; the rest show only their names. */
+let openProject = "";
+
 export function renderChangeList(): void {
   const list = byId("change-list", HTMLElement);
   const scrollTop = list.scrollTop;
@@ -15,19 +18,36 @@ export function renderChangeList(): void {
 }
 
 function projectGroup(view: ProjectChangesView): HTMLElement {
-  const isSelected = view.project === store.selectedProjectName;
-  return el("section", { class: "change-group" }, groupHead(view, isSelected), ...groupBody(view, isSelected));
+  return el("section", { class: "change-group" }, groupHead(view), ...groupBody(view));
 }
 
-function groupHead(view: ProjectChangesView, isSelected: boolean): HTMLButtonElement {
+/** Choosing another project from the tabs closes the open one, so a list never shows beside another project's diffs. */
+function isOpen(view: ProjectChangesView): boolean {
+  return view.project === openProject && view.project === store.selectedProjectName;
+}
+
+function groupHead(view: ProjectChangesView): HTMLButtonElement {
+  const isSelected = view.project === store.selectedProjectName;
   const head = el(
     "button",
-    { type: "button", class: `change-group-head${isSelected ? " selected" : ""}` },
+    {
+      type: "button",
+      class: `change-group-head${isSelected ? " selected" : ""}`,
+      "aria-expanded": String(isOpen(view)),
+    },
+    el("span", { class: "change-group-chevron", "aria-hidden": "true" }, "›"),
     el("span", { class: "change-group-name" }, view.project),
     el("span", { class: "badge" }, headNote(view)),
   );
-  head.addEventListener("click", () => store.select(view.project));
+  head.addEventListener("click", () => toggleGroup(view));
   return head;
+}
+
+/** Opening a project selects it and closes the one open before; clicking the open one again closes it. */
+function toggleGroup(view: ProjectChangesView): void {
+  openProject = isOpen(view) ? "" : view.project;
+  if (view.project === store.selectedProjectName) return store.rerender();
+  store.select(view.project);
 }
 
 function headNote(view: ProjectChangesView): string {
@@ -36,9 +56,9 @@ function headNote(view: ProjectChangesView): string {
   return `${view.files.length} · ${changeTotals(view)}`;
 }
 
-/** Only the selected project opens up, so the list stays short with many projects. */
-function groupBody(view: ProjectChangesView, isSelected: boolean): HTMLElement[] {
-  if (!isSelected) return [];
+/** Only the open project lists its files, so the list stays short with many projects. */
+function groupBody(view: ProjectChangesView): HTMLElement[] {
+  if (!isOpen(view)) return [];
   const files = view.files.map((file) => fileRow(view.project, file));
   const more = el("p", { class: "change-note" }, `…and ${view.moreFiles} more files`);
   return view.moreFiles ? [...files, more] : files;

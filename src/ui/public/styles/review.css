@@ -27,22 +27,37 @@
   border-right: 1px solid var(--border);
   background: var(--surface);
 }
-.change-group {
-  margin-bottom: 10px;
+/* Closed, the groups are a compact list of project names; the open one lists its files under it. */
+.change-group:has(.change-group-head[aria-expanded="true"]) {
+  margin-bottom: 6px;
 }
 .change-group-head {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: 6px;
+  padding: 3px 6px;
   border-color: transparent;
   background: transparent;
-  font-weight: 600;
   text-align: left;
+}
+.change-group-head:hover {
+  background: var(--surface-2);
 }
 .change-group-head.selected {
   background: var(--accent-soft);
+}
+.change-group-head[aria-expanded="true"] {
+  font-weight: 600;
+}
+.change-group-chevron {
+  flex: none;
+  width: 10px;
+  color: var(--muted);
+  transition: transform 0.12s ease;
+}
+.change-group-head[aria-expanded="true"] .change-group-chevron {
+  transform: rotate(90deg);
 }
 .change-group-name {
   flex: 1;
