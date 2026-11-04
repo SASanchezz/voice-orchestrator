@@ -30,6 +30,7 @@ import { renderPlanUsage, wirePlanUsagePoll } from "./plan-usage.js";
 import { showLatestReply, showLatestReplyOf, renderLatestReply } from "./latest-reply.js";
 import { renderReview, wireReview } from "./review.js";
 import { wireSessionClose } from "./session-close.js";
+import { wireSessionMenu } from "./session-menu.js";
 import { renderViewMode, wireViewMode } from "./view-mode.js";
 
 const chat = new ChatView();
@@ -105,6 +106,7 @@ wireViewMode();
 wireReview();
 wireAssistantClear();
 wireSessionClose();
+wireSessionMenu();
 wireChangePoll();
 wirePlanUsagePoll();
 connect();

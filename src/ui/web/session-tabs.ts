@@ -7,6 +7,7 @@ import { budgetBadge } from "./budget-badge.js";
 import { button, el } from "./dom.js";
 import { isUnseen } from "./seen-results.js";
 import { closeButton } from "./session-close.js";
+import { openSessionMenu } from "./session-menu.js";
 import { STATUS_LABELS, store } from "./store.js";
 
 export function sessionTabs(project: ProjectView): HTMLDivElement[] {
@@ -14,7 +15,9 @@ export function sessionTabs(project: ProjectView): HTMLDivElement[] {
     const isActiveSession = session.id === project.activeSession;
     const shown = isActiveSession && !store.projectTodoShown;
     const attrs = { class: tabClass(session, shown), role: "tab", "aria-selected": String(shown) };
-    return el("div", attrs, openButton(session, isActiveSession), ...stopButtons(session), closeButton(session));
+    const tab = el("div", attrs, openButton(session, isActiveSession), ...stopButtons(session), closeButton(session));
+    tab.addEventListener("contextmenu", (event) => openSessionMenu(event, project, session));
+    return tab;
   });
 }
 

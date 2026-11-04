@@ -27,6 +27,7 @@ import "./flows/read-only-commands.flow.js";
 import "./flows/task-endings.flow.js";
 import "./flows/worker-questions.flow.js";
 import "./flows/project-removal.flow.js";
+import "./flows/session-sweeps.flow.js"; // last: it closes dbadmin's sessions and their history
 import { voice } from "./support/harness.js";
 import { acmeWeb, commitCount, dbadmin } from "./support/sandbox.js";
 

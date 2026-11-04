@@ -11,6 +11,7 @@ import { openTodoCountOf } from "./project-todo.js";
 import { closeNote } from "./session-close.js";
 import { sessionTabs, todoTab } from "./session-tabs.js";
 import { activeSession, store } from "./store.js";
+import { sweepNote } from "./sweep-note.js";
 
 export function renderConversation(chat: ChatView): void {
   const project = store.selectedProject();
@@ -26,7 +27,7 @@ export function renderConversation(chat: ChatView): void {
   const newSession = button("+", "ghost session-new", () => void createSession(project));
   newSession.title = `New session in ${project.name}`;
   const todo = todoTab(project, openTodoCountOf(project.name));
-  tabs.replaceChildren(todo, ...sessionTabs(project), newSession, ...closeNote(project));
+  tabs.replaceChildren(todo, ...sessionTabs(project), newSession, ...closeNote(project), ...sweepNote(project));
   void chat.showSession(session.id);
 }
 

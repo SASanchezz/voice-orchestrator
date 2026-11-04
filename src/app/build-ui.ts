@@ -29,6 +29,7 @@ import { ReadRoutes, SessionChatReader } from "../ui/server/read-routes.js";
 import { ReviewRoutes } from "../ui/server/review-routes.js";
 import { RouteTable, type RouteHandlers } from "../ui/server/route-table.js";
 import { SessionActions } from "../ui/server/session-actions.js";
+import { SessionSweepActions } from "../ui/server/session-sweep-actions.js";
 import { SiteRouter } from "../ui/server/site-router.js";
 import { StatePublisher } from "../ui/server/state-publisher.js";
 import { TabActions } from "../ui/server/tab-actions.js";
@@ -126,12 +127,24 @@ function routeTable(core: Core, neighbors: OperatorNeighbors, sources: UiSources
     permissions: sources.permissionClicks,
     questions: sources.questionClicks,
     queue: new QueueActions(workers.queuedTasks, lookup, reporter),
-    tabs: new TabActions(core.registry, lookup, reporter),
     tasks: new TaskActions(workers.intake, lookup, reporter),
     todoItems: todoItemHandlers(todo, lookup, reporter),
-    sessions: new SessionActions(workers.control, lookup, reporter),
+    ...sessionHandlers(core, neighbors, sources),
     ...voiceHandlers(sources.operator, devices),
   });
+}
+
+/** What the session tabs, their buttons and their right-click menu act on. */
+function sessionHandlers(
+  core: Core,
+  { workers }: OperatorNeighbors,
+  { reporter, lookup }: UiSources,
+): Pick<RouteHandlers, "tabs" | "sessions" | "sweeps"> {
+  return {
+    tabs: new TabActions(core.registry, lookup, reporter),
+    sessions: new SessionActions(workers.control, lookup, reporter),
+    sweeps: new SessionSweepActions(workers.control, lookup, reporter),
+  };
 }
 
 /** What the page's voice message buttons, its mic button and the Gestures switch act on. */

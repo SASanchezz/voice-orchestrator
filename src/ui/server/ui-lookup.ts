@@ -32,6 +32,10 @@ export class UiLookup {
     return this.sessions.session(id);
   }
 
+  sessionsOf(project: string): SessionState[] {
+    return this.sessions.sessionsOf(project);
+  }
+
   labelOf(id: string): string {
     return this.sessions.labelOf(id);
   }

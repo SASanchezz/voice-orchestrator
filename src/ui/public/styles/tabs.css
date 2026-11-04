@@ -98,3 +98,39 @@
   border-color: var(--accent);
   background: var(--accent-soft);
 }
+
+/* ---------------------------------------------------------------- session tab menu */
+
+.session-menu {
+  position: fixed;
+  z-index: 30;
+  display: grid;
+  min-width: 180px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.session-menu[hidden] {
+  display: none;
+}
+.session-menu-item {
+  justify-content: flex-start;
+  text-align: left;
+  border-color: transparent;
+}
+.session-menu-item:hover:enabled {
+  background: var(--surface-2);
+}
+.session-menu-item:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+.session-sweep-note {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 4px 2px;
+  color: var(--muted);
+  font-size: 12px;
+}

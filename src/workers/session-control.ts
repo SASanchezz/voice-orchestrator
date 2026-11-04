@@ -39,6 +39,17 @@ export class SessionControl {
     return `Closed ${label}; its worker, queue and history are gone.`;
   }
 
+  /** Closes the sessions one after another, as closeSession does each. */
+  async closeSessions(sessionIds: string[]): Promise<void> {
+    for (const sessionId of sessionIds) await this.closeSession(sessionId);
+  }
+
+  /** The kept session becomes active first, so closing the active one never lands on another that stays. */
+  async closeOthers(keptId: string, otherIds: string[]): Promise<void> {
+    this.registry.activate(keptId);
+    await this.closeSessions(otherIds);
+  }
+
   /** Stops the session's worker, then wipes its chat, history and conversation; the session stays open. */
   async clearSession(sessionId: string): Promise<string> {
     const label = this.directory.labelOf(sessionId);
