@@ -8,7 +8,8 @@ import { codeWithSymbols } from "./symbol-links.js";
 export type LinesLoader = (range: Pick<HiddenRange, "from" | "to">) => Promise<string[]>;
 
 export function diffEntryRow(entry: DiffLine | HiddenRange, comment: CommentBox, loadLines: LinesLoader): HTMLElement {
-  return entry.kind === "hidden" ? hiddenRangeRow(entry, comment, loadLines) : diffRow(entry, comment);
+  if (entry.kind !== "hidden") return diffRow(entry, comment);
+  return hiddenRangeRow(entry, loadLines, (lines) => contextRows(lines, entry.from, comment));
 }
 
 export function diffRow(line: DiffLine, comment: CommentBox): HTMLDivElement {
@@ -19,9 +20,14 @@ export function diffRow(line: DiffLine, comment: CommentBox): HTMLDivElement {
   return row;
 }
 
-function hiddenRangeRow(range: HiddenRange, comment: CommentBox, loadLines: LinesLoader): HTMLDivElement {
+/** Opens, in place, into the rows `rowsOf` makes of the lines it hid. */
+export function hiddenRangeRow(
+  range: HiddenRange,
+  loadLines: LinesLoader,
+  rowsOf: (lines: string[]) => HTMLElement[],
+): HTMLDivElement {
   const row = el("div", { class: "diff-hidden" });
-  const reveal = (lines: string[]): void => row.replaceWith(...contextRows(lines, range.from, comment));
+  const reveal = (lines: string[]): void => row.replaceWith(...rowsOf(lines));
   const expand = button(rangeLabel(range), "diff-expand", () => void openRange(expand, loadLines(range), reveal));
   row.append(expand);
   return row;

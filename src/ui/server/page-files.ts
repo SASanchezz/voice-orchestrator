@@ -19,6 +19,7 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/tabs.css": "text/css",
   "/styles/strip.css": "text/css",
   "/styles/review.css": "text/css",
+  "/styles/split-diff.css": "text/css",
   "/styles/approvals.css": "text/css",
   "/styles/questions.css": "text/css",
   "/styles/chat.css": "text/css",

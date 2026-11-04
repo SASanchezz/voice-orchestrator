@@ -1,11 +1,11 @@
 // One changed file in the Review view: its name and counts, what you can do with it, its diff and a comment box.
 
-import { diffLines, withHiddenRanges } from "../diff-lines.js";
 import type { ChangedFileView, FileDiffView } from "../change-views.js";
-import { act, fetchHiddenLines } from "./api.js";
+import { act } from "./api.js";
 import { refreshChanges } from "./change-poll.js";
+import { DiffBodyRows } from "./diff-body-rows.js";
 import { CommentBox } from "./diff-comment.js";
-import { diffEntryRow, diffRow, type LinesLoader } from "./diff-rows.js";
+import { type DiffLayout, layoutOf, layoutToggle, onLayoutChange } from "./diff-layout.js";
 import { button, el } from "./dom.js";
 import { isMarkedReviewed, setMarkedReviewed } from "./review-marks.js";
 import { onSymbolModifierClick } from "./symbol-links.js";
@@ -37,7 +37,7 @@ function fileActions(project: string, file: ChangedFileView, reviewed: boolean):
   const mark = button(reviewed ? "Reviewed ✓" : "Mark reviewed", "ghost diff-mark", () => toggleReview(project, file));
   const stage = button("Stage", "ghost", () => void stageFile(project, file));
   stage.disabled = file.staged;
-  return el("div", { class: "diff-actions" }, mark, stage);
+  return el("div", { class: "diff-actions" }, mark, stage, layoutToggle(project, file.path));
 }
 
 function toggleReview(project: string, file: ChangedFileView): void {
@@ -59,21 +59,19 @@ export function syncDiffFile(section: HTMLDetailsElement, project: string, file:
   if (mark) mark.textContent = reviewed ? "Reviewed ✓" : "Mark reviewed";
 }
 
-/** The diff, or why there is none. All of it goes in as text. */
+/** The diff, or why there is none. All of it goes in as text. Switching layout keeps the comment you're writing. */
 export function fillDiff(section: HTMLDetailsElement, project: string, diff: FileDiffView): void {
-  const body = section.querySelector(".diff-body");
+  const body = section.querySelector<HTMLElement>(".diff-body");
   if (!body) return;
   if (diff.notShownReason) return body.replaceChildren(el("p", { class: "diff-note" }, diff.notShownReason));
   const comment = new CommentBox(diff.path);
-  const rows = el("div", { class: "diff-lines" }, ...diffRows(project, diff, comment));
-  onSymbolModifierClick(rows, (symbol) => void showDefinitions(project, symbol, diff.path));
-  body.replaceChildren(rows, comment.box);
+  const rows = new DiffBodyRows(project, diff, comment);
+  const show = (layout: DiffLayout): void => body.replaceChildren(diffLinesIn(layout, rows), comment.box);
+  onSymbolModifierClick(body, (symbol) => void showDefinitions(project, symbol, diff.path));
+  onLayoutChange(section, show);
+  show(layoutOf(project, diff.path));
 }
 
-function diffRows(project: string, diff: FileDiffView, comment: CommentBox): HTMLElement[] {
-  const lines = diffLines(diff.patch);
-  if (!diff.expansion) return lines.map((line) => diffRow(line, comment));
-  const { lineCount, fingerprint } = diff.expansion;
-  const loadLines: LinesLoader = (range) => fetchHiddenLines(project, diff.path, { ...range, fingerprint });
-  return withHiddenRanges(lines, lineCount).map((entry) => diffEntryRow(entry, comment, loadLines));
+function diffLinesIn(layout: DiffLayout, rows: DiffBodyRows): HTMLDivElement {
+  return el("div", { class: `diff-lines ${layout}` }, ...rows.rowsIn(layout));
 }

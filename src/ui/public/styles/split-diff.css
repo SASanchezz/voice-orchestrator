@@ -1,0 +1,38 @@
+/* A diff side by side in the Review view: the old file left, the new file right. Long lines wrap, so both halves stay
+   in view. */
+.split-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.split-side {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  cursor: pointer;
+}
+.split-side + .split-side {
+  border-left: 1px solid var(--border);
+}
+.split-side .diff-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.split-side:hover {
+  outline: 1px solid var(--border);
+}
+.split-side.commented {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.split-side.removed {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+}
+.split-side.added {
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
+}
+.split-side.empty {
+  background: var(--surface-2);
+  cursor: default;
+}
+.split-side.empty:hover {
+  outline: none;
+}
