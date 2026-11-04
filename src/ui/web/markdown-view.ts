@@ -10,13 +10,20 @@ export function markdownView(text: string, className = ""): HTMLDivElement {
   return el("div", { class: `markdown ${className}`.trim() }, ...parseMarkdown(text).map(blockNode));
 }
 
+type ListBlock = Extract<Block, { kind: "list" }>;
+
 function blockNode(block: Block): HTMLElement {
   if (block.kind === "heading") return el(HEADING_TAGS[block.level - 1], {}, ...inlineNodes(block.content));
   if (block.kind === "paragraph") return el("p", {}, ...withLineBreaks(block.lines));
   if (block.kind === "quote") return el("blockquote", {}, ...withLineBreaks(block.lines));
   if (block.kind === "code") return codeBlock(block.text);
   if (block.kind === "table") return tableNode(block.header, block.rows);
-  return el(block.ordered ? "ol" : "ul", {}, ...block.items.map((item) => el("li", {}, ...inlineNodes(item))));
+  return listNode(block);
+}
+
+function listNode(list: ListBlock): HTMLElement {
+  const items = list.items.map((item) => el("li", {}, ...item.map(blockNode)));
+  return list.ordered ? el("ol", { start: String(list.start) }, ...items) : el("ul", {}, ...items);
 }
 
 /** A command or snippet, with a button that copies exactly it. */

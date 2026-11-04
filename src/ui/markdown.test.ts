@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { parseInline, parseMarkdown } from "./markdown.js";
 
 const text = (value: string) => ({ kind: "text", text: value });
+const paragraph = (value: string) => ({ kind: "paragraph", lines: [[text(value)]] });
 
 test("markdown: bold, inline code and italic inside a line", () => {
   assert.deepEqual(parseInline("**Tests** pass in `npm test`, *mostly*"), [
@@ -43,9 +44,70 @@ test("markdown: a pipe table becomes header and rows", () => {
 
 test("markdown: dashes make a list and numbers an ordered one", () => {
   assert.deepEqual(parseMarkdown("- one\n- two\n\n1. first"), [
-    { kind: "list", ordered: false, items: [[text("one")], [text("two")]] },
-    { kind: "list", ordered: true, items: [[text("first")]] },
+    { kind: "list", ordered: false, start: 1, items: [[paragraph("one")], [paragraph("two")]] },
+    { kind: "list", ordered: true, start: 1, items: [[paragraph("first")]] },
   ]);
+});
+
+test("markdown: bullets indented under a numbered item nest inside it", () => {
+  assert.deepEqual(parseMarkdown("1. first\n   - a\n   - b\n2. second"), [
+    {
+      kind: "list",
+      ordered: true,
+      start: 1,
+      items: [
+        [paragraph("first"), { kind: "list", ordered: false, start: 1, items: [[paragraph("a")], [paragraph("b")]] }],
+        [paragraph("second")],
+      ],
+    },
+  ]);
+});
+
+test("markdown: bullets indented less than the number's width still nest", () => {
+  const [list] = parseMarkdown("1. first\n  - a\n2. second");
+  assert.deepEqual(list?.kind === "list" && list.items.length, 2);
+});
+
+test("markdown: a wrapped line stays in its item", () => {
+  assert.deepEqual(parseMarkdown("1. first\n   more\n2. second"), [
+    {
+      kind: "list",
+      ordered: true,
+      start: 1,
+      items: [[{ kind: "paragraph", lines: [[text("first")], [text("more")]] }], [paragraph("second")]],
+    },
+  ]);
+});
+
+test("markdown: blank lines between items keep one list", () => {
+  const [list, ...others] = parseMarkdown("1. first\n\n2. second\n\n3. third");
+  assert.deepEqual([list?.kind === "list" && list.items.length, others.length], [3, 0]);
+});
+
+test("markdown: a list split by unindented bullets keeps counting", () => {
+  const lists = parseMarkdown("3. third\n- aside\n4. fourth");
+  assert.deepEqual(
+    lists.map((list) => list.kind === "list" && list.start),
+    [3, 1, 4],
+  );
+});
+
+test("markdown: a fenced block inside an item stays in the item", () => {
+  assert.deepEqual(parseMarkdown("1. Run:\n   ```\n   npm ci\n\n   npm test\n   ```\n2. Done"), [
+    {
+      kind: "list",
+      ordered: true,
+      start: 1,
+      items: [[paragraph("Run:"), { kind: "code", text: "npm ci\n\nnpm test" }], [paragraph("Done")]],
+    },
+  ]);
+});
+
+test("markdown: an unindented line after a list is a new paragraph", () => {
+  assert.deepEqual(
+    parseMarkdown("- a\n\nafter").map((block) => block.kind),
+    ["list", "paragraph"],
+  );
 });
 
 test("markdown: headings, and paragraph lines kept apart", () => {

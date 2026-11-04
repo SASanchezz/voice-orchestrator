@@ -34,8 +34,25 @@
 .markdown ol {
   padding-left: 20px;
 }
+/* The feed is itself a list, so without these the browser styles every answer's bullets as nested. */
+.markdown ul {
+  list-style: disc;
+}
+.markdown ul ul,
+.markdown ol ul {
+  list-style: circle;
+}
+.markdown ol {
+  list-style: decimal;
+}
 .markdown li + li {
   margin-top: 2px;
+}
+.markdown li > :last-child {
+  margin-bottom: 0;
+}
+.markdown li > p:has(+ ul, + ol) {
+  margin-bottom: 2px;
 }
 .markdown code {
   font-family: var(--mono);

@@ -13,14 +13,14 @@ export type Block =
   | { kind: "heading"; level: number; content: Inline[] }
   | { kind: "paragraph"; lines: Inline[][] }
   | { kind: "quote"; lines: Inline[][] }
-  | { kind: "list"; ordered: boolean; items: Inline[][] }
+  | { kind: "list"; ordered: boolean; start: number; items: Block[][] }
   | { kind: "code"; text: string }
   | { kind: "table"; header: Inline[][]; rows: Inline[][][] };
 
 const HEADING = /^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$/;
 const FENCE = /^\s*(```|~~~)/;
-const BULLET = /^\s*[-*+]\s+(.*)$/;
-const NUMBERED = /^\s*\d{1,9}[.)]\s+(.*)$/;
+const BULLET = /^\s*[-*+]\s+(?<body>.*)$/;
+const NUMBERED = /^\s*(?<number>\d{1,9})[.)]\s+(?<body>.*)$/;
 const QUOTE = /^\s*>\s?(.*)$/;
 const TABLE_ROW = /^\s*\|.*\|\s*$/;
 const TABLE_DIVIDER = /^\s*\|?(\s*:?-{3,}:?\s*\|)+(\s*:?-{3,}:?\s*)?$/;
@@ -87,10 +87,45 @@ function tableCells(row: string): Inline[][] {
   return inner.split(/(?<!\\)\|/).map((cell) => parseInline(cell.trim().replace(/\\\|/g, "|")));
 }
 
+/** Blank lines between items don't end a list, so "1. a\n\n2. b" stays one list. */
 function readList(lines: string[], start: number, marker: RegExp): Read {
-  const end = endOf(lines, start, (line) => marker.test(line));
-  const items = lines.slice(start, end).map((line) => parseInline(marker.exec(line)?.[1] ?? ""));
-  return [{ kind: "list", ordered: marker === NUMBERED, items }, end];
+  const items: Block[][] = [];
+  let index = start;
+  while (marker.test(lines[index] ?? "")) {
+    const end = itemEnd(lines, index);
+    items.push(parseMarkdown(itemSource(lines.slice(index, end), marker)));
+    index = endOf(lines, end, (line) => !line.trim());
+  }
+  return [{ kind: "list", ordered: marker === NUMBERED, start: listStart(lines[start]), items }, index];
+}
+
+/** An item runs on through lines indented deeper than its marker, across blank lines, and stops at a shallower one. */
+function itemEnd(lines: string[], start: number): number {
+  const markerIndent = indentOf(lines[start]);
+  let end = start + 1;
+  for (let index = end; index < lines.length; index++) {
+    if (!lines[index].trim()) continue;
+    if (indentOf(lines[index]) <= markerIndent) break;
+    end = index + 1;
+  }
+  return end;
+}
+
+/** The item as markdown of its own. Answers often indent less than the marker's width, so it dedents by what's there. */
+function itemSource(itemLines: string[], marker: RegExp): string {
+  const [first, ...rest] = itemLines;
+  const body = marker.exec(first)?.groups?.body ?? "";
+  const margin = Math.min(...rest.filter((line) => line.trim()).map(indentOf));
+  return [body, ...rest.map((line) => line.slice(margin))].join("\n");
+}
+
+function indentOf(line: string): number {
+  return line.length - line.trimStart().length;
+}
+
+/** The source's own number: a list split by unindented bullets carries on counting instead of restarting at 1. */
+function listStart(line: string): number {
+  return Number(NUMBERED.exec(line)?.groups?.number ?? 1);
 }
 
 function readQuote(lines: string[], start: number): Read {
