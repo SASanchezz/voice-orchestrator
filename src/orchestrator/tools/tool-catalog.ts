@@ -10,6 +10,7 @@ import type { Editor } from "../../editor/editor.js";
 import type { DestructiveList } from "../../safety/destructive-list.js";
 import type { ScreenSource } from "../../screen/screen-source.js";
 import type { GestureControl } from "../../sensors/gesture-switch.js";
+import type { SkillLibrary } from "../../skills/skill-library.js";
 import type { ChangeSummarizer } from "../../workers/change-summarizer.js";
 import type { QueuedTasks } from "../../workers/queued-tasks.js";
 import type { SessionControl } from "../../workers/session-control.js";
@@ -41,6 +42,7 @@ import {
   setProjectAccount,
 } from "./project-tools.js";
 import { listQueuedTasks, removeQueuedTask } from "./queue-tools.js";
+import { listSkills, loadSkill } from "./skill-tools.js";
 import { closeSession, listSessions, newSession, switchSession } from "./session-tools.js";
 import { git, runTask, stopTask, summarizeChanges } from "./task-tools.js";
 import { deleteTodoItem, restoreTodoItem, sendTodoItem, setTodoItemDone } from "./todo-item-change-tools.js";
@@ -79,6 +81,7 @@ export interface ToolServices {
   clients: PageClients;
   attachments: AttachmentFiles;
   destructive: DestructiveList;
+  skills: SkillLibrary;
 }
 
 /** The tools in the order the model sees them. */
@@ -125,6 +128,8 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => destructiveRules(s.destructive),
   (s) => destructiveAdd(s.destructive, s.context),
   (s) => destructiveRemove(s.destructive, s.context),
+  (s) => listSkills(s.skills),
+  (s) => loadSkill(s.skills),
 ];
 
 export function operatorToolList(services: ToolServices): OperatorTool[] {

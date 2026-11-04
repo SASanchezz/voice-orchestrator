@@ -29,6 +29,7 @@ function toolServices(core: Core, neighbors: OperatorNeighbors, kit: Conversatio
     ...pageServices(neighbors),
     git: new GitCommands(core.cfg, core.destructive, kit.context),
     notes: devices.notes,
+    skills: devices.skills,
     requests: kit.requests,
     context: kit.context,
     screen: devices.screen,

@@ -20,7 +20,7 @@ export function buildOperatorSession(
 ): OperatorSession {
   const { cfg, status, history } = core;
   const situation = new ProjectSituation(status, history, permissions.views);
-  const prompt = new SystemPrompt(new PromptBasics(cfg, devices.notes), situation, kit.memory);
+  const prompt = new SystemPrompt(new PromptBasics(cfg, devices.notes, devices.skills), situation, kit.memory);
   const agent = new AgentPrompt(devices.assistantAgent, prompt);
   const replies = new TurnReplies(new TurnTimeline(), new AgentTurnLog(agent.name));
   const stream = new SessionStream(new OperatorOptions(cfg, agent, tools), devices.query, replies);

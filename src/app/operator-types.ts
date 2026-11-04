@@ -12,6 +12,7 @@ import type { AssistantAgent } from "../config/assistant-agent.js";
 import type { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import type { ConversationMemory } from "../orchestrator/memory/conversation-memory.js";
 import type { ScreenSource } from "../screen/screen-source.js";
+import type { SkillLibrary } from "../skills/skill-library.js";
 import type { GestureControl } from "../sensors/gesture-switch.js";
 import type { DictationControl } from "../voice/dictation.js";
 import type { LiveClients } from "../ui/server/live-clients.js";
@@ -31,6 +32,8 @@ export interface OperatorDevices {
   notes: AssistantNotes;
   /** The specialized agent every assistant chat runs as, checked at startup (agents/voice-assistant.md). */
   assistantAgent: AssistantAgent;
+  /** The assistant's skills (skills/), their names and descriptions read at startup. */
+  skills: SkillLibrary;
   query: QueryFn;
   /** Camera gestures, switched on and off from the web UI or by voice. */
   gestures: GestureControl;

@@ -38,7 +38,7 @@ The app has several Markdown files, plus a few data files that work like memory.
                        │ docs/local-vision.md                                                  │
                        └───────────────────────────────────────────────────────────────────────┘
 
-  read by the ASSISTANT at every new session (built into one system prompt, in this order)
+  read by the ASSISTANT at every new session (one system prompt; full order in section 5)
   ┌─────────────────────────────────────────────────────────────────────────────────────────┐
   │ 1. built-in operator rules (src/orchestrator/prompt/*.ts)                                 │
   │ 2. config/config.yaml → orchestrator.rules            (your standing rules)               │
@@ -60,34 +60,6 @@ The app has several Markdown files, plus a few data files that work like memory.
     state/todo/*.md (tasks set aside by a usage limit)   state/feed.jsonl, state/chats/ (UI chats)
 ```
 
-### Markdown files
-
-| File                                       | What it contains                                                                                                                                                         | Read by                                                                                                                     | When to reference it                                                                                  | Related files                                                                                                                                                           |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SYSTEM_KNOWLEDGE.md` (this file)          | How the assistant works inside: architecture, sessions, memory, routing, config, decision rules, validation, logs, tokens                                                | People                                                                                                                      | To understand or explain _why_ the assistant behaves as it does, or to find where something is stored | Summarizes and points at all the others and at `src/`                                                                                                                   |
-| `README.md`                                | What the app does from the user's side: features, setup, running, example session, folder layout, limits                                                                 | People                                                                                                                      | Installing, first run, "what can I say to it?"                                                        | Overview of everything; this file goes deeper                                                                                                                           |
-| `CLAUDE.md`                                | Rules for **coding on this repo**: commands (typecheck, lint, test), size limits, zod at boundaries, test rules, refactor rules                                          | Claude Code sessions and workers editing this repo                                                                          | Before changing the app's code                                                                        | Adds to the global `~/.claude/CLAUDE.md`; **not** read by the assistant (`settingSources: []`)                                                                          |
-| `~/.claude/CLAUDE.md` (outside the repo)   | Your global code style for every project: naming, functions, readability, types, cleanup                                                                                 | Every Claude Code session and worker on the personal account (work-account workers read `~/.claude-work/CLAUDE.md` instead) | Writing or reviewing code in any project                                                              | `CLAUDE.md` adds this repo's specifics on top                                                                                                                           |
-| `agents/voice-assistant.md`                | The specialized agent: name, description, and the four required rule sections (project and session routing, requirement clarity, new session or continuation, task type) | The assistant, last in its prompt                                                                                           | Changing **how it routes, when it asks, how it labels tasks**                                         | Checked at startup by `src/config/assistant-agent.ts`; explained in [section 6](#6-decision-edges-of-the-specialized-agent); outranks the standing rules on when to ask |
-| `config/notes.md` (local, gitignored)      | **Your** facts for the assistant: aliases ("the store" = webshop), project facts, preferences, under `## Aliases`, `## Project notes`, `## Other`                        | The assistant, at every new session                                                                                         | Teaching it a name or fact; checking what it "remembers"                                              | Written by the `remember` tool; starts as a copy of `notes.example.md`; explained in [section 3](#3-notes-and-memory)                                                   |
-| `config/notes.example.md`                  | A template for `notes.md` with sample entries                                                                                                                            | People (copied once at setup)                                                                                               | Setting up a new machine                                                                              | Copy to `config/notes.md`; never read by the app                                                                                                                        |
-| `docs/gestures-plan.md`                    | Build plan for camera gestures, `look_at_camera` and screen history, in milestones with status                                                                           | People                                                                                                                      | Working on `src/sensors/`, `src/camera/` or `sensors/gestures/`                                       | Linked from `sensors/gestures/README.md`                                                                                                                                |
-| `docs/local-vision.md`                     | Setting up a local vision model (llama.cpp) for `camera.describer: local`                                                                                                | People                                                                                                                      | Turning on local camera descriptions                                                                  | `config/config.yaml` → `camera`; `src/camera/`                                                                                                                          |
-| `sensors/gestures/README.md`               | The Python gesture sensor: setup, gestures, use in the orchestrator                                                                                                      | People                                                                                                                      | Installing or tuning gestures                                                                         | `docs/gestures-plan.md`; `config/gestures.yaml`; `config.yaml` → `sensors.gestures`                                                                                     |
-| `state/todo/*.md` (local)                  | One task each that an account's usage limit put aside: project, session, account, reset time, full task                                                                  | The app (`list_todo`, `run_todo`); people may edit                                                                          | "What's in my todo?", or retrying after a limit resets                                                | Written by `src/limits/`; **not** your personal to-do list (`state/todo-items.json`)                                                                                    |
-| `sensors/gestures/.pytest_cache/README.md` | Generated by pytest                                                                                                                                                      | Nobody                                                                                                                      | Never                                                                                                 | Safe to ignore                                                                                                                                                          |
-
-### Non-Markdown files that hold knowledge
-
-| File                                        | What it contains                                                                      | Read by                                         | When to reference it                                                 | Related files                                                                          |
-| ------------------------------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `config/config.yaml` → `orchestrator.rules` | Your standing rules ("always run tests", "answer in English")                         | The assistant, before your notes                | A habit it should always follow                                      | Can't override the destructive checks; `agents/voice-assistant.md` wins on when to ask |
-| `config/destructive.yaml`                   | Commands that need a spoken "confirm <verb>"                                          | The app's code (not a model); hot-reloads       | Deciding what must never run without your words                      | Checked in `src/safety/`; can be edited by voice ("confirm edit")                      |
-| `state/registry.json`                       | Projects, sessions, queues, statuses, costs, context sizes, last 10 tasks per session | The app; summarized into the assistant's prompt | "What did webshop do last time?", resuming a worker by hand          | `project_history` reads it; [section 2](#2-session-management)                         |
-| `state/conversation.json`                   | The assistant's handoff and last 20 exchanges                                         | The assistant, at every new session             | Checking what it carried over after a reset or restart               | Written on each exchange and on reset; [section 3](#3-notes-and-memory)                |
-| `state/assistant-agent.jsonl`               | Which agent the app started with, and which handled each turn                         | People                                          | Checking that the specialized agent is really in use                 | Validates `agents/voice-assistant.md`; [section 7](#7-validation-and-logging)          |
-| `state/feed.jsonl`, `state/chats/`          | The chats shown in the web UI                                                         | The web UI only                                 | Never needed for the model; emptied by **Clear** / **Clear session** | Not memory: no model reads them                                                        |
-
 ### Which file do I open?
 
 | I want to…                                      | Open                                                                          |
@@ -95,10 +67,12 @@ The app has several Markdown files, plus a few data files that work like memory.
 | Understand how the assistant works              | `SYSTEM_KNOWLEDGE.md`                                                         |
 | Install or run the app                          | `README.md`                                                                   |
 | Change the app's code                           | `CLAUDE.md` (and `~/.claude/CLAUDE.md`)                                       |
-| Change how the assistant routes or when it asks | `agents/voice-assistant.md`                                                   |
+| Change how the assistant routes or when it asks | `agents/voice-assistant.md` (restart the app)                                 |
+| Give it a playbook for one kind of request      | `skills/<name>/SKILL.md`, or `plugins/voice-worker/skills/` for the workers   |
+| Change how it talks, its general duties         | `src/orchestrator/prompt/system-prompt-text.ts` (code change)                 |
 | Teach it a name, alias or project fact          | Say "remember …", or edit `config/notes.md`                                   |
 | Give it a habit to always follow                | `orchestrator.rules` in `config/config.yaml`                                  |
-| Stop a command from running without my say-so   | `config/destructive.yaml`                                                     |
+| Stop a command from running without my say-so   | `config/destructive.yaml`, or say "add … to destructive"                      |
 | See what a project did before                   | Ask "what did X do last time?" (`state/registry.json`)                        |
 | See tasks blocked by a usage limit              | `state/todo/`                                                                 |
 | Work on gestures or the camera                  | `docs/gestures-plan.md`, `sensors/gestures/README.md`, `docs/local-vision.md` |
@@ -352,7 +326,7 @@ conversations belong to a config folder.
 ### 4c. Which session (judgment, then code)
 
 The agent's rules choose between **continue** (call `run_task` → the active session, queued if busy) and **new**
-(call `new_session` then `run_task`). See [6c](#6c-new-session-or-continuation) for the exact rules. When unsure, it
+(call `new_session` then `run_task`), by the "New session or continuation" rules in the agent file. When unsure, it
 calls `list_sessions` first, then asks.
 
 Code then makes the rest deterministic: `run_task` always targets the **active** session
@@ -361,7 +335,7 @@ new session, which becomes active automatically.
 
 ### 4d. What to tell the worker
 
-The instruction starts with the task type prefix ([6d](#6d-task-type)), contains the request "exactly as the user
+The instruction starts with the task type prefix (the agent file's "Task type"), contains the request "exactly as the user
 means it", plus full paths of any attached files. The assistant never does the work itself.
 
 ---
@@ -403,84 +377,47 @@ Built fresh for each new assistant session (`PromptBasics`, `ProjectSituation`, 
 1. `SYSTEM_PROMPT` (`src/orchestrator/prompt/system-prompt-text.ts`): how to talk (1–3 short sentences, `[SCREEN]`
    for detail), what it controls, the incoming message tags, the destructive-action rules.
 2. `TODO_PROMPT`: the personal to-do list, kept apart from the usage-limit todo list.
-3. Your standing rules (`orchestrator.rules`).
-4. Your notes (`config/notes.md`).
-5. The current date and time, the project names and account names.
-6. Current status of every project, recent tasks per project, waiting permission requests.
-7. The conversation recap: handoff and last exchanges.
-8. `You are the "voice-assistant" agent.` and the agent file's rules, which take precedence over earlier guidance
+3. The skills index: each skill's name and description from `skills/` (`skills-prompt.ts`).
+4. Your standing rules (`orchestrator.rules`).
+5. Your notes (`config/notes.md`).
+6. The current date and time, the project names and account names.
+7. Current status of every project, recent tasks per project, waiting permission requests.
+8. The conversation recap: handoff and last exchanges.
+9. `You are the "voice-assistant" agent.` and the agent file's rules, which take precedence over earlier guidance
    about when to ask.
 
-### Changing the assistant's behavior: where to edit
-
-| You want to change…                                        | Edit                                                          |
-| ---------------------------------------------------------- | ------------------------------------------------------------- |
-| How it routes, when it asks, how it labels task types      | `agents/voice-assistant.md` (restart the app)                 |
-| A personal habit ("always run tests", "answer in English") | `orchestrator.rules` in `config/config.yaml`                  |
-| A name, alias or project fact                              | Say "remember …", or edit `config/notes.md`                   |
-| Which commands need "confirm …"                            | `config/destructive.yaml`, or say "add … to destructive"      |
-| How it talks, its general duties                           | `src/orchestrator/prompt/system-prompt-text.ts` (code change) |
+Where to edit to change its behavior is in [Which file do I open?](#which-file-do-i-open).
 
 ---
 
 ## 6. Decision edges of the specialized agent
 
-These are the rules in `agents/voice-assistant.md`. The startup check requires each of the four sections to exist,
-under its exact `## ` heading, with text under it. They come after everything else in the prompt and win over earlier
-guidance about when to ask, but they **never** loosen the destructive-action rules.
+The rules themselves are in `agents/voice-assistant.md`; read them there rather than a copy here. The startup check
+requires its four sections (`Project and session routing`, `Requirement clarity`, `New session or continuation`,
+`Task type`) under those exact `## ` headings, each with text. They come after everything else in the prompt and win
+over earlier guidance about when to ask, but they **never** loosen the destructive-action rules.
 
-### 6a. Project and session routing
+### 6a. Why the rules are what they are
 
-| Situation                                              | Decision                                                             |
-| ------------------------------------------------------ | -------------------------------------------------------------------- |
-| You named the project, or it's the one being discussed | Act                                                                  |
-| Project not certain                                    | Ask one short question naming the likely ones: "webshop or billing?" |
-| The matched name isn't exactly what was heard          | Confirm first: "webshop, right?"                                     |
-| You named a session ("session 2")                      | Use it                                                               |
-| No session named, project has several                  | Apply 6c; if still open, ask                                         |
+- **Routing asks instead of guessing** because whisper mishears names, and work sent to the wrong project is costly to
+  undo. The code's fuzzy match ([4a](#4a-which-project-code--judgment)) finds a candidate; the rules decide whether
+  it's certain enough to act on.
+- **Changes wait for a go-ahead, analysis doesn't**, because saying back the request is the cheapest moment to catch a
+  misunderstanding, and a read-only task can't do harm.
+- **Unrelated work gets a new session** for cost, focus and parallelism; follow-ups continue so the worker keeps the
+  context they need ([8b](#8b-why-big-or-unrelated-tasks-go-to-new-sessions)).
+- **Every instruction starts with a task-type prefix** so the worker knows its limits, e.g. that `Analysis only` means
+  no edits.
 
-### 6b. Requirement clarity
+### 6b. Skills
 
-| Request                                                                             | Decision                                                                                                                               |
-| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Changes files or runs commands (implementation, debugging, refactoring, operations) | Say back in 1–2 sentences what will change, where, and how you'll know it's done. **Wait for "yes" / "go" / "do it"**, then `run_task` |
-| Same, but you already said "just do it" / "go ahead"                                | Say what it understood and send it in the same reply                                                                                   |
-| "Done" can't be described, or the request has two readings                          | Ask one short question first. Never guess                                                                                              |
-| Analysis only (questions, reviews, explanations)                                    | No go-ahead needed: say in a few words what it will ask, and send it                                                                   |
+Playbooks for particular requests are skills, not sections of the agent file. The assistant's own playbooks are in
+`skills/<name>/SKILL.md`; only their names and descriptions are in its prompt, and it loads one when a request matches.
+Skills a worker runs inside a project are in `plugins/voice-worker/skills/`, loaded for every worker task by
+`src/workers/worker-options.ts`, so they reach every project on every account. When a request needs both, the
+assistant's playbook names the worker skill in its `run_task` instruction (`voice-worker:<name>`).
 
-### 6c. New session or continuation
-
-| Situation                                                                          | Decision                                                                                |
-| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Follow-up to the session's current or last task ("also…", "fix what you just did") | **Continue**: `run_task` (queued if busy); the worker keeps its context                 |
-| Unrelated work, active session **busy**                                            | **New session**: `new_session`, then `run_task`, so it runs in parallel                 |
-| Unrelated work, active session **idle** but it already worked on something else    | **New session**, so each conversation stays on one topic                                |
-| Unrelated work, active session idle and fresh                                      | Use the active session                                                                  |
-| Can't tell follow-up from new, or whether it's busy                                | `list_sessions` first; still unclear → "Continue in session 2, or start a new session?" |
-
-It always says which it chose: "new session on webshop", "queued after the current task".
-
-### 6d. Task type
-
-Every `run_task` instruction starts with a prefix, so the worker knows its limits:
-
-| Type           | When                                                            | Prefix                                                                         |
-| -------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| Analysis       | Questions, reviews, explaining code, finding where something is | `Analysis only, don't change any files:`                                       |
-| Implementation | New behavior, a feature, a described change                     | `Implement:`                                                                   |
-| Debugging      | Something is broken or behaves wrongly                          | `Debug: reproduce it, find the cause, then fix it and say what the cause was:` |
-| Refactoring    | Restructuring without changing behavior                         | `Refactor, keeping behavior identical, run the tests before and after:`        |
-| Operations     | git, deploys, installs, data changes                            | `Operations:` (the confirm phrase is still needed)                             |
-
-A mixed request is split and sent in order, usually analysis first.
-
-"Review and commit" for a project has its own section in the agent file, which the startup check doesn't require. The
-phrase is the go-ahead once the project is certain. The assistant calls `list_sessions`, asks first if a session of that
-project is busy, and sends the worker to the `voice-worker:review-and-commit` skill. The skill is in
-`plugins/voice-worker/`, loaded for every worker task by `src/workers/worker-options.ts`, so it reaches every project on
-every account. Each commit still needs "confirm commit".
-
-### 6e. Edges enforced in code, not by judgment
+### 6c. Edges enforced in code, not by judgment
 
 The model can't talk its way past these:
 
@@ -508,8 +445,7 @@ The model can't talk its way past these:
    - it doesn't start with a `---` frontmatter block;
    - the frontmatter isn't valid YAML;
    - `name` isn't lowercase letters, digits and dashes starting with a letter, or `description` is empty;
-   - any of the four required sections (`Project and session routing`, `Requirement clarity`,
-     `New session or continuation`, `Task type`) is missing or empty.
+   - any of the four required sections ([section 6](#6-decision-edges-of-the-specialized-agent)) is missing or empty.
 
    On failure it logs the problem, prints `✗ Startup stopped: …` with the reason and how to fix it, **says aloud** "The
    assistant's agent is missing or broken, so the app did not start. The terminal says why." and exits with code 1.
@@ -576,7 +512,7 @@ session gets more expensive and less sharp at the same time.
 
 - **Cost and focus.** A new session starts with an empty context, so a new topic doesn't pay for the history of an
   unrelated one, and the worker isn't distracted by it. This is the "each conversation stays on one topic" rule in
-  [6c](#6c-new-session-or-continuation).
+  the agent file's "New session or continuation".
 - **Parallelism.** A busy session would queue the new task; a new session runs it at once, next to the other.
 - **Follow-ups are the exception.** "Also…" or "fix what you just did" continue in the same session on purpose: the
   context the worker already has is exactly what the follow-up needs, and rebuilding it would cost more.
@@ -639,29 +575,22 @@ The same idea applies to the assistant, handled differently:
 
 ## 9. Where everything lives (cheat sheet)
 
-| Path                                                        | Purpose                                                                  |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `agents/voice-assistant.md`                                 | The specialized agent's rules                                            |
-| `config/config.yaml`                                        | Main config                                                              |
-| `config/notes.md`                                           | Your notes; `remember` writes here                                       |
-| `config/destructive.yaml`                                   | Confirm-phrase rules                                                     |
-| `plugins/voice-worker/`                                     | Skills every project's worker gets (review and commit)                   |
-| `state/registry.json`                                       | Projects, sessions, queues, statuses, costs, context sizes, task history |
-| `state/conversation.json`                                   | Assistant's last 20 exchanges and handoff                                |
-| `state/assistant-agent.jsonl`                               | Agent startup and per-turn log                                           |
-| `state/feed.jsonl`                                          | Assistant chat for the UI                                                |
-| `state/chats/`                                              | Worker session chats for the UI                                          |
-| `state/spend.json`                                          | Daily spend                                                              |
-| `state/projects.json`                                       | Projects added by voice                                                  |
-| `state/todo/`                                               | Tasks set aside by a usage limit, one Markdown file each                 |
-| `state/todo-items.json`                                     | Your personal to-do list                                                 |
-| `state/screenshots/`, `state/attachments/`, `state/camera/` | Screen captures, dropped files, camera frames                            |
-| `state/ui-token`                                            | The web UI's access token                                                |
-| `state/bin/`                                                | Compiled Swift helpers (hotkey)                                          |
-| `src/orchestrator/prompt/`                                  | The assistant's system prompt                                            |
-| `src/orchestrator/tools/tool-catalog.ts`                    | Every tool the assistant has, in order                                   |
-| `src/workers/`                                              | Starting, queueing, stopping workers; summaries; handoffs                |
-| `src/budget/`                                               | Context and cost tracking                                                |
+The README's [Files](README.md#files) table covers the config files, `plugins/`, the `src/` folders and the main
+`state/` files. These are the ones it leaves out:
+
+| Path                                                        | Purpose                                                |
+| ----------------------------------------------------------- | ------------------------------------------------------ |
+| `agents/voice-assistant.md`                                 | The specialized agent's rules                          |
+| `skills/`                                                   | The assistant's playbooks, loaded on demand            |
+| `state/assistant-agent.jsonl`                               | Agent startup and per-turn log                         |
+| `state/chats/`                                              | Worker session chats for the UI                        |
+| `state/projects.json`                                       | Projects added by voice                                |
+| `state/todo-items.json`                                     | Your personal to-do list (not the usage-limit `todo/`) |
+| `state/screenshots/`, `state/attachments/`, `state/camera/` | Screen captures, dropped files, camera frames          |
+| `state/ui-token`                                            | The web UI's access token                              |
+| `state/bin/`                                                | Compiled Swift helpers (hotkey)                        |
+| `src/orchestrator/prompt/`                                  | The assistant's system prompt                          |
+| `src/orchestrator/tools/tool-catalog.ts`                    | Every tool the assistant has, in order                 |
 
 ---
 
@@ -677,5 +606,3 @@ Found while writing this; worth deciding on:
   that its rules win on when to ask, so implementation requests wait for your go-ahead unless you say "just do it".
 - **Terminal logs aren't saved.** Only the agent log goes to a file. If you need the rest after the fact, run
   `npm start 2>&1 | tee -a state/app.log`.
-- **Notes reach the prompt only at the next session start.** A note you add by hand while the app runs is picked up
-  after the next reset or restart.

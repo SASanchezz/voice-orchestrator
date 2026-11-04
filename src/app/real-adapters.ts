@@ -1,7 +1,7 @@
 import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
 import { SensorCamera } from "../camera/sensor-camera.js";
 import type { AppConfig } from "../config/app-config.js";
-import { CONFIG_PATH, NOTES_PATH } from "../config/paths.js";
+import { CONFIG_PATH, NOTES_PATH, SKILLS_DIR } from "../config/paths.js";
 import { MacBrowserPage } from "../macos/mac-browser-page.js";
 import { MacPopups } from "../macos/mac-popups.js";
 import { MacQuestionPanels } from "../macos/mac-question-panels.js";
@@ -9,6 +9,7 @@ import { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../safety/destructive-list.js";
 import type { GestureControl } from "../sensors/gesture-switch.js";
 import type { SensorSnapshots } from "../sensors/sensor-snapshots.js";
+import { loadSkillLibrary } from "../skills/skill-library.js";
 import { MacScreen } from "../screen/mac-screen.js";
 import { MacHotkey } from "../voice/hotkey.js";
 import { HotkeyTalk } from "../voice/hotkey-talk.js";
@@ -45,12 +46,16 @@ export async function realAdapters(
   return { ...devices, questionPanels, ...filesAndModel() };
 }
 
-/** config/destructive.yaml (hot-reloaded), config/config.yaml, config/notes.md and the Agent SDK. */
-function filesAndModel(): Pick<Adapters, "destructive" | "configFile" | "notes" | "query" | "explainCommands"> {
+/** config/destructive.yaml (hot-reloaded), config/config.yaml, config/notes.md, skills/ and the Agent SDK. */
+function filesAndModel(): Pick<
+  Adapters,
+  "destructive" | "configFile" | "notes" | "skills" | "query" | "explainCommands"
+> {
   const destructive = new DestructiveList();
   destructive.watchForChanges();
   const notes = new AssistantNotes(NOTES_PATH);
-  return { destructive, configFile: CONFIG_PATH, notes, query: sdkQuery, explainCommands: true };
+  const skills = loadSkillLibrary(SKILLS_DIR);
+  return { destructive, configFile: CONFIG_PATH, notes, skills, query: sdkQuery, explainCommands: true };
 }
 
 /** Your voice on macOS, the mic switch that lets gestures talk as well as the hotkey, and the page's mic button. */

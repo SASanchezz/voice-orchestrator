@@ -1,13 +1,16 @@
 import type { AppConfig } from "../../config/app-config.js";
+import type { SkillLibrary } from "../../skills/skill-library.js";
 import type { AssistantNotes } from "../memory/assistant-notes.js";
+import { skillsPrompt } from "./skills-prompt.js";
 import { SYSTEM_PROMPT } from "./system-prompt-text.js";
 import { TODO_PROMPT } from "./todo-prompt-text.js";
 
-/** The parts of the system prompt that set up the operator: how it works, your rules and notes, today, the names it knows. */
+/** The parts of the system prompt that set up the operator: how it works, its skills, your rules and notes, today, the names it knows. */
 export class PromptBasics {
   constructor(
     private cfg: AppConfig,
     private notes: AssistantNotes,
+    private skills: SkillLibrary,
   ) {}
 
   parts(): string[] {
@@ -15,6 +18,7 @@ export class PromptBasics {
     return [
       SYSTEM_PROMPT,
       TODO_PROMPT,
+      skillsPrompt(this.skills),
       this.standingRules(),
       notes && `The user's notes (follow them like the standing rules):\n${notes}`,
       `Now: ${new Date().toString()}.`, // for calendar events; your custom prompt replaces Claude Code's own date line

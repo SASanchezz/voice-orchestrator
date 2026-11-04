@@ -10,10 +10,11 @@ import { after } from "node:test";
 import { rmSync } from "node:fs";
 import { buildApp, startOperator } from "../../app/build-app.js";
 import { loadAssistantAgent } from "../../config/assistant-agent.js";
-import { ASSISTANT_AGENT_PATH } from "../../config/paths.js";
+import { ASSISTANT_AGENT_PATH, SKILLS_DIR } from "../../config/paths.js";
 import { AssistantNotes } from "../../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../../safety/destructive-list.js";
 import { UnavailableGestures } from "../../sensors/gesture-switch.js";
+import { loadSkillLibrary } from "../../skills/skill-library.js";
 import { UnavailableDictation } from "../../voice/dictation.js";
 import { fakeQuery } from "../../testing/fake-query.js";
 import { TestBrowserPage, TestNotices } from "../../testing/test-notices.js";
@@ -42,6 +43,7 @@ export const app = buildApp(cfg, {
   camera: new TestCamera(),
   notes: new AssistantNotes(notesFile),
   assistantAgent: loadAssistantAgent(ASSISTANT_AGENT_PATH),
+  skills: loadSkillLibrary(SKILLS_DIR),
   configFile,
   destructive: new DestructiveList(rulesFile),
   query,
