@@ -11,9 +11,9 @@ export class ToolCallGate {
   ) {}
 
   forSession(sessionId: string): CanUseTool {
-    return (toolName, input, { suggestions, signal }) =>
+    return (toolName, input, { suggestions, signal, toolUseID }) =>
       toolName === QUESTION_TOOL
         ? this.questions.ask(sessionId, input, signal)
-        : this.permissions.request(sessionId, { toolName, input }, { suggestions, signal });
+        : this.permissions.request(sessionId, { toolName, input }, { suggestions, signal, toolUseId: toolUseID });
   }
 }

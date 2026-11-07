@@ -16,6 +16,8 @@ export interface ToolCall {
 export interface RequestContext {
   suggestions?: PermissionUpdate[];
   signal: AbortSignal;
+  /** The id the call's PreToolUse hook saw too. */
+  toolUseId?: string;
 }
 
 /** A request as it arrives, before it is waiting. */

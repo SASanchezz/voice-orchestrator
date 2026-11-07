@@ -38,12 +38,18 @@ export class DestructiveList {
     return this.compiled.map(({ rule }) => rule);
   }
 
+  /** The first rule the call matches, whatever its scope. */
   match(toolName: string, input: Record<string, unknown>): DestructiveRule | undefined {
-    return this.matchText(describeToolCall(toolName, input), toolName);
+    return this.matchAll(toolName, input)[0];
+  }
+
+  /** Every rule the call matches, in file order. */
+  matchAll(toolName: string, input: Record<string, unknown>): DestructiveRule[] {
+    return matchingRules(this.compiled, describeToolCall(toolName, input), toolName);
   }
 
   matchText(text: string, toolName = "Bash"): DestructiveRule | undefined {
-    return findRule(this.compiled, text, toolName)?.rule;
+    return matchingRules(this.compiled, text, toolName)[0];
   }
 
   /** Throws on an invalid regex, before anything is saved. */
@@ -70,9 +76,9 @@ function compile(rule: DestructiveRule): CompiledRule {
 }
 
 /** A shell command is judged by its whole text, part by part, on its programs and options only (see command-verbs.ts). */
-function findRule(compiled: CompiledRule[], text: string, toolName: string): CompiledRule | undefined {
+function matchingRules(compiled: CompiledRule[], text: string, toolName: string): DestructiveRule[] {
   const candidates = toolName === "Bash" ? destructiveCandidates(text) : [text];
-  return compiled.find(
-    ({ rule, re }) => (rule.tools ?? ["Bash"]).includes(toolName) && candidates.some((t) => re.test(t)),
-  );
+  return compiled
+    .filter(({ rule, re }) => (rule.tools ?? ["Bash"]).includes(toolName) && candidates.some((t) => re.test(t)))
+    .map(({ rule }) => rule);
 }

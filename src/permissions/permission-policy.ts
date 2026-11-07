@@ -1,7 +1,7 @@
 import type { PermissionMode } from "../config/app-config.js";
 import { isReadOnlyCall, readsSecrets } from "../safety/call-safety.js";
-import type { DestructiveList } from "../safety/destructive-list.js";
 import type { DestructiveRule } from "../safety/destructive-rules-file.js";
+import type { BranchScopedRules } from "./branch-scoped-rules.js";
 import type { ToolCall } from "./permission-types.js";
 
 /**
@@ -11,7 +11,7 @@ import type { ToolCall } from "./permission-types.js";
 export class PermissionPolicy {
   constructor(
     private mode: PermissionMode,
-    private destructive: DestructiveList,
+    private rules: BranchScopedRules,
   ) {}
 
   get permissionMode(): PermissionMode {
@@ -26,9 +26,9 @@ export class PermissionPolicy {
       : "Ask mode: every permission request goes to the user, except read-only commands.";
   }
 
-  /** The destructive rule the call matches, if any. */
-  ruleFor(call: ToolCall): DestructiveRule | undefined {
-    return this.destructive.match(call.toolName, call.input);
+  /** The destructive rule that applies to the call, if any; `toolUseId` lets a branch check from its hook count. */
+  ruleFor(call: ToolCall, toolUseId?: string): DestructiveRule | undefined {
+    return this.rules.ruleFor(call, toolUseId);
   }
 
   allowsWithoutAsking(call: ToolCall, rule: DestructiveRule | undefined): boolean {

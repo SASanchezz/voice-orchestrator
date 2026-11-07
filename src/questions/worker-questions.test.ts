@@ -4,6 +4,7 @@ import { copyFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PermissionResult } from "@anthropic-ai/claude-agent-sdk";
+import { DEFAULT_PROTECTED_BRANCHES } from "../config/app-config.js";
 import { DESTRUCTIVE_PATH, setStateDir } from "../config/paths.js";
 import { AppEvents } from "../events/app-events.js";
 import { PermissionAnnouncer } from "../permissions/permission-announcer.js";
@@ -12,6 +13,7 @@ import { PermissionPolicy } from "../permissions/permission-policy.js";
 import { WaitingRequests } from "../permissions/waiting-requests.js";
 import { openRegistry } from "../registry/open-registry.js";
 import { DestructiveList } from "../safety/destructive-list.js";
+import { workerRules } from "../testing/test-worker-rules.js";
 import { ToolCallGate } from "../workers/tool-call-gate.js";
 import { QuestionBroker } from "./question-broker.js";
 import { QUESTION_TOOL } from "./question-input.js";
@@ -22,7 +24,12 @@ const tmp = mkdtempSync(join(tmpdir(), "vo-questions-"));
 setStateDir(tmp);
 const rulesFile = join(tmp, "destructive.yaml");
 copyFileSync(DESTRUCTIVE_PATH, rulesFile);
-const settings = { mode: "auto", reminderMinutes: 60, alwaysDestination: "localSettings" } as const;
+const settings = {
+  mode: "auto",
+  reminderMinutes: 60,
+  alwaysDestination: "localSettings",
+  protectedBranches: DEFAULT_PROTECTED_BRANCHES,
+} as const;
 const DATABASE = "Which database?";
 const INPUT = {
   questions: [
@@ -44,7 +51,7 @@ const settle = () => new Promise((r) => setImmediate(r));
 function questions(t: TestContext) {
   const events = new AppEvents();
   const { sessions, registry } = openRegistry({ webshop: "personal" }, events);
-  const policy = new PermissionPolicy("auto", new DestructiveList(rulesFile));
+  const policy = new PermissionPolicy("auto", workerRules(new DestructiveList(rulesFile)));
   const permissions = new PermissionBroker(
     policy,
     new WaitingRequests(sessions, new PermissionAnnouncer(sessions, events, settings)),

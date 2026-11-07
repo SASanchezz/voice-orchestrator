@@ -4,10 +4,12 @@ import { copyFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PermissionResult, PermissionUpdate } from "@anthropic-ai/claude-agent-sdk";
+import { DEFAULT_PROTECTED_BRANCHES } from "../config/app-config.js";
 import { DESTRUCTIVE_PATH, setStateDir } from "../config/paths.js";
 import { AppEvents, type AppEvent } from "../events/app-events.js";
 import { openRegistry } from "../registry/open-registry.js";
 import { DestructiveList } from "../safety/destructive-list.js";
+import { workerRules } from "../testing/test-worker-rules.js";
 import { PermissionAnnouncer } from "./permission-announcer.js";
 import { PermissionAnswers } from "./permission-answers.js";
 import { PermissionBroker } from "./permission-broker.js";
@@ -22,7 +24,12 @@ setStateDir(tmp);
 const rulesFile = join(tmp, "destructive.yaml");
 copyFileSync(DESTRUCTIVE_PATH, rulesFile);
 const rules = new DestructiveList(rulesFile);
-const settings = { mode: "ask", reminderMinutes: 60, alwaysDestination: "localSettings" } as const;
+const settings = {
+  mode: "ask",
+  reminderMinutes: 60,
+  alwaysDestination: "localSettings",
+  protectedBranches: DEFAULT_PROTECTED_BRANCHES,
+} as const;
 const ALWAYS_SUGGESTION = {
   type: "addRules",
   rules: [{ toolName: "Bash", ruleContent: "npm test:*" }],
@@ -34,7 +41,7 @@ const ALWAYS_SUGGESTION = {
 function permissions(t: TestContext, explain?: ExplainCommand) {
   const events = new AppEvents();
   const { sessions, registry } = openRegistry({ webshop: "personal" }, events);
-  const policy = new PermissionPolicy("ask", rules);
+  const policy = new PermissionPolicy("ask", workerRules(rules));
   const announcer = new PermissionAnnouncer(sessions, events, settings);
   const waiting = new WaitingRequests(sessions, announcer);
   const explanations = explain && new PermissionExplanations(waiting, explain, announcer);

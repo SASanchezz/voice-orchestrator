@@ -77,10 +77,10 @@ export function buildWorkers(core: Core, gate: ToolCallGate, query: QueryFn): Wo
 }
 
 function workerKit(core: Core): WorkerKit {
-  const { cfg, projects, sessions, events, destructive } = core;
+  const { cfg, projects, sessions, events, workerRules } = core;
   const directory = new WorkerDirectory(cfg, projects, sessions);
   const todo = new TodoList(resolve(STATE_DIR, "todo"));
-  const options = new WorkerOptions(cfg, directory, destructive);
+  const options = new WorkerOptions(cfg, directory, workerRules);
   const chat = new WorkerChat();
   return { chat, directory, options, todo, limits: new UsageLimits(todo, events), budget: buildBudget(core, chat) };
 }

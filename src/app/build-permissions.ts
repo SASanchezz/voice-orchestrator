@@ -18,10 +18,10 @@ export interface PermissionParts {
 
 /** Without `explain`, requests are shown without a plain-language explanation. */
 export function buildPermissions(
-  { cfg, sessions, events, destructive }: Core,
+  { cfg, sessions, events, workerRules }: Core,
   explain?: ExplainCommand,
 ): PermissionParts {
-  const policy = new PermissionPolicy(cfg.permissions.mode, destructive);
+  const policy = new PermissionPolicy(cfg.permissions.mode, workerRules);
   const announcer = new PermissionAnnouncer(sessions, events, cfg.permissions);
   const waiting = new WaitingRequests(sessions, announcer);
   const explanations = explain && new PermissionExplanations(waiting, explain, announcer);

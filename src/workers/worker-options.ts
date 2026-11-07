@@ -2,7 +2,8 @@ import type { CanUseTool, HookCallback, Options } from "@anthropic-ai/claude-age
 import { envForProfile } from "../config/accounts.js";
 import type { AppConfig } from "../config/app-config.js";
 import { WORKER_PLUGIN_PATH } from "../config/paths.js";
-import type { DestructiveList } from "../safety/destructive-list.js";
+import type { BranchScopedRules } from "../permissions/branch-scoped-rules.js";
+import type { ToolCall } from "../permissions/permission-types.js";
 import { readsSecrets } from "../safety/call-safety.js";
 import { toolInput } from "../safety/tool-calls.js";
 import type { RunningTask } from "./running-task.js";
@@ -21,7 +22,7 @@ export class WorkerOptions {
   constructor(
     private cfg: AppConfig,
     private directory: WorkerDirectory,
-    private destructive: DestructiveList,
+    private rules: BranchScopedRules,
   ) {}
 
   forProject(project: string): Options {
@@ -50,19 +51,24 @@ export class WorkerOptions {
     };
   }
 
-  /** Destructive commands and reading secrets always go to a voice prompt, even if an allow rule would pass them. */
+  /**
+   * Destructive commands and reading secrets always go to a voice prompt, even if an allow rule would pass them.
+   * Only here is the folder the command runs in known, so this is where rules scoped to protected branches are checked.
+   */
   private forceAsk: HookCallback = async (input) => {
     if (input.hook_event_name !== "PreToolUse") return {};
-    const reason = this.askReason(input.tool_name, toolInput(input.tool_input));
+    const call = { toolName: input.tool_name, input: toolInput(input.tool_input) };
+    await this.rules.checkBranch(call, input.cwd, input.tool_use_id);
+    const reason = this.askReason(call, input.tool_use_id);
     if (!reason) return {};
     return {
       hookSpecificOutput: { hookEventName: "PreToolUse", permissionDecision: "ask", permissionDecisionReason: reason },
     };
   };
 
-  private askReason(toolName: string, input: Record<string, unknown>): string | undefined {
-    const rule = this.destructive.match(toolName, input);
+  private askReason(call: ToolCall, toolUseId: string): string | undefined {
+    const rule = this.rules.ruleFor(call, toolUseId);
     if (rule) return `destructive (${rule.verb})`;
-    return readsSecrets(toolName, input) ? "reads a secret file" : undefined;
+    return readsSecrets(call.toolName, call.input) ? "reads a secret file" : undefined;
   }
 }

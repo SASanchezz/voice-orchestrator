@@ -9,7 +9,10 @@ import type { Registry } from "../registry/registry.js";
 import type { Sessions } from "../registry/sessions.js";
 import { StatusReport } from "../registry/status-report.js";
 import { TaskHistory } from "../registry/task-history.js";
+import { BranchScopedRules } from "../permissions/branch-scoped-rules.js";
+import { BranchProtection } from "../safety/branch-protection.js";
 import type { DestructiveList } from "../safety/destructive-list.js";
+import { GitBranches } from "../safety/git-branches.js";
 
 /** What every part of the app builds on: config, events, projects and sessions, the destructive rules and attached files. */
 export interface Core {
@@ -21,6 +24,8 @@ export interface Core {
   history: TaskHistory;
   status: StatusReport;
   destructive: DestructiveList;
+  /** The destructive rules as they apply to workers, where some depend on the branch a command runs on. */
+  workerRules: BranchScopedRules;
   attachments: AttachmentFiles;
 }
 
@@ -38,6 +43,12 @@ export function buildCore(cfg: AppConfig, destructive: DestructiveList): Core {
     history,
     status: new StatusReport(projects, sessions),
     destructive,
+    workerRules: workerRules(cfg, destructive),
     attachments: new AttachmentFiles(resolve(STATE_DIR, "attachments")),
   };
+}
+
+function workerRules(cfg: AppConfig, destructive: DestructiveList): BranchScopedRules {
+  const protection = new BranchProtection(cfg.permissions.protectedBranches, new GitBranches());
+  return new BranchScopedRules(destructive, protection);
 }

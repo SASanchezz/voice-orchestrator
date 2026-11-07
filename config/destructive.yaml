@@ -10,10 +10,15 @@
 #            other tools: "<Tool> <file path or input>")
 #   verb:    the word you have to say after "confirm"
 #   tools:   optional, which tools the rule applies to (default: Bash); workers' tools or the operator's own
+#   scope:   optional; protectedBranch: a worker's command needs the phrase only when its git calls run on a protected
+#            branch (permissions.protectedBranches in config.yaml, or the branch of the repo's main checkout), or
+#            when it can't tell which branch (an unclear cd, a branch switch, a detached HEAD). On any other branch
+#            of a linked worktree it runs like any other command. The operator's own commands always need the phrase.
 
 rules:
   - { pattern: '\bgit\s+push\b',                 verb: push }
-  - { pattern: '\bgit\s+commit\b',               verb: commit }
+  - { pattern: '\bgit\s+commit\b',               verb: commit, scope: protectedBranch }
+  - { pattern: '\bgit\s+merge\b',                verb: merge, scope: protectedBranch }
   - { pattern: '\bgit\s+reset\s+--hard\b',       verb: reset }
   - { pattern: '\bgit\s+clean\b',                verb: clean }
   - { pattern: '\bgit\s+branch\s+-D\b',          verb: delete }

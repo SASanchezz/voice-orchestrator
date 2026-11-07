@@ -3,7 +3,14 @@
 type GitCheck = (args: string[]) => boolean;
 
 /** Global options that take a value, as in git -C repo status. */
-const GLOBAL_OPTIONS_WITH_VALUE = new Set(["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--config-env"]);
+export const GLOBAL_OPTIONS_WITH_VALUE = new Set([
+  "-C",
+  "-c",
+  "--git-dir",
+  "--work-tree",
+  "--namespace",
+  "--config-env",
+]);
 const BRANCH_CHANGES = new Set([
   "-d", "-D", "--delete", "-m", "-M", "--move", "-c", "-C", "--copy", "-f", "--force", "-u", "-t", "--track",
   "--set-upstream-to", "--unset-upstream", "--edit-description",

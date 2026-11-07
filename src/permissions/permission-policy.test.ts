@@ -6,6 +6,7 @@ import { join } from "node:path";
 import type { PermissionMode } from "../config/app-config.js";
 import { DESTRUCTIVE_PATH } from "../config/paths.js";
 import { DestructiveList } from "../safety/destructive-list.js";
+import { workerRules } from "../testing/test-worker-rules.js";
 import { PermissionPolicy } from "./permission-policy.js";
 
 const rulesFile = join(mkdtempSync(join(tmpdir(), "vo-policy-")), "destructive.yaml");
@@ -13,7 +14,7 @@ copyFileSync(DESTRUCTIVE_PATH, rulesFile);
 const rules = new DestructiveList(rulesFile);
 
 function allowsWithoutAsking(mode: PermissionMode, command: string): boolean {
-  const policy = new PermissionPolicy(mode, rules);
+  const policy = new PermissionPolicy(mode, workerRules(rules));
   const call = { toolName: "Bash", input: { command } };
   return policy.allowsWithoutAsking(call, policy.ruleFor(call));
 }

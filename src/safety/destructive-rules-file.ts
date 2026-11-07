@@ -2,10 +2,15 @@ import { readFileSync, writeFileSync } from "node:fs";
 import YAML from "yaml";
 import { z } from "zod";
 
+/** protectedBranch: the rule applies to a worker's command only when it runs on a protected branch, or one it can't tell. */
+export const RULE_SCOPES = ["protectedBranch"] as const;
+export type RuleScope = (typeof RULE_SCOPES)[number];
+
 export interface DestructiveRule {
   pattern: string;
   verb: string;
   tools?: string[];
+  scope?: RuleScope;
 }
 
 const ruleSchema = z.object({
@@ -15,6 +20,10 @@ const ruleSchema = z.object({
     .array(z.string())
     .nullish()
     .transform((tools) => tools ?? undefined),
+  scope: z
+    .enum(RULE_SCOPES)
+    .nullish()
+    .transform((scope) => scope ?? undefined),
 });
 const rulesFileSchema = z.object({ rules: z.array(ruleSchema).nullish() }).nullish();
 

@@ -4,6 +4,7 @@ import { copyFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { PermissionResult } from "@anthropic-ai/claude-agent-sdk";
+import { DEFAULT_PROTECTED_BRANCHES } from "../config/app-config.js";
 import { DESTRUCTIVE_PATH, setStateDir } from "../config/paths.js";
 import { AppEvents } from "../events/app-events.js";
 import { PermissionAnnouncer } from "../permissions/permission-announcer.js";
@@ -15,6 +16,7 @@ import { WaitingRequests } from "../permissions/waiting-requests.js";
 import { openRegistry } from "../registry/open-registry.js";
 import { DestructiveList } from "../safety/destructive-list.js";
 import { TestPopups } from "../testing/test-popups.js";
+import { workerRules } from "../testing/test-worker-rules.js";
 import { PermissionPopups } from "./permission-popups.js";
 
 const tmp = mkdtempSync(join(tmpdir(), "vo-popups-"));
@@ -22,7 +24,12 @@ setStateDir(tmp);
 const rulesFile = join(tmp, "destructive.yaml");
 copyFileSync(DESTRUCTIVE_PATH, rulesFile);
 const rules = new DestructiveList(rulesFile);
-const settings = { mode: "ask", reminderMinutes: 60, alwaysDestination: "localSettings" } as const;
+const settings = {
+  mode: "ask",
+  reminderMinutes: 60,
+  alwaysDestination: "localSettings",
+  protectedBranches: DEFAULT_PROTECTED_BRANCHES,
+} as const;
 const EXPLANATION = "Pushes your commits to GitHub. Risk: medium.";
 
 /** One project's permissions with pop-ups, wired as in the app. Requests still waiting when the test ends are stopped. */
@@ -32,7 +39,7 @@ function permissionsWithPopups(t: TestContext) {
   const announcer = new PermissionAnnouncer(sessions, events, settings);
   const waiting = new WaitingRequests(sessions, announcer);
   const explanations = new PermissionExplanations(waiting, async () => EXPLANATION, announcer);
-  const broker = new PermissionBroker(new PermissionPolicy("ask", rules), waiting, explanations);
+  const broker = new PermissionBroker(new PermissionPolicy("ask", workerRules(rules)), waiting, explanations);
   const answers = new PermissionAnswers(waiting, sessions, settings);
   const popups = new TestPopups();
   new PermissionPopups(popups, answers).follow(events);
