@@ -2,13 +2,18 @@ import type { AppEvent, AppEvents, QuestionEvent } from "../events/app-events.js
 import type { WorkerQuestion } from "../questions/question-input.js";
 import type { AnswersByQuestion } from "../questions/question-types.js";
 import type { PopupActions } from "./popup-actions.js";
-import type { NoticeButton } from "./task-notices.js";
+
+/** One of a pop-up's buttons: what it says, and the answer a click gives. */
+export interface PanelButton {
+  answer: string;
+  label: string;
+}
 
 /** What a pop-up shows for a worker's questions: buttons top to bottom, and maybe a field for your own answer. */
 export interface QuestionPanel {
   title: string;
   detail: string;
-  buttons: NoticeButton[];
+  buttons: PanelButton[];
   acceptsText: boolean;
 }
 
@@ -27,7 +32,7 @@ export interface QuestionClicks {
   answerByClick(id: string, answers: AnswersByQuestion): string;
 }
 
-const OPEN_BROWSER: NoticeButton = { answer: "open", label: "Open in browser" };
+const OPEN_BROWSER: PanelButton = { answer: "open", label: "Open in browser" };
 const OPTION_ANSWER = /^option:(\d+)$/;
 const TEXT_ANSWER = /^text:(.+)$/;
 

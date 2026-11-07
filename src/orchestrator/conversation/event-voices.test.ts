@@ -11,6 +11,7 @@ const KAGGLE_DONE: TaskEndEvent = {
   sessionNumber: 1,
   task: "Please retrain the model.",
   result: "ok",
+  note: "ok",
 };
 
 /** Event voices over a speaker that counts how often its speech was stopped. */

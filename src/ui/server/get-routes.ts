@@ -1,5 +1,6 @@
 import type { ServerResponse } from "node:http";
-import { ATTACHED_IMAGE_PATH, SCRIPT_PATH, type PageFiles } from "./page-files.js";
+import { ATTACHED_IMAGE_PATH, NOTICE_SCRIPT_PATH, SCRIPT_PATH, type PageFiles } from "./page-files.js";
+import { NOTICE_PATH } from "./ui-access.js";
 import type { ReadRoutes } from "./read-routes.js";
 import type { ReviewRoutes } from "./review-routes.js";
 
@@ -24,11 +25,13 @@ export class GetRoutes {
 
   private pageOrChat(url: URL, res: ServerResponse): void {
     if (url.pathname === "/") return this.pages.page(url, res);
+    if (url.pathname === NOTICE_PATH) return this.pages.noticePage(url, res);
     if (url.pathname === "/api/events") return this.reads.events(url, res);
     const sessionMessages = url.pathname.match(SESSION_MESSAGES_PATH);
     if (sessionMessages) return this.reads.sessionMessages(url, sessionMessages[1], res);
     if (url.pathname === ATTACHED_IMAGE_PATH) return this.pages.attachedImage(url, res);
     if (url.pathname === SCRIPT_PATH) return this.pages.serveScript(res);
+    if (url.pathname === NOTICE_SCRIPT_PATH) return this.pages.serveNoticeScript(res);
     this.pages.staticFile(url.pathname, res);
   }
 }

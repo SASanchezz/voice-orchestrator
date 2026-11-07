@@ -2,16 +2,18 @@ import { build } from "esbuild";
 import { resolve } from "node:path";
 import { APP_DIR } from "../../config/paths.js";
 
-const ENTRY = resolve(APP_DIR, "src/ui/web/app.ts");
+/** The web UI's page, and the notice panel's. */
+export const APP_ENTRY = resolve(APP_DIR, "src/ui/web/app.ts");
+export const NOTICE_ENTRY = resolve(APP_DIR, "src/ui/web/notice/notice-app.ts");
 
 /**
- * Compiles the page's TypeScript (src/ui/web/) into one browser script, in memory.
+ * Compiles a page's TypeScript (src/ui/web/) into one browser script, in memory.
  * Done when the UI server starts, so there is no separate build step and a restart picks up changes.
  * This strips types without checking them; `npm run typecheck` does that.
  */
-export async function bundleWebApp(): Promise<string> {
+export async function bundleWebPage(entry: string): Promise<string> {
   const result = await build({
-    entryPoints: [ENTRY],
+    entryPoints: [entry],
     bundle: true,
     format: "esm",
     target: "es2022",

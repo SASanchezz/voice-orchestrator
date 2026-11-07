@@ -1,9 +1,7 @@
 // Tells the server how many files wait in this page's draft, so your voice message waits for your choice only then.
 
 import { report } from "./api.js";
-
-/** This page among the open ones; a reload is a new page with an empty draft. */
-const PAGE_ID = crypto.randomUUID();
+import { PAGE_ID } from "./page-id.js";
 
 export function reportDraft(files: number): void {
   report("/api/draft", { page: PAGE_ID, files });

@@ -16,8 +16,9 @@ interface TaskSubject {
 
 /** Events the orchestrator turns into speech. */
 export type AppEvent = EventSubject &
+  /** result: the end of the worker's closing note, as passed on to the assistant; note: the whole of it. */
   (
-    | (TaskSubject & { kind: "task_done"; result: string })
+    | (TaskSubject & { kind: "task_done"; result: string; note: string })
     | (TaskSubject & { kind: "task_failed"; error: string })
     | { kind: "usage_limit"; account: string; resetsAt?: string; savedTasks: number }
     | { kind: "permission"; id: string; description: string; destructiveVerb?: string; reminder?: boolean }

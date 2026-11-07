@@ -146,7 +146,9 @@
               ✕
             </button>
             <button type="button" id="mic-button" class="ghost mic-button" aria-label="Record your words">🎙</button>
-            <button type="submit" id="composer-send" class="primary">Send</button>
+            <button type="submit" id="composer-send" class="primary" title="Send (Enter; Shift+Enter adds a line)">
+              Send
+            </button>
           </form>
         </div>
 
@@ -198,7 +200,7 @@
         <pre id="confirm-command" class="command"></pre>
         <p class="muted">This runs once. Destructive actions can't be always allowed.</p>
         <div class="dialog-actions">
-          <button value="cancel" class="ghost">Cancel</button>
+          <button value="cancel" class="ghost" title="Cancel (Esc)">Cancel</button>
           <button value="confirm" class="danger" id="confirm-button">Allow once</button>
         </div>
       </form>
@@ -209,7 +211,7 @@
         <h2>Restart the orchestrator?</h2>
         <p id="restart-warning" class="explanation"></p>
         <div class="dialog-actions">
-          <button value="cancel" class="ghost">Cancel</button>
+          <button value="cancel" class="ghost" title="Cancel (Esc)">Cancel</button>
           <button value="confirm" class="danger">Restart</button>
         </div>
       </form>
@@ -244,7 +246,7 @@
           <select id="todo-project-input"></select>
         </label>
         <div class="dialog-actions">
-          <button type="button" id="todo-cancel" class="ghost">Cancel</button>
+          <button type="button" id="todo-cancel" class="ghost" title="Cancel (Esc)">Cancel</button>
           <button value="save" class="primary">Save</button>
         </div>
       </form>
@@ -252,7 +254,7 @@
 
     <dialog id="image-viewer" class="image-viewer" aria-label="Attached image">
       <form method="dialog">
-        <button class="ghost image-viewer-close" title="Close" aria-label="Close">×</button>
+        <button class="ghost image-viewer-close" title="Close (Esc)" aria-label="Close">×</button>
       </form>
       <img id="image-viewer-image" alt="" />
       <p id="image-viewer-name" class="muted"></p>

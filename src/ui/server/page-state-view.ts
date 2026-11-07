@@ -11,8 +11,8 @@ export class PageStateView {
     private todo: TodoItemViews,
   ) {}
 
-  /** Everything but the editor's status, which EditorStateView adds. */
-  state(): Omit<UiState, "editor"> {
+  /** Everything but the editor's status and the notices, which EditorStateView and NoticeStateView add. */
+  state(): Omit<UiState, "editor" | "notices"> {
     return { ...this.live.state(), budget: this.budget.view(), todo: this.todo.view() };
   }
 }

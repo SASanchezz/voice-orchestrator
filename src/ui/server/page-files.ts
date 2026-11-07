@@ -6,10 +6,11 @@ import { imageTypeOf } from "../../attachments/image-types.js";
 import { APP_DIR } from "../../config/paths.js";
 import { HTTP_STATUS, HttpError } from "./http-error.js";
 import type { UiAccess } from "./ui-access.js";
-import { bundleWebApp } from "./web-bundle.js";
+import { APP_ENTRY, bundleWebPage, NOTICE_ENTRY } from "./web-bundle.js";
 
 const PUBLIC_DIR = resolve(APP_DIR, "src/ui/public");
 export const SCRIPT_PATH = "/app.js";
+export const NOTICE_SCRIPT_PATH = "/notice.js";
 export const ATTACHED_IMAGE_PATH = "/api/attachments";
 /** Attached files stay for a week and never change. */
 const ATTACHED_IMAGE_CACHE = "private, max-age=604800, immutable";
@@ -34,11 +35,16 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/force-stop.css": "text/css",
   "/styles/code.css": "text/css",
   "/styles/resize.css": "text/css",
+  "/styles/notice.css": "text/css",
 };
 
-/** The page, its script (compiled from src/ui/web/ at start), its stylesheets and the attached images it shows. */
+/**
+ * The page and the notice panel's page, their scripts (compiled from src/ui/web/ at start), their stylesheets and the
+ * attached images the page shows.
+ */
 export class PageFiles {
   private script = "";
+  private noticeScript = "";
 
   constructor(
     private access: UiAccess,
@@ -46,22 +52,23 @@ export class PageFiles {
   ) {}
 
   async prepare(): Promise<void> {
-    this.script = await bundleWebApp();
+    [this.script, this.noticeScript] = await Promise.all([bundleWebPage(APP_ENTRY), bundleWebPage(NOTICE_ENTRY)]);
   }
 
   page(url: URL, res: ServerResponse): void {
-    this.access.requireToken(
-      url.searchParams.get("token"),
-      "Open the link printed in the terminal (it carries an access token).",
-    );
-    const html = this.access.withToken(readFileSync(resolve(PUBLIC_DIR, "index.html"), "utf8"));
-    res.writeHead(HTTP_STATUS.ok, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
-    res.end(html);
+    this.htmlPage("index.html", url, res);
+  }
+
+  noticePage(url: URL, res: ServerResponse): void {
+    this.htmlPage("notice.html", url, res);
   }
 
   serveScript(res: ServerResponse): void {
-    res.writeHead(HTTP_STATUS.ok, { "content-type": "text/javascript", "cache-control": "no-store" });
-    res.end(this.script);
+    sendScript(this.script, res);
+  }
+
+  serveNoticeScript(res: ServerResponse): void {
+    sendScript(this.noticeScript, res);
   }
 
   staticFile(pathname: string, res: ServerResponse): void {
@@ -69,6 +76,16 @@ export class PageFiles {
     if (!type) throw new HttpError(HTTP_STATUS.notFound, "Not found");
     res.writeHead(HTTP_STATUS.ok, { "content-type": type, "cache-control": "no-store" });
     res.end(readFileSync(resolve(PUBLIC_DIR, pathname.slice(1))));
+  }
+
+  private htmlPage(file: string, url: URL, res: ServerResponse): void {
+    this.access.requireToken(
+      url.searchParams.get("token"),
+      "Open the link printed in the terminal (it carries an access token).",
+    );
+    const html = this.access.withToken(readFileSync(resolve(PUBLIC_DIR, file), "utf8"));
+    res.writeHead(HTTP_STATUS.ok, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
+    res.end(html);
   }
 
   /** An image attached to a message, for its thumbnail in the chat; other attached files are only listed. */
@@ -84,4 +101,9 @@ export class PageFiles {
     });
     res.end(readFileSync(path));
   }
+}
+
+function sendScript(script: string, res: ServerResponse): void {
+  res.writeHead(HTTP_STATUS.ok, { "content-type": "text/javascript", "cache-control": "no-store" });
+  res.end(script);
 }

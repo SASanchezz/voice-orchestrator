@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="ui-token" content="__UI_TOKEN__" />
+    <title>Notices</title>
+    <link rel="stylesheet" href="/styles/base.css" />
+    <link rel="stylesheet" href="/styles/markdown.css" />
+    <link rel="stylesheet" href="/styles/notice.css" />
+  </head>
+  <body class="notice-page">
+    <main id="notice" class="notice" hidden>
+      <header class="notice-head">
+        <span id="notice-badge" class="notice-badge"></span>
+        <h1 id="notice-title" class="notice-title"></h1>
+        <div id="notice-pager" class="notice-pager" hidden>
+          <button type="button" class="ghost" data-command="previous" title="Previous notice">‹</button>
+          <span id="notice-position" class="muted"></span>
+          <button type="button" class="ghost" data-command="next" title="Next notice">›</button>
+        </div>
+      </header>
+      <p id="notice-time" class="muted notice-time"></p>
+
+      <section id="notice-scroll" class="notice-scroll" aria-live="polite">
+        <div id="notice-body">
+          <div id="notice-summary" class="notice-summary"></div>
+          <details id="notice-full" class="notice-full" hidden>
+            <summary data-shortcut="fullNote" title="Show or fold the worker's whole closing note">Full note</summary>
+            <div id="notice-full-body"></div>
+          </details>
+          <section id="notice-explanation" class="notice-explanation" aria-label="Explanation" hidden></section>
+        </div>
+      </section>
+
+      <p id="notice-problem" class="notice-problem" role="alert" hidden></p>
+
+      <nav class="notice-actions" aria-label="Notice actions">
+        <button type="button" data-command="close" title="Close this notice">Close</button>
+        <button
+          type="button"
+          id="notice-explain"
+          data-command="explain"
+          title="A longer written explanation of the changes, made on the project's own account"
+        >
+          Explain more
+        </button>
+        <button type="button" data-command="openAssistant" title="The assistant's reply to this task, in the web UI">
+          Assistant
+        </button>
+        <button type="button" data-command="openSession" title="The worker's session, in the web UI">Session</button>
+        <button type="button" data-command="review" title="The project's changes, in Review">Review</button>
+        <button type="button" class="ghost close-all" data-command="closeAll" title="Close every notice">
+          Close all
+        </button>
+      </nav>
+
+      <form id="reply-form" class="reply">
+        <fieldset id="reply-fields" class="reply-fields">
+          <textarea id="reply-input" rows="2" aria-label="Reply to the worker"></textarea>
+          <div class="reply-buttons">
+            <button
+              type="button"
+              id="reply-mic-cancel"
+              class="ghost mic-cancel"
+              title="Discard this recording (Esc)"
+              hidden
+            >
+              ✕
+            </button>
+            <button
+              type="button"
+              id="reply-mic"
+              class="ghost mic-button"
+              data-shortcut="mic"
+              aria-label="Speak your reply"
+            >
+              🎙
+            </button>
+            <button
+              type="submit"
+              id="reply-send"
+              class="primary"
+              data-shortcut="send"
+              title="Send to this worker's session; ⇧↩ adds a line"
+            >
+              Send
+            </button>
+          </div>
+        </fieldset>
+      </form>
+      <p id="reply-status" class="muted reply-status" aria-live="polite"></p>
+    </main>
+
+    <div id="hover-hint" class="hover-hint" role="tooltip" hidden></div>
+
+    <script src="/notice.js" type="module"></script>
+  </body>
+</html>

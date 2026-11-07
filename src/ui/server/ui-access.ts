@@ -6,6 +6,7 @@ import { HTTP_STATUS, HttpError } from "./http-error.js";
 
 const TOKEN_BYTES = 24;
 const TOKEN_PLACEHOLDER = "__UI_TOKEN__";
+export const NOTICE_PATH = "/notice";
 
 /**
  * Bound to 127.0.0.1; every API call needs the token from the printed link, so other websites open
@@ -21,7 +22,12 @@ export class UiAccess {
 
   /** The link to open; it carries the token. */
   link(): string {
-    return `http://127.0.0.1:${this.port}/?token=${this.token}`;
+    return this.linkTo("/");
+  }
+
+  /** The notice panel's page; it only ever reaches the panel through its stdin, never a command line. */
+  noticeLink(): string {
+    return this.linkTo(NOTICE_PATH);
   }
 
   isLocalHost(host: string | undefined): boolean {
@@ -35,6 +41,10 @@ export class UiAccess {
   /** The page with the token in it, for its API calls. */
   withToken(html: string): string {
     return html.replace(TOKEN_PLACEHOLDER, this.token);
+  }
+
+  private linkTo(path: string): string {
+    return `http://127.0.0.1:${this.port}${path}?token=${this.token}`;
   }
 
   private isToken(candidate: string | string[] | null | undefined): boolean {

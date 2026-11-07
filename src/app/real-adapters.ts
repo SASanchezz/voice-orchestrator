@@ -1,8 +1,10 @@
 import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
 import { SensorCamera } from "../camera/sensor-camera.js";
+import { MacClipboard } from "../clipboard/mac-clipboard.js";
 import type { AppConfig } from "../config/app-config.js";
 import { CONFIG_PATH, NOTES_PATH, SKILLS_DIR } from "../config/paths.js";
 import { MacBrowserPage } from "../macos/mac-browser-page.js";
+import { MacNoticePanel } from "../macos/mac-notice-panel.js";
 import { MacPopups } from "../macos/mac-popups.js";
 import { MacQuestionPanels } from "../macos/mac-question-panels.js";
 import { AssistantNotes } from "../orchestrator/memory/assistant-notes.js";
@@ -24,7 +26,7 @@ import type { Adapters } from "./build-app.js";
 
 /**
  * The real world: what main.ts made first (your voice, the page's mic, the assistant's checked agent), the screen, the
- * camera (through the gesture sensor's `snapshots`), pop-ups, your files and the Agent SDK.
+ * clipboard, the camera (through the gesture sensor's `snapshots`), pop-ups, your files and the Agent SDK.
  */
 export async function realAdapters(
   madeFirst: Pick<Adapters, "voice" | "dictation" | "assistantAgent">,
@@ -37,10 +39,11 @@ export async function realAdapters(
   const devices = {
     ...madeFirst,
     screen,
+    clipboard: await MacClipboard.create(),
     camera: SensorCamera.create(snapshots),
     gestures,
     popups,
-    notices: popups,
+    notices: await MacNoticePanel.create(),
     browser: new MacBrowserPage(),
   };
   return { ...devices, questionPanels, ...filesAndModel() };

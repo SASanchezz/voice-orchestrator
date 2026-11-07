@@ -1,6 +1,7 @@
 // What the server sends the web page. It imports only types from files that import nothing, so both the server (Node)
 // and the page (browser) compile it; the server's payloads are typed against it, so the two can't drift apart unnoticed.
 
+import type { NoticeView } from "./notice-protocol.js";
 import type { PageTarget, ProjectTarget } from "./page-target.js";
 
 export type SessionStatus = "idle" | "running" | "waiting_permission" | "done" | "failed" | "stopped";
@@ -111,9 +112,12 @@ export interface UiState {
   gestures: GestureStateName;
   voiceInput: VoiceInputName;
   voiceOffer?: VoiceOfferView;
+  /** The confirm phrases the assistant asked you to say, e.g. ["push"]; Confirm buttons answer them. */
+  confirmVerbs: string[];
   budget: BudgetView;
   todo: TodoListView;
   editor: EditorStateName;
+  notices: NoticeView[];
 }
 
 /** An item on your personal to-do list. */

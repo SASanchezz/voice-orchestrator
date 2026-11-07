@@ -19,6 +19,7 @@ import { HandoffActions } from "../ui/server/handoff-actions.js";
 import { GetRoutes } from "../ui/server/get-routes.js";
 import type { LiveClients } from "../ui/server/live-clients.js";
 import { relayDictation, relayToClients, relayVoiceDraft } from "../ui/server/live-relay.js";
+import { NoticeStateView } from "../ui/server/notice-state-view.js";
 import { PageFiles } from "../ui/server/page-files.js";
 import { PageStateView } from "../ui/server/page-state-view.js";
 import { PermissionActions } from "../ui/server/permission-actions.js";
@@ -47,6 +48,7 @@ import { SessionChats } from "../ui/session-chats.js";
 import type { OperatorParts } from "./build-operator.js";
 import { todoItemHandlers, todoItemViews } from "./build-todo.js";
 import type { Core } from "./core.js";
+import type { NoticeParts } from "./build-notices.js";
 import type { OperatorDevices, OperatorNeighbors } from "./operator-types.js";
 
 export interface UiParts {
@@ -61,8 +63,11 @@ export interface UiParts {
   clients: LiveClients;
 }
 
+/** What the web UI shows and acts on besides the operator's neighbors: the notice panel's notices. */
+export type UiNeighbors = OperatorNeighbors & { notices: NoticeParts };
+
 /** The assistant's timeline and the session chats follow the app; the web UI shows them. */
-export function buildUi(core: Core, neighbors: OperatorNeighbors, operator: OperatorParts): UiParts {
+export function buildUi(core: Core, neighbors: UiNeighbors, operator: OperatorParts): UiParts {
   const feed = new Feed();
   feed.follow(operator.lines, core.events);
   const chats = new SessionChats(new ChatFiles(resolve(STATE_DIR, "chats")));
@@ -93,7 +98,7 @@ interface UiSources {
   changes: GitChanges;
 }
 
-function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources): UiServer {
+function uiServer(core: Core, neighbors: UiNeighbors, sources: UiSources): UiServer {
   const access = new UiAccess();
   const { clients, lookup } = sources;
   relayToClients(clients, sources.feed, sources.chats);
@@ -102,7 +107,8 @@ function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources):
   const live = new UiStateView(lookup, sources.waiting, new VoiceViews(sources.operator, neighbors.devices.gestures));
   const budget = new TodayBudget(core.cfg.budget, neighbors.workers.spend);
   const page = new PageStateView(live, budget, todoItemViews(neighbors.todo));
-  const publisher = new StatePublisher(clients, new EditorStateView(page, neighbors.editor.server), sources.feed);
+  const state = new NoticeStateView(new EditorStateView(page, neighbors.editor.server), neighbors.notices.inbox);
+  const publisher = new StatePublisher(clients, state, sources.feed);
   const table = routeTable(core, neighbors, sources);
   const reads = new ReadRoutes(access, publisher, new SessionChatReader(lookup, sources.chats));
   const changesRoutes = new ChangesRoutes(access, lookup, sources.changes);
@@ -114,8 +120,8 @@ function uiServer(core: Core, neighbors: OperatorNeighbors, sources: UiSources):
 }
 
 /** What each of the page's actions acts on. */
-function routeTable(core: Core, neighbors: OperatorNeighbors, sources: UiSources): RouteTable {
-  const { permissions, workers, todo, devices } = neighbors;
+function routeTable(core: Core, neighbors: UiNeighbors, sources: UiSources): RouteTable {
+  const { permissions, workers, todo, devices, notices } = neighbors;
   const { reporter, lookup } = sources;
   return new RouteTable({
     app: new AppActions(sources.operator.lifecycle),
@@ -123,6 +129,7 @@ function routeTable(core: Core, neighbors: OperatorNeighbors, sources: UiSources
     attached: new AttachedText(core.attachments),
     changes: new ChangeActions(lookup, sources.changes),
     handoffs: new HandoffActions(workers.handoff, lookup, reporter),
+    ...noticeHandlers(notices),
     policy: permissions.policy,
     permissions: sources.permissionClicks,
     questions: sources.questionClicks,
@@ -132,6 +139,11 @@ function routeTable(core: Core, neighbors: OperatorNeighbors, sources: UiSources
     ...sessionHandlers(core, neighbors, sources),
     ...voiceHandlers(sources.operator, devices),
   });
+}
+
+/** What the notice panel's buttons act on, and where a page says which session it has on screen. */
+function noticeHandlers({ actions, shownSessions }: NoticeParts): Pick<RouteHandlers, "notices" | "shownSessions"> {
+  return { notices: actions, shownSessions };
 }
 
 /** What the session tabs, their buttons and their right-click menu act on. */

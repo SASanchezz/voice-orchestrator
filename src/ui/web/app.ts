@@ -19,6 +19,7 @@ import { reloadIfRestarted, wireRestart } from "./restart.js";
 import { AttachmentTray } from "./attachments.js";
 import { byId } from "./dom.js";
 import { reportDraft, reportDraftWhileShown } from "./draft-report.js";
+import { reportShownSession, reportShownSessionChange, wireShownSessionReport } from "./shown-session-report.js";
 import { wireImageViewer } from "./image-viewer.js";
 import { renderVoiceOffer } from "./voice-offer.js";
 import { wireVoiceDiscard } from "./voice-discard.js";
@@ -62,6 +63,7 @@ function connect(): void {
   events.addEventListener("open", () => setConnected(true));
   events.addEventListener("open", reloadIfRestarted);
   events.addEventListener("open", () => reportDraft(tray.count)); // a restarted server knows of no draft
+  events.addEventListener("open", reportShownSession);
   events.addEventListener("error", () => setConnected(false)); // EventSource reconnects by itself
   followState(events);
   followChats(events);
@@ -89,12 +91,14 @@ function followChats(events: EventSource): void {
 }
 
 store.onChange(renderPage);
+store.onChange(reportShownSessionChange);
 wireSegment("permission-mode", "/api/permission-mode");
 wireSegment("speech-mode", "/api/speech-mode");
 wireSegment("gesture-mode", "/api/gestures");
 wireComposer(tray);
 wireForceStop();
 reportDraftWhileShown(() => tray.count);
+wireShownSessionReport();
 wireImageViewer();
 wireSeenResults(renderPage);
 wireMicButton(); // before wireVoiceDiscard: Esc discards the recording first

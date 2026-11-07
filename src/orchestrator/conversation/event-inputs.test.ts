@@ -66,6 +66,7 @@ const DONE: TaskEndEvent = {
   sessionNumber: 2,
   task: "Please add a resend countdown.",
   result: `${"x".repeat(1000)}All tests pass.`,
+  note: `${"x".repeat(1000)}All tests pass.`,
 };
 
 test("event inputs: a finished task is a notice, said without a model turn", () => {

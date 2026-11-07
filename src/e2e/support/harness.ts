@@ -17,7 +17,8 @@ import { UnavailableGestures } from "../../sensors/gesture-switch.js";
 import { loadSkillLibrary } from "../../skills/skill-library.js";
 import { UnavailableDictation } from "../../voice/dictation.js";
 import { fakeQuery } from "../../testing/fake-query.js";
-import { TestBrowserPage, TestNotices } from "../../testing/test-notices.js";
+import { TestClipboard } from "../../testing/test-clipboard.js";
+import { TestBrowserPage, TestNoticePanel } from "../../testing/test-notices.js";
 import { TestPopups } from "../../testing/test-popups.js";
 import { TestQuestionPanels } from "../../testing/test-question-panels.js";
 import { connectBrain, fakeOperator } from "./fake-operator.js";
@@ -31,7 +32,7 @@ export const voice = new TestVoice();
 export const screen = new TestScreen();
 export const popups = new TestPopups();
 export const questionPanels = new TestQuestionPanels();
-export const notices = new TestNotices();
+export const notices = new TestNoticePanel();
 
 const query = fakeQuery(({ prompt, options }) =>
   typeof prompt === "string" ? fakeWorker(prompt, options!) : fakeOperator(prompt, options!),
@@ -40,6 +41,7 @@ const query = fakeQuery(({ prompt, options }) =>
 export const app = buildApp(cfg, {
   voice,
   screen,
+  clipboard: new TestClipboard(),
   camera: new TestCamera(),
   notes: new AssistantNotes(notesFile),
   assistantAgent: loadAssistantAgent(ASSISTANT_AGENT_PATH),

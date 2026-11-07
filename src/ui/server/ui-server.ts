@@ -31,6 +31,11 @@ export class UiServer {
     return this.access.link();
   }
 
+  /** The notice panel's page, once started; it carries the token. */
+  noticeLink(): string {
+    return this.access.noticeLink();
+  }
+
   stop(): void {
     this.publisher.stop();
     this.server?.close();

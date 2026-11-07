@@ -28,8 +28,10 @@ const INITIAL_STATE: UiState = {
   speechMode: "questions",
   gestures: "unavailable", // hidden until the server says whether there is a mic
   voiceInput: "idle",
+  confirmVerbs: [],
   todo: { items: [] },
   editor: "off", // no Code view until the server says VS Code is there
+  notices: [],
   // nothing is marked until the server's first state brings the real limits
   budget: {
     contextWarnPercent: Number.POSITIVE_INFINITY,

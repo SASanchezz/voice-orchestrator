@@ -1,17 +1,12 @@
-// A small floating panel with buttons: a worker's permission request (Deny / Allow, top-right corner),
-// a worker's question (its options, stacked, and a field for your own answer),
-// or a short notice that a task ended (its own buttons, bottom-right, so it never covers a request).
+// A small floating panel with buttons in the top-right corner: a worker's permission request (Deny / Allow),
+// or a worker's question (its options, stacked, and a field for your own answer).
 // It never activates or takes focus: the app you're in (e.g. the browser) stays in front and keeps the keyboard,
 // until you click into the answer field, which then takes typing without bringing anything else forward.
-// Prints the clicked button's answer ("deny" / "allow" by default), or "text:<your answer>", and exits;
-// --close-after exits silently after that many seconds.
+// Prints the clicked button's answer ("deny" / "allow" by default), or "text:<your answer>", and exits.
 // Each line on stdin replaces the plain-language explanation; stdin closing (the orchestrator quit) closes the panel.
 // Usage: popup-panel <title> <warning or ""> <detail or ""> <allow label>
-//          [--button <answer> <label>]... [--look <answer> <color> <symbol>]...
-//          [--stacked] [--text <placeholder>] [--bottom] [--close-after <seconds>]
+//          [--button <answer> <label>]... [--stacked] [--text <placeholder>]
 // Buttons given with --button replace Deny and Allow, left to right, or top to bottom with --stacked.
-// --look fills that button in a color (gray, blue, purple or green) with an SF Symbol before its label,
-// so a notice's buttons are told apart at a glance; the panel widens if they don't fit.
 import AppKit
 
 let usageExitCode: Int32 = 64
@@ -52,15 +47,6 @@ func buttonOptions() -> [(answer: String, label: String)] {
   let buttons = repeatedOption("--button", count: 2).map { (answer: $0[0], label: $0[1]) }
   return buttons.isEmpty ? [(answer: "deny", label: "Deny"), (answer: "allow", label: allowLabel)] : buttons
 }
-let fillColors: [String: NSColor] = [
-  "gray": .systemGray, "blue": .systemBlue, "purple": .systemPurple, "green": .systemGreen,
-]
-/** Each "--look <answer> <color> <symbol>", by answer. */
-let looks = Dictionary(
-  repeatedOption("--look", count: 3).map { ($0[0], (color: fillColors[$0[1]] ?? .systemGray, symbol: $0[2])) },
-  uniquingKeysWith: { _, last in last })
-let atBottom = options.contains("--bottom")
-let closeAfterSeconds = option("--close-after").flatMap(Double.init)
 let stacked = options.contains("--stacked")
 let ownAnswerPlaceholder = option("--text")
 
@@ -80,30 +66,6 @@ final class Clicks: NSObject {
     fflush(stdout)
     exit(0)
   }
-}
-
-/** Filled in its color, a white symbol and label centered together, in a rounded pill wider than its text. */
-func applyLook(_ button: NSButton, color: NSColor, symbol: String) {
-  let lookPadding: CGFloat = 20
-  let lookHeight: CGFloat = 28
-  button.isBordered = false
-  button.wantsLayer = true
-  button.layer?.backgroundColor = (color.blended(withFraction: 0.15, of: .black) ?? color).cgColor
-  button.layer?.cornerRadius = 7
-  button.attributedTitle = lookTitle(button.title, symbol: symbol)
-  button.widthAnchor.constraint(equalToConstant: button.intrinsicContentSize.width + lookPadding).isActive = true
-  button.heightAnchor.constraint(equalToConstant: lookHeight).isActive = true
-}
-/** The symbol inline before the label, so the two stay side by side in white. */
-func lookTitle(_ label: String, symbol: String) -> NSAttributedString {
-  let font = NSFont.systemFont(ofSize: 12, weight: .semibold)
-  let symbolSize = NSImage.SymbolConfiguration(pointSize: font.pointSize, weight: .semibold)
-  let white = NSImage.SymbolConfiguration(paletteColors: [.white]).applying(symbolSize)
-  let icon = NSTextAttachment()
-  icon.image = NSImage(systemSymbolName: symbol, accessibilityDescription: nil)?.withSymbolConfiguration(white)
-  let title = NSMutableAttributedString(attachment: icon)
-  title.append(NSAttributedString(string: "  " + label, attributes: [.foregroundColor: NSColor.white, .font: font]))
-  return title
 }
 
 func wrappingLabel(_ text: String, font: NSFont, color: NSColor = .labelColor) -> NSTextField {
@@ -130,7 +92,6 @@ let answerButtons = buttonOptions().map { option -> NSButton in
   let button = NSButton(title: option.label, target: clicks, action: #selector(Clicks.clicked(_:)))
   button.identifier = NSUserInterfaceItemIdentifier(option.answer)
   button.hasDestructiveAction = option.answer == "allow" && !warning.isEmpty
-  if let look = looks[option.answer] { applyLook(button, color: look.color, symbol: look.symbol) }
   return button
 }
 let buttons = NSStackView(views: stacked ? answerButtons : [NSView()] + answerButtons)
@@ -169,13 +130,12 @@ panel.hidesOnDeactivate = false  // this app is never active, so it would never 
 panel.becomesKeyOnlyIfNeeded = true
 panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
-/** Fits the panel to its text, in the top-right corner of the screen, or the bottom-right one. */
+/** Fits the panel to its text, in the top-right corner of the screen. */
 func placeInCorner() {
   content.layoutSubtreeIfNeeded()
   let size = panel.frameRect(forContentRect: NSRect(origin: .zero, size: content.fittingSize)).size
   let screen = (NSScreen.main ?? NSScreen.screens[0]).visibleFrame
-  let y = atBottom ? screen.minY + screenMargin : screen.maxY - size.height - screenMargin
-  let origin = NSPoint(x: screen.maxX - size.width - screenMargin, y: y)
+  let origin = NSPoint(x: screen.maxX - size.width - screenMargin, y: screen.maxY - size.height - screenMargin)
   panel.setFrame(NSRect(origin: origin, size: size), display: true)
 }
 
@@ -189,10 +149,6 @@ FileHandle.standardInput.readabilityHandler = { input in
     explanation.isHidden = false
     placeInCorner()
   }
-}
-
-if let seconds = closeAfterSeconds {
-  DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { exit(0) }
 }
 
 placeInCorner()

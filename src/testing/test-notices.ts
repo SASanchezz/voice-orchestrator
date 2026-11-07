@@ -1,17 +1,18 @@
 import type { BrowserPage } from "../ui/server/page-opener.js";
-import type { Notice, NoticeDevice } from "../ui/task-notices.js";
+import type { NoticePanelDevice } from "../ui/notices/task-notices.js";
 
-/** A fake notice as a test sees it: what it says, and a way to click one of its buttons by answer. */
-export interface TestNotice extends Notice {
-  click(answer: string): void;
-}
+/** A fake notice panel: tests read the links it was shown with and whether it is up. */
+export class TestNoticePanel implements NoticePanelDevice {
+  shownLinks: string[] = [];
+  isShowing = false;
 
-/** Fake native notices: tests read what was shown and click its buttons. */
-export class TestNotices implements NoticeDevice {
-  shown: TestNotice[] = [];
+  show(link: string): void {
+    this.shownLinks.push(link);
+    this.isShowing = true;
+  }
 
-  notify(notice: Notice, chosen: (answer: string) => void): void {
-    this.shown.push({ ...notice, click: chosen });
+  hide(): void {
+    this.isShowing = false;
   }
 }
 

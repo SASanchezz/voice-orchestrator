@@ -36,7 +36,13 @@ test("an empty task is spoken as its task", () => {
 const WICKED_TASK = { project: "wicked-fe", session: "s1", label: "wicked-fe", sessionNumber: 1 };
 
 test("a finished task's headline names the session and the gist", () => {
-  const e = { kind: "task_done", ...WICKED_TASK, task: "Please add a resend countdown.", result: "ok" } as const;
+  const e = {
+    kind: "task_done",
+    ...WICKED_TASK,
+    task: "Please add a resend countdown.",
+    result: "ok",
+    note: "ok",
+  } as const;
   assert.equal(taskHeadline(e), "wicked-fe session 1 done: add a resend countdown");
 });
 

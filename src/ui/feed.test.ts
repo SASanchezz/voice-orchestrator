@@ -63,6 +63,6 @@ test("a finished task's line links to its session", () => {
   const feed = new Feed();
   feed.follow(new ConversationLines(), events);
   const subject = { project: "prewins", session: "s-22", label: "prewins", task: "run tests", sessionNumber: 22 };
-  events.emitEvent({ kind: "task_done", ...subject, result: "All green." });
+  events.emitEvent({ kind: "task_done", ...subject, result: "All green.", note: "All green." });
   assert.deepEqual(feed.recent()[0].session, PREWINS_22);
 });

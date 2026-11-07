@@ -98,6 +98,7 @@ const KAGGLE_DONE: TaskEndEvent = {
   sessionNumber: 1,
   task: "Please retrain the model.",
   result: "ok",
+  note: "ok",
 };
 
 /** The task's voice as its pop-up silences it; `stops` counts speech cut off, as the talk key does. */

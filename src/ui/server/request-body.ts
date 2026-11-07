@@ -3,6 +3,7 @@ import { z } from "zod";
 import { MAX_ATTACHMENTS } from "../../attachments/attachment-limits.js";
 import { PERMISSION_MODES, SPEECH_MODES } from "../../config/app-config.js";
 import { GESTURE_MODES } from "../../sensors/gesture-setting.js";
+import { NOTICE_TARGETS } from "../notice-protocol.js";
 import { attachmentsField } from "./attachment-body.js";
 import { HTTP_STATUS, HttpError } from "./http-error.js";
 
@@ -19,6 +20,7 @@ export const answersBody = z.object({ answers: z.record(z.string(), z.string()) 
 export const permissionModeBody = z.object({ mode: z.enum(PERMISSION_MODES) });
 export const speechModeBody = z.object({ mode: z.enum(SPEECH_MODES) });
 export const gestureModeBody = z.object({ mode: z.enum(GESTURE_MODES) });
+export const noticeOpenBody = z.object({ view: z.enum(NOTICE_TARGETS) });
 export const taskBody = z
   .object({ instruction: z.string().trim(), attachments: attachmentsField })
   .refine((body) => body.instruction || body.attachments.length, NOTHING_TO_SEND);
@@ -26,10 +28,13 @@ export const queueRemovalBody = z.object({ place: z.number().int().positive(), i
 export const attachedFilesBody = z
   .object({ attachments: attachmentsField })
   .refine((body) => body.attachments.length, "Attach a file");
+const pageField = z.string().min(1).max(MAX_PAGE_ID_LENGTH);
 export const draftBody = z.object({
-  page: z.string().min(1).max(MAX_PAGE_ID_LENGTH),
+  page: pageField,
   files: z.number().int().min(0).max(MAX_ATTACHMENTS),
 });
+/** No session: the page has the assistant, a project's To-do or Review on screen, or none at all. */
+export const shownSessionBody = z.object({ page: pageField, session: z.string().min(1).optional() });
 
 /** A POST's JSON body; {} when it has none. */
 export async function readJson(req: IncomingMessage, maxBytes: number): Promise<unknown> {

@@ -12,7 +12,8 @@ export interface HiddenLinesRequest {
 
 export const token = document.querySelector<HTMLMetaElement>('meta[name="ui-token"]')?.content ?? "";
 
-async function post(path: string, body: object): Promise<string | undefined> {
+/** An action whose refusal the caller shows itself; it throws with the server's reason. */
+export async function post(path: string, body: object): Promise<string | undefined> {
   const res = await fetch(path, {
     method: "POST",
     headers: { "content-type": "application/json", "x-token": token },

@@ -15,7 +15,8 @@ export class TaskAnnouncer {
   ) {}
 
   done(task: RunningTask, result: string): void {
-    this.events.emitEvent({ kind: "task_done", ...this.subject(task), result: result.slice(-RESULT_CHARS) });
+    const subject = this.subject(task);
+    this.events.emitEvent({ kind: "task_done", ...subject, result: result.slice(-RESULT_CHARS), note: result });
   }
 
   finished(task: RunningTask): void {

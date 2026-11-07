@@ -11,7 +11,15 @@ import { MAX_ATTACHED_BODY_BYTES } from "./attachment-body.js";
 import type { PermissionActions } from "./permission-actions.js";
 import type { QuestionActions } from "./question-actions.js";
 import type { QueueActions } from "./queue-actions.js";
-import { gestureModeBody, MAX_BODY_BYTES, permissionModeBody } from "./request-body.js";
+import type { NoticeActions } from "../notices/notice-actions.js";
+import type { ShownSessions } from "../notices/shown-sessions.js";
+import {
+  gestureModeBody,
+  MAX_BODY_BYTES,
+  noticeOpenBody,
+  permissionModeBody,
+  shownSessionBody,
+} from "./request-body.js";
 import type { SessionActions } from "./session-actions.js";
 import type { SessionSweepActions } from "./session-sweep-actions.js";
 import type { TabActions } from "./tab-actions.js";
@@ -39,6 +47,8 @@ export interface RouteHandlers {
   dictation: DictationControl;
   gestures: GestureControl;
   handoffs: HandoffActions;
+  /** The notice panel's buttons; its replies go through `tasks`. */
+  notices: NoticeActions;
   policy: PermissionPolicy;
   permissions: PermissionActions;
   questions: QuestionActions;
@@ -47,6 +57,8 @@ export interface RouteHandlers {
   tasks: TaskActions;
   todoItems: TodoItemHandlers;
   sessions: SessionActions;
+  /** Which session each open page has on screen, so a task ending there brings up no notice. */
+  shownSessions: ShownSessions;
   sweeps: SessionSweepActions;
   voice: VoiceCancel;
   voiceOffers: VoiceOfferActions;
@@ -98,6 +110,7 @@ function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
     [/^\/api\/speech-mode$/, (b) => h.assistant.setSpeechMode(b)],
     [/^\/api\/gestures$/, (b) => h.gestures.setMode(gestureModeBody.parse(b).mode)],
     ...sessionRoutes(h),
+    ...noticeRoutes(h),
     ...voiceRoutes(h),
   ];
 }
@@ -115,6 +128,28 @@ function sessionRoutes(h: RouteHandlers): [RegExp, Route][] {
     [/^\/api\/sessions\/([\w-]+)\/queue\/remove$/, (b, m) => h.queue.removeQueued(m[1], b)],
     [/^\/api\/sessions\/([\w-]+)\/handoff$/, (_b, m) => h.handoffs.handOff(m[1])],
   ];
+}
+
+/**
+ * The notice panel: seen, closed by you or by itself, a web UI view opened, or a longer explanation asked for; and the
+ * session a web UI page has on screen, which needs no notice.
+ */
+function noticeRoutes(h: RouteHandlers): [RegExp, Route][] {
+  return [
+    [/^\/api\/notices\/(\w+)\/seen$/, (_b, m) => h.notices.markSeen(m[1])],
+    [/^\/api\/notices\/(\w+)\/close$/, (_b, m) => h.notices.close(m[1])],
+    [/^\/api\/notices\/(\w+)\/expire$/, (_b, m) => h.notices.expire(m[1])],
+    [/^\/api\/notices\/(\w+)\/open$/, (b, m) => h.notices.open(m[1], noticeOpenBody.parse(b).view)],
+    [/^\/api\/notices\/(\w+)\/explain$/, (_b, m) => h.notices.explain(m[1])],
+    [/^\/api\/shown-session$/, (b) => noteShownSession(h.shownSessions, b)],
+  ];
+}
+
+function noteShownSession(shownSessions: ShownSessions, body: unknown): string {
+  const { page, session } = shownSessionBody.parse(body);
+  if (session) shownSessions.pageShows(page, session);
+  else shownSessions.pageShowsNoSession(page);
+  return "Noted.";
 }
 
 /**
