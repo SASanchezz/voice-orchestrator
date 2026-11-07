@@ -21,6 +21,11 @@ export function planCloseAll(sessions: SessionView[]): SessionSweep {
   return splitByRunning(sessions);
 }
 
+/** The ids of the sessions a sweep closes. */
+export function closingIds(sweep: SessionSweep): string[] {
+  return sweep.closing.map((session) => session.id);
+}
+
 function splitByRunning(sessions: SessionView[]): SessionSweep {
   return { closing: sessions.filter(isIdle), skipped: sessions.filter(isBusy) };
 }

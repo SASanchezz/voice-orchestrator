@@ -11,6 +11,7 @@ import "./flows/project-work.flow.js";
 import "./flows/notifications.flow.js";
 import "./flows/queue-removal.flow.js";
 import "./flows/session-stop.flow.js";
+import "./flows/session-routing.flow.js";
 import "./flows/ui-access.flow.js";
 import "./flows/replies.flow.js";
 import "./flows/history-and-restarts.flow.js";

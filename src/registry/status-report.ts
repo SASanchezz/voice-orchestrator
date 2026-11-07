@@ -48,9 +48,14 @@ export class StatusReport {
 
 function describeSession(s: SessionState): string {
   const bits: string[] = [s.status];
-  if (s.task) bits.push(`task="${s.task.slice(0, TASK_CHARS)}"`);
+  if (s.task) bits.push(`${taskLabel(s)}="${s.task.slice(0, TASK_CHARS)}"`);
   if (s.queued.length) bits.push(`${s.queued.length} queued`);
   if (s.lastActivity && s.status === "running") bits.push(`now: ${s.lastActivity}`);
   if (s.lastError && s.status === "failed") bits.push(`error: ${s.lastError.slice(0, ERROR_CHARS)}`);
   return bits.join(", ");
+}
+
+/** A finished session's task is its last one, which tells the model what a follow-up there would continue. */
+function taskLabel(s: SessionState): string {
+  return s.status === "running" || s.status === "waiting_permission" ? "task" : "last task";
 }

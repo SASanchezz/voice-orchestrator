@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { z } from "zod";
 import type { SessionState } from "../../registry/registry-schema.js";
-import { app } from "../support/harness.js";
-import { pause, uiPost, untilIdle } from "../support/helpers.js";
+import { app, voice } from "../support/harness.js";
+import { mark, pause, uiPost, untilIdle } from "../support/helpers.js";
 
 const { core, workers } = app;
 const idsOfDbadmin = (): string[] => core.sessions.sessionsOf("dbadmin").map((s) => s.id);
@@ -46,4 +46,21 @@ test("ui: close all with nothing running leaves the project one fresh session", 
   await uiPost("/api/projects/dbadmin/sessions/close-all", {});
   const remaining = idsOfDbadmin();
   assert.deepEqual([remaining.length, remaining.includes(running.id)], [1, false]);
+});
+
+test("voice: new work reuses the empty session close all left behind", async () => {
+  const i = mark();
+  const empty = core.registry.activeSession("dbadmin");
+  voice.say("new session dbadmin");
+  await voice.heard(new RegExp(`Using dbadmin session ${empty.number}, which was still empty`), i);
+});
+
+test("voice: close other sessions keeps only the active one", async () => {
+  const active = core.registry.createSession("dbadmin");
+  core.registry.createSession("dbadmin");
+  core.registry.activate(active.id);
+  const i = mark();
+  voice.say("close other sessions dbadmin");
+  await voice.heard(/Closed dbadmin sessions \d+ and \d+\./, i);
+  assert.deepEqual(idsOfDbadmin(), [active.id]);
 });

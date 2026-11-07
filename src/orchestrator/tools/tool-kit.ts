@@ -6,7 +6,7 @@ import type { SessionState } from "../../registry/registry-schema.js";
 import type { Screenshot } from "../../screen/screen-source.js";
 import { errorMessage } from "../../shared/errors.js";
 
-type ToolContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
+export type ToolContent = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
 
 export interface ToolResult {
   content: ToolContent[];
@@ -66,6 +66,8 @@ export const sessionNumberArg = z
 export const optionalSessionArg = sessionNumberArg
   .optional()
   .describe("Session number; the active session if left out");
+
+export const instructionArg = z.string().describe("What the worker should do, in plain words");
 
 /** The session a tool means: the one with this number, or the project's active one when no number was said. */
 export function sessionOf(registry: Registry, project: string, number: number | undefined): SessionState {

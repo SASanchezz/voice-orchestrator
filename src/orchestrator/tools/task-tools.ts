@@ -7,6 +7,7 @@ import type { TaskIntake } from "../../workers/task-intake.js";
 import type { GitCommands } from "../actions/git-commands.js";
 import {
   defineTool,
+  instructionArg,
   needProject,
   optionalSessionArg,
   projectArg,
@@ -15,12 +16,18 @@ import {
   type OperatorTool,
 } from "./tool-kit.js";
 
-export function runTask(intake: TaskIntake, cfg: AppConfig): OperatorTool {
+export function runTask(intake: TaskIntake, registry: Registry, cfg: AppConfig): OperatorTool {
   return defineTool({
     name: "run_task",
-    description: "Send an instruction to a project's coding worker. Queued if it is busy.",
-    args: { project: projectArg, instruction: z.string().describe("What the worker should do, in plain words") },
-    run: ({ project, instruction }) => text(intake.run(needProject(cfg, project), instruction)),
+    description:
+      "Send an instruction to one session's coding worker: the session with this number, or the project's active " +
+      "session if none is given. Queued if that session is busy. Only for a follow-up to that session's current or " +
+      "last task; other work goes to new_session.",
+    args: { project: projectArg, session: optionalSessionArg, instruction: instructionArg },
+    run: ({ project, session, instruction }) => {
+      const target = sessionOf(registry, needProject(cfg, project), session);
+      return text(intake.runInSession(target.id, instruction));
+    },
   });
 }
 
