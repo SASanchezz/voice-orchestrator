@@ -4,7 +4,7 @@ import type { FeedEntryView, PendingRequestView, SessionChatLine } from "../prot
 import { fetchSessionMessages } from "./api.js";
 import { feedItem, feedItems } from "./chat-items.js";
 import { ChatList } from "./chat-list.js";
-import { showConfirmButtons } from "./confirm-buttons.js";
+import { ConfirmButtons } from "./confirm-buttons.js";
 import { latestTaskEnd, replyLineIds } from "../task-reply.js";
 import { chatRows, joinsPermissionRow } from "../permission-lines.js";
 import { permissionRowItem } from "./permission-items.js";
@@ -12,6 +12,7 @@ import { SessionFeed } from "./session-feed.js";
 
 export class ChatView {
   private list = new ChatList();
+  private confirmButtons = new ConfirmButtons(this.list);
   private orchestratorEntries: FeedEntryView[] = [];
   /** undefined: the orchestrator's chat is shown */
   private shownSession?: string;
@@ -30,7 +31,7 @@ export class ChatView {
     if (this.shownSession) return;
     if (joins) this.list.replaceLast(permissionRowItem(chatRows(this.orchestratorEntries).at(-1) ?? [entry]));
     else this.list.append(feedItem(entry));
-    showConfirmButtons(this.list, this.orchestratorEntries);
+    this.confirmButtons.show(this.orchestratorEntries);
   }
 
   showOrchestrator(): void {
@@ -41,7 +42,7 @@ export class ChatView {
 
   private renderOrchestrator(): void {
     this.list.render(feedItems(this.orchestratorEntries));
-    showConfirmButtons(this.list, this.orchestratorEntries);
+    this.confirmButtons.show(this.orchestratorEntries);
   }
 
   /** Points out the assistant's reply to the session's latest ended task, in its chat, which must be the one shown. */

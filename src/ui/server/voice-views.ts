@@ -1,3 +1,4 @@
+import type { ConfirmAsk } from "../../orchestrator/conversation/confirm-ask.js";
 import type { VoiceCancel } from "../../orchestrator/conversation/voice-cancel.js";
 import type { VoiceHold } from "../../orchestrator/conversation/voice-hold.js";
 import type { Orchestrator } from "../../orchestrator/orchestrator.js";
@@ -9,24 +10,27 @@ export interface VoiceParts {
   orchestrator: Orchestrator;
   voiceHold: VoiceHold;
   voiceCancel: VoiceCancel;
+  confirmAsk: ConfirmAsk;
 }
 
 /**
  * The voice side of the page: how replies are spoken, whether you're talking, whether gestures can talk for you,
- * and a voice message waiting for you.
+ * a voice message waiting for you, and the confirm phrases the assistant asked you to say.
  */
 export class VoiceViews {
   private orchestrator: Orchestrator;
   private hold: VoiceHold;
   private cancel: VoiceCancel;
+  private confirmAsk: ConfirmAsk;
 
   constructor(
-    { orchestrator, voiceHold, voiceCancel }: VoiceParts,
+    { orchestrator, voiceHold, voiceCancel, confirmAsk }: VoiceParts,
     private gestureControl: GestureControl,
   ) {
     this.orchestrator = orchestrator;
     this.hold = voiceHold;
     this.cancel = voiceCancel;
+    this.confirmAsk = confirmAsk;
   }
 
   get speechMode(): SpeechModeName {
@@ -45,5 +49,9 @@ export class VoiceViews {
 
   offer(): VoiceOfferView | undefined {
     return this.hold.waiting;
+  }
+
+  get confirmVerbs(): string[] {
+    return this.confirmAsk.verbs;
   }
 }

@@ -12,7 +12,7 @@ export class UiStateView {
   ) {}
 
   /** Everything but the budget and the to-do list, which PageStateView adds, and the editor's status. */
-  state(): Omit<UiState, "budget" | "todo" | "editor"> {
+  state(): Omit<UiState, "budget" | "todo" | "editor" | "notices"> {
     return {
       projects: this.lookup.projectViews(),
       pending: this.waiting.requests(),
@@ -22,6 +22,7 @@ export class UiStateView {
       gestures: this.voice.gestures,
       voiceInput: this.voice.voiceInput,
       voiceOffer: this.voice.offer(),
+      confirmVerbs: this.voice.confirmVerbs,
     };
   }
 }

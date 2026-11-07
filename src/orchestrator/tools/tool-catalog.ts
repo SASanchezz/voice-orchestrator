@@ -1,4 +1,5 @@
 import type { AttachmentFiles } from "../../attachments/attachment-files.js";
+import type { ClipboardSource } from "../../clipboard/clipboard-source.js";
 import type { AppConfig } from "../../config/app-config.js";
 import type { PermissionAnswers } from "../../permissions/permission-answers.js";
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
@@ -7,6 +8,7 @@ import type { Registry } from "../../registry/registry.js";
 import type { StatusReport } from "../../registry/status-report.js";
 import type { TaskHistory } from "../../registry/task-history.js";
 import type { Editor } from "../../editor/editor.js";
+import type { MessageReading } from "../../messages/message-reading.js";
 import type { DestructiveList } from "../../safety/destructive-list.js";
 import type { ScreenSource } from "../../screen/screen-source.js";
 import type { GestureControl } from "../../sensors/gesture-switch.js";
@@ -23,14 +25,18 @@ import type { AccountSwitch } from "../actions/account-switch.js";
 import type { GitCommands } from "../actions/git-commands.js";
 import type { ProjectOpener } from "../actions/project-opener.js";
 import type { ProjectRemover } from "../actions/project-remover.js";
+import type { ConfirmAsk } from "../conversation/confirm-ask.js";
 import type { TurnContext } from "../conversation/turn-context.js";
 import type { ResetRequests } from "../lifecycle/reset-requests.js";
 import type { AssistantNotes } from "../memory/assistant-notes.js";
 import { lookAtCamera, lookAtScreen, remember, resetContext, restartOrchestrator } from "./assistant-tools.js";
 import type { CameraView } from "./camera-views.js";
 import { readAttachment } from "./attachment-tools.js";
+import { readClipboard } from "./clipboard-tools.js";
+import { askToConfirm } from "./confirm-tools.js";
 import { destructiveAdd, destructiveRemove, destructiveRules } from "./destructive-tools.js";
 import { setGestures } from "./gesture-tools.js";
+import { catchUpMessages, listMessageSources } from "./message-tools.js";
 import { showChanges, showChat, showCode, type PageClients } from "./page-view-tools.js";
 import { answerPermission, listPendingPermissions, setPermissionMode } from "./permission-tools.js";
 import {
@@ -43,12 +49,13 @@ import {
 } from "./project-tools.js";
 import { listQueuedTasks, removeQueuedTask } from "./queue-tools.js";
 import { listSkills, loadSkill } from "./skill-tools.js";
-import { closeSession, listSessions, newSession, switchSession } from "./session-tools.js";
+import { closeOtherSessions, closeSession, listSessions, newSession, switchSession } from "./session-tools.js";
 import { git, runTask, stopTask, summarizeChanges } from "./task-tools.js";
 import { deleteTodoItem, restoreTodoItem, sendTodoItem, setTodoItemDone } from "./todo-item-change-tools.js";
 import { addTodoItem, editTodoItem, listTodoItems } from "./todo-item-tools.js";
 import { discardTodo, listTodo, runTodo } from "./todo-tools.js";
 import type { OperatorTool } from "./tool-kit.js";
+import type { WorkSessions } from "./work-sessions.js";
 
 /** Everything the operator's tools act on; each tool takes only the parts it uses. */
 export interface ToolServices {
@@ -61,6 +68,7 @@ export interface ToolServices {
   accounts: AccountSwitch;
   intake: TaskIntake;
   control: SessionControl;
+  workSessions: WorkSessions;
   queuedTasks: QueuedTasks;
   todos: TodoRunner;
   todoItems: TodoItems;
@@ -74,7 +82,9 @@ export interface ToolServices {
   answers: PermissionAnswers;
   views: PermissionViews;
   context: TurnContext;
+  confirmAsk: ConfirmAsk;
   screen: ScreenSource;
+  clipboard: ClipboardSource;
   cameraView: CameraView;
   gestures: GestureControl;
   editor: Pick<Editor, "status">;
@@ -82,6 +92,7 @@ export interface ToolServices {
   attachments: AttachmentFiles;
   destructive: DestructiveList;
   skills: SkillLibrary;
+  messages: MessageReading;
 }
 
 /** The tools in the order the model sees them. */
@@ -91,10 +102,11 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => removeProject(s.remover, s.context, s.cfg),
   (s) => projectStatus(s.status, s.cfg),
   (s) => listSessions(s.status, s.cfg),
-  (s) => newSession(s.registry, s.cfg),
+  (s) => newSession(s.workSessions, s.intake, s.cfg),
   (s) => switchSession(s.registry, s.cfg),
   (s) => closeSession(s.registry, s.control, s.cfg),
-  (s) => runTask(s.intake, s.cfg),
+  (s) => closeOtherSessions(s.workSessions, s.cfg),
+  (s) => runTask(s.intake, s.registry, s.cfg),
   (s) => listTodo(s.todos),
   (s) => runTodo(s.todos),
   (s) => discardTodo(s.todos),
@@ -125,6 +137,10 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => showChat(s.clients, s.cfg),
   (s) => showChanges(s.clients, s.cfg),
   (s) => readAttachment(s.attachments),
+  (s) => readClipboard(s.clipboard, s.attachments),
+  (s) => catchUpMessages(s.messages),
+  (s) => listMessageSources(s.messages),
+  (s) => askToConfirm(s.confirmAsk),
   (s) => destructiveRules(s.destructive),
   (s) => destructiveAdd(s.destructive, s.context),
   (s) => destructiveRemove(s.destructive, s.context),

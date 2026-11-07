@@ -1,5 +1,6 @@
 import { VOICE_MESSAGE_WAIT_MS } from "../attachments/attachment-limits.js";
 import type { AppEvent } from "../events/app-events.js";
+import { ConfirmAsk } from "../orchestrator/conversation/confirm-ask.js";
 import { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import { inputFor } from "../orchestrator/conversation/event-inputs.js";
 import { EventTurns } from "../orchestrator/conversation/event-turns.js";
@@ -47,6 +48,8 @@ export interface OperatorParts {
   voiceCancel: VoiceCancel;
   /** Whether you pointed while talking, told to the model with your words. */
   pointing: PointingCue;
+  /** The confirm phrases the assistant asked you to say, which the web UI shows as buttons. */
+  confirmAsk: ConfirmAsk;
 }
 
 /** Builds the operator and has it listen: your key press, your words, and every app event. */
@@ -60,11 +63,18 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   const pointing = new PointingCue();
   listen(neighbors.devices, pointing, (text) => voiceHold.receive(pointing.annotate(text)));
   releaseShotsAfterTurns(neighbors.devices, kit.context);
+  kit.confirmAsk.follow(kit.lines);
   core.events.on("event", (e: AppEvent) => loop.enqueue(inputFor(e, kit.voices)));
   core.events.on("permission_closed", (requestId: string) => kit.replies.answered(requestId));
   const orchestrator = new Orchestrator(loop, kit.context, kit.speech);
-  const { lines, context, voices } = kit;
-  return { orchestrator, session, lifecycle, lines, tools, context, voices, voiceHold, voiceCancel, pointing };
+  return { orchestrator, session, lifecycle, tools, voiceHold, voiceCancel, pointing, ...kitParts(kit) };
+}
+
+type KitPart = "lines" | "context" | "voices" | "confirmAsk";
+
+/** The conversation's parts the rest of the app uses too. */
+function kitParts({ lines, context, voices, confirmAsk }: ConversationKit): Pick<OperatorParts, KitPart> {
+  return { lines, context, voices, confirmAsk };
 }
 
 function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighbors): ConversationKit {
@@ -84,6 +94,7 @@ function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighb
     lines: new ConversationLines(),
     memory,
     requests: new ResetRequests(),
+    confirmAsk: new ConfirmAsk(),
   };
 }
 
