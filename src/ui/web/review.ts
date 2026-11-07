@@ -1,17 +1,18 @@
 // The Review view: every project's uncommitted changes in one place, in place of the code and chat. Its project is the
 // selected one. New changes update the list at once; the diffs wait for your Refresh, so they never move while you read
-// or lose a comment you're writing.
+// or lose a comment you're writing. Leaving the view keeps them, so coming back finds them loaded where you left off.
 
 import type { ProjectChangesView } from "../change-views.js";
 import { changesVersion } from "../reviewed-files.js";
 import { renderChangeList } from "./change-list.js";
-import { markDiffsOutdated, showDiffsOf, showNoDiffs } from "./diff-pane.js";
+import { keepDiffScroll, markDiffsOutdated, restoreDiffScroll, showDiffsOf, showNoDiffs } from "./diff-pane.js";
 import { byId } from "./dom.js";
 import { store } from "./store.js";
 import { wireSymbolKeys } from "./symbol-links.js";
 
 let loadedVersion = "";
 let loadedProject = "";
+let wasShown = false;
 
 export function wireReview(): void {
   byId("review-button", HTMLButtonElement).addEventListener("click", toggleReview);
@@ -27,10 +28,15 @@ function toggleReview(): void {
 
 export function renderReview(): void {
   renderReviewButton();
+  const isLeaving = wasShown && !store.reviewShown;
+  const isReturning = store.reviewShown && !wasShown;
+  wasShown = store.reviewShown;
+  if (isLeaving) keepDiffScroll(); // read before the pane is hidden
   byId("review-panel", HTMLElement).hidden = !store.reviewShown;
-  if (!store.reviewShown) return forgetLoadedDiffs();
+  if (!store.reviewShown) return;
   renderChangeList();
   renderDiffs(store.changes.find((view) => view.project === store.selectedProjectName));
+  if (isReturning) restoreDiffScroll();
 }
 
 function renderReviewButton(): void {

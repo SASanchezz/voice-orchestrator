@@ -1,4 +1,5 @@
-// The Review view's right side: one project's files as one scroll. A file's diff loads when you scroll near it.
+// The Review view's right side: one project's files as one scroll. An open file's diff loads when you scroll near it;
+// a folded one waits until you open it.
 
 import type { ChangedFileView, ProjectChangesView } from "../change-views.js";
 import { fetchFileDiff } from "./api.js";
@@ -12,27 +13,63 @@ const LOAD_AHEAD = "600px";
 const MODIFIER_KEY = navigator.platform.startsWith("Mac") ? "⌘" : "Ctrl";
 
 let observer: IntersectionObserver | undefined;
+const requestedSections = new WeakSet<HTMLDetailsElement>();
+/** Where the pane was scrolled when the Review view was left; the pane forgets it while hidden. */
+let keptScrollTop = 0;
 
 export function showDiffsOf({ project, files }: ProjectChangesView): void {
   observer?.disconnect();
   closeDefinitions();
-  observer = new IntersectionObserver((entries) => loadVisible(project, entries), { rootMargin: LOAD_AHEAD });
+  keptScrollTop = 0;
+  const pane = byId("diff-pane", HTMLElement);
+  // The pane is the root, because it clips its sections: a margin on the window would never reach past its edges.
+  observer = new IntersectionObserver((entries) => loadVisible(project, entries), {
+    root: pane,
+    rootMargin: LOAD_AHEAD,
+  });
   const sections = files.map((file) => diffFile(project, file));
-  byId("diff-pane", HTMLElement).replaceChildren(refreshBar(), symbolHint(), ...sections);
-  for (const section of sections) observer.observe(section);
+  pane.replaceChildren(refreshBar(), symbolHint(), ...sections);
+  sections.forEach(watchSection);
+}
+
+/** Opening a folded file asks again whether it is near, since its place in the scroll didn't change. */
+function watchSection(section: HTMLDetailsElement): void {
+  observer?.observe(section);
+  section.addEventListener("toggle", () => recheckSection(section));
+}
+
+function recheckSection(section: HTMLDetailsElement): void {
+  if (requestedSections.has(section) || !section.isConnected) return;
+  observer?.unobserve(section);
+  observer?.observe(section);
 }
 
 function loadVisible(project: string, entries: IntersectionObserverEntry[]): void {
   for (const entry of entries) {
-    if (!entry.isIntersecting || !(entry.target instanceof HTMLDetailsElement)) continue;
-    observer?.unobserve(entry.target);
-    void loadInto(project, entry.target);
+    const isNearOpenSection = entry.isIntersecting && entry.target instanceof HTMLDetailsElement && entry.target.open;
+    if (isNearOpenSection) loadSection(project, entry.target);
   }
 }
 
+function loadSection(project: string, section: HTMLDetailsElement): void {
+  requestedSections.add(section);
+  observer?.unobserve(section);
+  void loadInto(project, section);
+}
+
+/** A pane redrawn while the diff loaded has dropped the section, so the diff goes nowhere. */
 async function loadInto(project: string, section: HTMLDetailsElement): Promise<void> {
   const path = section.dataset.path ?? "";
-  fillDiff(section, project, await fetchFileDiff(project, path));
+  const diff = await fetchFileDiff(project, path);
+  if (section.isConnected) fillDiff(section, project, diff);
+}
+
+export function keepDiffScroll(): void {
+  keptScrollTop = byId("diff-pane", HTMLElement).scrollTop;
+}
+
+export function restoreDiffScroll(): void {
+  byId("diff-pane", HTMLElement).scrollTop = keptScrollTop;
 }
 
 function symbolHint(): HTMLParagraphElement {
@@ -56,6 +93,7 @@ export function markDiffsOutdated(isOutdated: boolean, refresh: () => void): voi
 export function showNoDiffs(project: string | undefined): void {
   observer?.disconnect();
   closeDefinitions();
+  keptScrollTop = 0;
   const message = project ? `${project} has no uncommitted changes.` : "Pick a project to see its changes.";
   byId("diff-pane", HTMLElement).replaceChildren(el("p", { class: "empty" }, message));
 }
