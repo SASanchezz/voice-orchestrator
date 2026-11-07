@@ -70,6 +70,7 @@ permissions:
   mode: auto # auto: workers run everything except destructive commands without asking | ask: every request goes to you. Switch by voice: "ask mode" / "auto mode"
   reminderMinutes: 5 # re-announce unanswered permission requests
   alwaysDestination: localSettings # where "always allow" is saved: localSettings (project's .claude/settings.local.json) | projectSettings | userSettings | session
+  protectedBranches: [main, master, develop, "release/*"] # commits and merges here (and on the main checkout's branch) need "confirm commit" / "confirm merge"; in a worktree on any other branch they run without asking
 
 # When a session counts as large or expensive. Context: percent of the model's context window
 # (amber badge from warn, red badge plus one spoken notice and a handoff offer from critical). Costs in USD.
@@ -97,3 +98,15 @@ editor:
   enabled: false # true adds a Chat | Code switch per project; the first start downloads the VS Code server once
   codePath: /Applications/Visual Studio Code.app/Contents/Resources/app/bin/code-tunnel # code-tunnel, not bin/code
   port: 4778 # on 127.0.0.1; the web UI passes /editor through to it
+
+# Slack and Telegram catch-up: "catch me up on Slack and Telegram". Read only when asked; nothing is sent or marked read.
+# Optional: without this block the feature is off. Setup: npm run slack-login -- acme, npm run telegram-login; see docs/messages-setup.md.
+messages:
+  slack:
+    - workspace: acme # = the Keychain account name (-a) its token is saved under
+      profile: work # the Claude account that summarizes it; work messages never reach the personal account
+      channels: [] # DMs, group DMs and mentions are always read; channels only when named here, e.g. [general, deploys]
+  telegram:
+    profile: personal
+    chats: all # every chat with new messages; or a list of chat names to limit it, e.g. [Family, Bob]. Missing: none
+    exclude: [] # optional: chat names to always skip. With all, every new message (groups and channels too) goes to the summarizer

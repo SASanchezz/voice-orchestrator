@@ -2,6 +2,7 @@ import { z } from "zod";
 import { budgetSchema } from "./budget-config.js";
 import { cameraSchema } from "./camera-config.js";
 import { editorSchema } from "./editor-config.js";
+import { messagesSchema } from "./messages-config.js";
 import { expandHome } from "./paths.js";
 import { sensorsSchema } from "./sensor-config.js";
 import { numberOr } from "./yaml-values.js";
@@ -22,6 +23,8 @@ export type SpeechMode = (typeof SPEECH_MODES)[number];
 const DEFAULT_RESET_MINUTES = 60;
 const DEFAULT_ANSWER_WINDOW_SECONDS = 15;
 const DEFAULT_UI = { port: 4777, open: true };
+/** Branches where a commit or merge still needs the confirm phrase, even in a worktree; `*` matches anything. */
+export const DEFAULT_PROTECTED_BRANCHES = ["main", "master", "develop", "release/*"];
 const DEFAULT_PERMISSIONS = { mode: "ask", reminderMinutes: 5, alwaysDestination: "localSettings" } as const;
 
 // A key left empty in YAML reads as null; like a missing key, it gets the default.
@@ -80,9 +83,15 @@ const permissionsSchema = z
       .transform((mode) => mode ?? "ask"),
     reminderMinutes: z.number(),
     alwaysDestination: z.enum(ALWAYS_DESTINATIONS),
+    protectedBranches: z
+      .array(z.string())
+      .nullish()
+      .transform((branches) => branches ?? [...DEFAULT_PROTECTED_BRANCHES]),
   })
   .nullish()
-  .transform((permissions) => permissions ?? { ...DEFAULT_PERMISSIONS });
+  .transform(
+    (permissions) => permissions ?? { ...DEFAULT_PERMISSIONS, protectedBranches: [...DEFAULT_PROTECTED_BRANCHES] },
+  );
 
 /** config/config.yaml, with defaults filled in and ~ expanded. */
 export const configFileSchema = z.object({
@@ -108,6 +117,7 @@ export const configFileSchema = z.object({
   sensors: sensorsSchema,
   camera: cameraSchema,
   editor: editorSchema,
+  messages: messagesSchema,
 });
 
 export type AppConfig = z.infer<typeof configFileSchema>;

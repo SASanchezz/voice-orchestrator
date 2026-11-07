@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import YAML from "yaml";
 import { configFileSchema, type AppConfig } from "./app-config.js";
+import { messageProfiles } from "./messages-config.js";
 import { CONFIG_PATH, expandHome } from "./paths.js";
 import { readProjectOverlay } from "./project-overlay.js";
 
@@ -34,4 +35,6 @@ function checkProfiles(cfg: AppConfig): void {
     throw new Error(`orchestrator.profile "${cfg.orchestrator.profile}" is not in profiles`);
   for (const [name, project] of Object.entries(cfg.projects))
     if (!cfg.profiles[project.profile]) throw new Error(`project ${name}: unknown profile "${project.profile}"`);
+  for (const [source, profile] of messageProfiles(cfg.messages))
+    if (!cfg.profiles[profile]) throw new Error(`messages, ${source}: unknown profile "${profile}"`);
 }

@@ -15,6 +15,14 @@ const agentLogEntrySchema = z.discriminatedUnion("event", [
     agent: z.string(),
     handledBy: z.enum(["specialized", "fallback"]),
   }),
+  /** A message catch-up: counts only, never message text. */
+  z.object({
+    at: z.string(),
+    event: z.literal("messages"),
+    source: z.string(),
+    messages: z.number(),
+    chats: z.number(),
+  }),
 ]);
 export type AgentLogEntry = z.infer<typeof agentLogEntrySchema>;
 
