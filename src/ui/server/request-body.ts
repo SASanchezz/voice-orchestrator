@@ -15,6 +15,8 @@ const MAX_PAGE_ID_LENGTH = 64;
 export const messageBody = z
   .object({ text: z.string().trim(), attachments: attachmentsField })
   .refine((body) => body.text || body.attachments.length, NOTHING_TO_SEND);
+/** A Confirm or Cancel click: the words it says for you. */
+export const clickedWordsBody = z.object({ text: z.string().trim().min(1) });
 export const decisionBody = z.object({ decision: z.enum(["once", "always", "deny"]) });
 export const answersBody = z.object({ answers: z.record(z.string(), z.string()) });
 export const permissionModeBody = z.object({ mode: z.enum(PERMISSION_MODES) });

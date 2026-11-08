@@ -103,6 +103,7 @@ function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
   return [
     [/^\/api\/restart$/, () => h.app.restartApp()],
     [/^\/api\/assistant\/clear$/, () => h.assistant.clearAssistant()],
+    [/^\/api\/clicked-words$/, (b) => h.assistant.sendClickedWords(b)],
     [/^\/api\/permissions\/(\w+)$/, (b, m) => h.permissions.answer(m[1], b)],
     [/^\/api\/questions\/(\w+)\/answer$/, (b, m) => h.questions.answer(m[1], b)],
     [/^\/api\/questions\/(\w+)\/skip$/, (_b, m) => h.questions.skip(m[1])],

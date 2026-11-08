@@ -42,13 +42,14 @@ function permissionsWithPopups(t: TestContext) {
   const broker = new PermissionBroker(new PermissionPolicy("ask", workerRules(rules)), waiting, explanations);
   const answers = new PermissionAnswers(waiting, sessions, settings);
   const popups = new TestPopups();
-  new PermissionPopups(popups, answers).follow(events);
+  const popupsFollowing = new PermissionPopups(popups, answers);
+  popupsFollowing.follow(events);
   const stop = new AbortController();
   t.after(() => stop.abort());
   const { id: session } = registry.activeSession("webshop");
   const ask = (command: string): Promise<PermissionResult> =>
     broker.request(session, { toolName: "Bash", input: { command } }, { signal: stop.signal });
-  return { ask, answers, popups, waiting, events };
+  return { ask, answers, popups, popupsFollowing, waiting, events };
 }
 
 const settle = () => new Promise((r) => setImmediate(r));
@@ -104,4 +105,17 @@ test("popups: a reminder doesn't open a second pop-up", (t) => {
   const { id, project, session, description } = waiting.all()[0];
   events.emitEvent({ kind: "permission", id, project, session, label: project, description, reminder: true });
   assert.equal(popups.shown.length, 1);
+});
+
+test("popups: an open destructive pop-up asks for its verb", (t) => {
+  const { ask, popupsFollowing } = permissionsWithPopups(t);
+  void ask("git push origin main");
+  assert.equal(popupsFollowing.isAsking("push"), true);
+});
+
+test("popups: a closed pop-up no longer asks for its verb", (t) => {
+  const { ask, answers, popupsFollowing, waiting } = permissionsWithPopups(t);
+  void ask("git push origin main");
+  answers.denyBySpeech(waiting.all()[0].id);
+  assert.equal(popupsFollowing.isAsking("push"), false);
 });

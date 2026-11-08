@@ -1,5 +1,6 @@
 import { VOICE_MESSAGE_WAIT_MS } from "../attachments/attachment-limits.js";
 import type { AppEvent } from "../events/app-events.js";
+import { ClickedWords } from "../orchestrator/conversation/clicked-words.js";
 import { ConfirmAsk } from "../orchestrator/conversation/confirm-ask.js";
 import { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import { inputFor } from "../orchestrator/conversation/event-inputs.js";
@@ -50,6 +51,8 @@ export interface OperatorParts {
   pointing: PointingCue;
   /** The confirm phrases the assistant asked you to say, which the web UI shows as buttons. */
   confirmAsk: ConfirmAsk;
+  /** The words a Confirm or Cancel click says for you, which first silence the reply being said. */
+  clickedWords: ClickedWords;
 }
 
 /** Builds the operator and has it listen: your key press, your words, and every app event. */
@@ -67,7 +70,9 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   core.events.on("event", (e: AppEvent) => loop.enqueue(inputFor(e, kit.voices)));
   core.events.on("permission_closed", (requestId: string) => kit.replies.answered(requestId));
   const orchestrator = new Orchestrator(loop, kit.context, kit.speech);
-  return { orchestrator, session, lifecycle, tools, voiceHold, voiceCancel, pointing, ...kitParts(kit) };
+  const clickedWords = new ClickedWords(kit.replies, orchestrator);
+  const parts = { orchestrator, session, lifecycle, tools, voiceHold, voiceCancel, pointing, clickedWords };
+  return { ...parts, ...kitParts(kit) };
 }
 
 type KitPart = "lines" | "context" | "voices" | "confirmAsk";

@@ -4,6 +4,7 @@ import { MacClipboard } from "../clipboard/mac-clipboard.js";
 import type { AppConfig } from "../config/app-config.js";
 import { CONFIG_PATH, NOTES_PATH, SKILLS_DIR } from "../config/paths.js";
 import { MacBrowserPage } from "../macos/mac-browser-page.js";
+import { MacConfirmPanels } from "../macos/mac-confirm-panels.js";
 import { MacNoticePanel } from "../macos/mac-notice-panel.js";
 import { MacPopups } from "../macos/mac-popups.js";
 import { MacQuestionPanels } from "../macos/mac-question-panels.js";
@@ -34,19 +35,24 @@ export async function realAdapters(
   snapshots: SensorSnapshots,
 ): Promise<Adapters> {
   const screen = await MacScreen.create();
-  const popups = await MacPopups.create();
-  const questionPanels = await MacQuestionPanels.create(); // after MacPopups: the helper is built by then
   const devices = {
     ...madeFirst,
     screen,
     clipboard: await MacClipboard.create(),
     camera: SensorCamera.create(snapshots),
     gestures,
-    popups,
     notices: await MacNoticePanel.create(),
     browser: new MacBrowserPage(),
   };
-  return { ...devices, questionPanels, ...filesAndModel() };
+  return { ...devices, ...(await popupPanels()), ...filesAndModel() };
+}
+
+/** Permission, question and confirm pop-ups, all from one Swift helper. */
+async function popupPanels(): Promise<Pick<Adapters, "popups" | "questionPanels" | "confirmPanels">> {
+  const popups = await MacPopups.create();
+  const questionPanels = await MacQuestionPanels.create(); // after MacPopups: the helper is built by then
+  const confirmPanels = await MacConfirmPanels.create();
+  return { popups, questionPanels, confirmPanels };
 }
 
 /** config/destructive.yaml (hot-reloaded), config/config.yaml, config/notes.md, skills/ and the Agent SDK. */

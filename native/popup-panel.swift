@@ -1,12 +1,14 @@
 // A small floating panel with buttons in the top-right corner: a worker's permission request (Deny / Allow),
+// the assistant's ask for a confirm phrase (Cancel / Confirm <verb>),
 // or a worker's question (its options, stacked, and a field for your own answer).
 // It never activates or takes focus: the app you're in (e.g. the browser) stays in front and keeps the keyboard,
 // until you click into the answer field, which then takes typing without bringing anything else forward.
 // Prints the clicked button's answer ("deny" / "allow" by default), or "text:<your answer>", and exits.
 // Each line on stdin replaces the plain-language explanation; stdin closing (the orchestrator quit) closes the panel.
 // Usage: popup-panel <title> <warning or ""> <detail or ""> <allow label>
-//          [--button <answer> <label>]... [--stacked] [--text <placeholder>]
+//          [--button <answer> <label>]... [--stacked] [--text <placeholder>] [--explanation <text>]
 // Buttons given with --button replace Deny and Allow, left to right, or top to bottom with --stacked.
+// --explanation shows plain-language text from the start, in the place stdin's explanations go.
 import AppKit
 
 let usageExitCode: Int32 = 64
@@ -49,6 +51,7 @@ func buttonOptions() -> [(answer: String, label: String)] {
 }
 let stacked = options.contains("--stacked")
 let ownAnswerPlaceholder = option("--text")
+let firstExplanation = option("--explanation") ?? ""
 
 final class Clicks: NSObject {
   /** Each button carries its answer as its identifier. */
@@ -81,8 +84,8 @@ let app = NSApplication.shared
 app.setActivationPolicy(ownAnswerPlaceholder == nil ? .prohibited : .accessory)
 let clicks = Clicks()
 
-let explanation = wrappingLabel("", font: .systemFont(ofSize: 13))
-explanation.isHidden = true
+let explanation = wrappingLabel(firstExplanation, font: .systemFont(ofSize: 13))
+explanation.isHidden = firstExplanation.isEmpty
 let warningLabel = wrappingLabel(warning, font: .boldSystemFont(ofSize: 12), color: .systemRed)
 warningLabel.isHidden = warning.isEmpty
 let commandLabel = wrappingLabel(command, font: .monospacedSystemFont(ofSize: 11, weight: .regular), color: .secondaryLabelColor)
@@ -91,7 +94,8 @@ commandLabel.isHidden = command.isEmpty
 let answerButtons = buttonOptions().map { option -> NSButton in
   let button = NSButton(title: option.label, target: clicks, action: #selector(Clicks.clicked(_:)))
   button.identifier = NSUserInterfaceItemIdentifier(option.answer)
-  button.hasDestructiveAction = option.answer == "allow" && !warning.isEmpty
+  let approves = option.answer == "allow" || option.answer.hasPrefix("confirm:")
+  button.hasDestructiveAction = approves && !warning.isEmpty
   return button
 }
 let buttons = NSStackView(views: stacked ? answerButtons : [NSView()] + answerButtons)

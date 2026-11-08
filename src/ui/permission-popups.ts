@@ -32,6 +32,8 @@ export interface ClickAnswers {
  */
 export class PermissionPopups {
   private open = new Map<string, Popup>();
+  /** The destructive verb of each open pop-up that has one, by request id. */
+  private openVerbs = new Map<string, string>();
 
   constructor(
     private device: PopupDevice,
@@ -46,14 +48,21 @@ export class PermissionPopups {
     events.on("permission_closed", (id: string) => this.close(id));
   }
 
+  /** Whether an open pop-up's Allow already counts as saying "confirm <verb>". */
+  isAsking(verb: string): boolean {
+    return [...this.openVerbs.values()].includes(verb);
+  }
+
   private show(request: PermissionEvent): void {
     const answer = (allowed: boolean) => this.answers.answerByClick(request.id, allowed ? "once" : "deny");
     this.open.set(request.id, this.device.open(contentFor(request), answer));
+    if (request.destructiveVerb) this.openVerbs.set(request.id, request.destructiveVerb);
   }
 
   private close(id: string): void {
     this.open.get(id)?.close();
     this.open.delete(id);
+    this.openVerbs.delete(id);
   }
 }
 

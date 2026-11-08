@@ -1,5 +1,6 @@
 // Confirm and Cancel under the assistant's open request for a confirm phrase. A click sends the words as your typed
 // message, so the server checks them exactly as if you had said them, and nothing runs that the words wouldn't run.
+// Like the talk key, a click cuts off the reply being said.
 
 import { cancelWords, confirmWords, openConfirmRequest } from "../confirm-request.js";
 import type { FeedEntryView } from "../protocol.js";
@@ -52,6 +53,6 @@ function confirmBar(verbs: string[]): HTMLDivElement {
 async function sendWords(bar: HTMLDivElement, words: string): Promise<void> {
   const buttons = [...bar.querySelectorAll("button")];
   buttons.forEach((node) => (node.disabled = true));
-  const sent = await act("/api/message", { text: words });
+  const sent = await act("/api/clicked-words", { text: words });
   if (sent === undefined) buttons.forEach((node) => (node.disabled = false));
 }

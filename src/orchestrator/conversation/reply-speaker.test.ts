@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { VoiceInputState, VoiceIO } from "../../voice/voice-io.js";
 import { ReplySpeaker } from "./reply-speaker.js";
+import { SingleVoice } from "./single-voice.js";
 
 /** A speaker whose speech plays until it is stopped. */
 class PlayingVoice implements VoiceIO {
@@ -76,4 +77,35 @@ test("reply speaker: a reply about nothing in particular is always spoken", asyn
   void speaker.speakWhenQuiet("Done.");
   await settle();
   assert.deepEqual(voice.spoken, ["Done."]);
+});
+
+test("reply speaker: silencing the latest reply cuts it off mid-sentence", async () => {
+  const { voice, speaker } = speakerWaitingFor();
+  const speaking = speaker.speakWhenQuiet("Say confirm push.", { voice: new SingleVoice() });
+  await settle();
+  speaker.silenceLatestReply();
+  await speaking;
+  assert.equal(voice.stops, 1);
+});
+
+test("reply speaker: the rest of a silenced reply is not said", async () => {
+  const { voice, speaker } = speakerWaitingFor();
+  const reply = new SingleVoice();
+  const first = speaker.speakWhenQuiet("Casini GDK, right?", { voice: reply });
+  await settle();
+  speaker.silenceLatestReply();
+  await first;
+  await speaker.speakWhenQuiet("Nothing has been pushed yet.", { voice: reply });
+  assert.deepEqual(voice.spoken, ["Casini GDK, right?"]);
+});
+
+test("reply speaker: a reply after the silenced one is said", async () => {
+  const { voice, speaker } = speakerWaitingFor();
+  const first = speaker.speakWhenQuiet("Say confirm push.", { voice: new SingleVoice() });
+  await settle();
+  speaker.silenceLatestReply();
+  await first;
+  void speaker.speakWhenQuiet("Pushed.", { voice: new SingleVoice() });
+  await settle();
+  assert.deepEqual(voice.spoken, ["Say confirm push.", "Pushed."]);
 });

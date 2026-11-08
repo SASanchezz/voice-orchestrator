@@ -3,6 +3,7 @@ import type { OperatorSession } from "../model/operator-session.js";
 import type { ConversationLine, ConversationLines } from "./conversation-lines.js";
 import { onScreen, SCREEN_MARKER, spokenPart } from "./reply-text.js";
 import type { ReplySpeaker, SpokenSubject } from "./reply-speaker.js";
+import { SingleVoice } from "./single-voice.js";
 
 /** What a reply is about: what may quiet its speech, and the worker session whose answer it relays (its lines link there). */
 export interface ReplySubject extends SpokenSubject {
@@ -24,9 +25,11 @@ export class ReplyPresenter {
   /**
    * Also speaks the reply piece by piece, so an acknowledgment is heard before the tools finish.
    * Each piece is shown before it is queued for speech, so the screen is never behind the voice.
-   * A reply about a permission request goes quiet once that request is answered.
+   * A reply about a permission request goes quiet once that request is answered. All its pieces share one voice,
+   * so silencing it also silences the pieces not said yet.
    */
   async askAloud(content: string, subject: ReplySubject = {}): Promise<string> {
+    const voiced = { ...subject, voice: subject.voice ?? new SingleVoice() };
     let spoken = Promise.resolve();
     let screenOnly = false;
     const reply = await this.session.ask(content, (text) => {
@@ -34,8 +37,7 @@ export class ReplyPresenter {
       if (screenOnly) return;
       screenOnly = text.includes(SCREEN_MARKER);
       const aloud = spokenPart(text);
-      if (aloud && (subject.voice?.replyMaySpeak() ?? true))
-        spoken = spoken.then(() => this.speaker.speakWhenQuiet(aloud, subject));
+      if (aloud && voiced.voice.replyMaySpeak()) spoken = spoken.then(() => this.speaker.speakWhenQuiet(aloud, voiced));
     });
     await spoken;
     return reply;

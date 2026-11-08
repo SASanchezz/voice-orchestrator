@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { AppEvents, type AppEvent, type QuestionEvent } from "../events/app-events.js";
 import type { AnswersByQuestion } from "../questions/question-types.js";
-import { TestQuestionPanels } from "../testing/test-question-panels.js";
+import { TestQuestionPanels } from "../testing/test-panels.js";
 import type { PageTarget } from "./page-target.js";
 import { QuestionPopups } from "./question-popups.js";
 

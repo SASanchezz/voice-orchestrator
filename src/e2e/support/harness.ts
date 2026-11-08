@@ -20,7 +20,7 @@ import { fakeQuery } from "../../testing/fake-query.js";
 import { TestClipboard } from "../../testing/test-clipboard.js";
 import { TestBrowserPage, TestNoticePanel } from "../../testing/test-notices.js";
 import { TestPopups } from "../../testing/test-popups.js";
-import { TestQuestionPanels } from "../../testing/test-question-panels.js";
+import { TestConfirmPanels, TestQuestionPanels } from "../../testing/test-panels.js";
 import { connectBrain, fakeOperator } from "./fake-operator.js";
 import { fakeWorker } from "./fake-worker.js";
 import { cfg, configFile, notesFile, root, rulesFile } from "./sandbox.js";
@@ -32,6 +32,7 @@ export const voice = new TestVoice();
 export const screen = new TestScreen();
 export const popups = new TestPopups();
 export const questionPanels = new TestQuestionPanels();
+export const confirmPanels = new TestConfirmPanels();
 export const notices = new TestNoticePanel();
 
 const query = fakeQuery(({ prompt, options }) =>
@@ -54,6 +55,7 @@ export const app = buildApp(cfg, {
   explainCommands: false,
   popups,
   questionPanels,
+  confirmPanels,
   notices,
   browser: new TestBrowserPage(),
 });
