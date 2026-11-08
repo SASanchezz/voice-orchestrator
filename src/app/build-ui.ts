@@ -2,22 +2,26 @@ import { resolve } from "node:path";
 import { STATE_DIR } from "../config/paths.js";
 import { PlanUsageReader } from "../limits/plan-usage-reader.js";
 import { RecentPlanUsage } from "../limits/recent-plan-usage.js";
+import { BranchCompare } from "../review/branch-compare.js";
 import { GitChanges } from "../review/git-changes.js";
 import { GitDefinitions } from "../review/git-definitions.js";
 import { ChatFiles } from "../ui/chat-files.js";
 import { Feed } from "../ui/feed.js";
 import { ActionReporter } from "../ui/server/action-reporter.js";
 import { ApiRoutes } from "../ui/server/api-routes.js";
+import { AskedReads } from "../ui/server/asked-reads.js";
 import { AppActions } from "../ui/server/app-actions.js";
 import { AssistantActions } from "../ui/server/assistant-actions.js";
 import { AttachedText } from "../ui/server/attached-text.js";
 import { ChangeActions } from "../ui/server/change-actions.js";
 import { ChangesRoutes } from "../ui/server/changes-routes.js";
+import { CompareRoutes } from "../ui/server/compare-routes.js";
 import { DefinitionRoutes } from "../ui/server/definition-routes.js";
 import { EditorStateView } from "../ui/server/editor-state-view.js";
 import { HandoffActions } from "../ui/server/handoff-actions.js";
 import { GetRoutes } from "../ui/server/get-routes.js";
 import type { LiveClients } from "../ui/server/live-clients.js";
+import { MessengerStatusRoute } from "../ui/server/messenger-status-route.js";
 import { relayDictation, relayToClients, relayVoiceDraft } from "../ui/server/live-relay.js";
 import { NoticeStateView } from "../ui/server/notice-state-view.js";
 import { PageFiles } from "../ui/server/page-files.js";
@@ -45,6 +49,7 @@ import { VoiceViews } from "../ui/server/voice-views.js";
 import { TodayBudget } from "../ui/server/today-budget.js";
 import { WaitingViews } from "../ui/server/waiting-views.js";
 import { SessionChats } from "../ui/session-chats.js";
+import { buildMessengerStatus } from "./build-messages.js";
 import type { OperatorParts } from "./build-operator.js";
 import { todoItemHandlers, todoItemViews } from "./build-todo.js";
 import type { Core } from "./core.js";
@@ -111,12 +116,23 @@ function uiServer(core: Core, neighbors: UiNeighbors, sources: UiSources): UiSer
   const publisher = new StatePublisher(clients, state, sources.feed);
   const table = routeTable(core, neighbors, sources);
   const reads = new ReadRoutes(access, publisher, new SessionChatReader(lookup, sources.chats));
-  const changesRoutes = new ChangesRoutes(access, lookup, sources.changes);
-  const review = new ReviewRoutes(changesRoutes, new DefinitionRoutes(access, lookup, new GitDefinitions()));
+  const review = reviewRoutes(access, lookup, sources.changes);
   const gets = new GetRoutes(new PageFiles(access, core.attachments), reads, review);
-  const usage = new PlanUsageRoute(access, new RecentPlanUsage(new PlanUsageReader(core.cfg)));
-  const router = new UiRouter(gets, new ApiRoutes(access, table, publisher), usage);
+  const router = new UiRouter(gets, new ApiRoutes(access, table, publisher), askedReads(core, access));
   return new UiServer(new SiteRouter(neighbors.editor.route, router), publisher, access);
+}
+
+/** The Review view's reads: uncommitted changes, branch comparisons and where names are defined. */
+function reviewRoutes(access: UiAccess, lookup: UiLookup, changes: GitChanges): ReviewRoutes {
+  const changesRoutes = new ChangesRoutes(access, lookup, changes);
+  const definitions = new DefinitionRoutes(access, lookup, new GitDefinitions());
+  return new ReviewRoutes(changesRoutes, definitions, new CompareRoutes(access, lookup, new BranchCompare()));
+}
+
+/** Plan usage for the top bar, and which messengers are connected for ⚙ › Messengers. */
+function askedReads(core: Core, access: UiAccess): AskedReads {
+  const usage = new PlanUsageRoute(access, new RecentPlanUsage(new PlanUsageReader(core.cfg)));
+  return new AskedReads(usage, new MessengerStatusRoute(access, buildMessengerStatus(core.cfg, core.messengers)));
 }
 
 /** What each of the page's actions acts on. */
@@ -125,7 +141,7 @@ function routeTable(core: Core, neighbors: UiNeighbors, sources: UiSources): Rou
   const { reporter, lookup } = sources;
   return new RouteTable({
     app: new AppActions(sources.operator.lifecycle),
-    assistant: new AssistantActions(sources.operator.orchestrator, sources.feed),
+    assistant: new AssistantActions(sources.operator.orchestrator, sources.feed, sources.operator.clickedWords),
     attached: new AttachedText(core.attachments),
     changes: new ChangeActions(lookup, sources.changes),
     handoffs: new HandoffActions(workers.handoff, lookup, reporter),

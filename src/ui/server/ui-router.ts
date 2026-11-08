@@ -1,15 +1,15 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { ApiRoutes } from "./api-routes.js";
+import type { AskedReads } from "./asked-reads.js";
 import type { GetRoutes } from "./get-routes.js";
 import { HTTP_STATUS, HttpError } from "./http-error.js";
-import { PLAN_USAGE_PATH, type PlanUsageRoute } from "./plan-usage-route.js";
 
 /** Sends each request to what the page reads, or to the actions. */
 export class UiRouter {
   constructor(
     private gets: GetRoutes,
     private api: ApiRoutes,
-    private usage: PlanUsageRoute,
+    private asked: AskedReads,
   ) {}
 
   prepare(): Promise<void> {
@@ -23,7 +23,7 @@ export class UiRouter {
   }
 
   private async read(url: URL, res: ServerResponse): Promise<void> {
-    if (url.pathname === PLAN_USAGE_PATH) return await this.usage.all(url, res);
+    if (this.asked.handles(url)) return await this.asked.route(url, res);
     await this.gets.route(url, res);
   }
 }

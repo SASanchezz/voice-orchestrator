@@ -29,6 +29,7 @@
     <link rel="stylesheet" href="/styles/force-stop.css" />
     <link rel="stylesheet" href="/styles/code.css" />
     <link rel="stylesheet" href="/styles/resize.css" />
+    <link rel="stylesheet" href="/styles/messengers.css" />
   </head>
   <body>
     <header class="topbar">
@@ -82,6 +83,17 @@
               </button>
             </div>
           </div>
+          <div class="control">
+            <button
+              type="button"
+              id="messengers-button"
+              class="ghost"
+              title="How to connect Slack, Telegram and other messengers, so the assistant can catch you up"
+            >
+              Messengers
+            </button>
+            <span id="messenger-status" class="messenger-status"></span>
+          </div>
           <button
             type="button"
             id="assistant-clear"
@@ -111,6 +123,7 @@
 
         <section id="review-panel" class="review" aria-label="Review changes" hidden>
           <div id="change-list" class="change-list"></div>
+          <div id="compare-bar" class="compare-bar" hidden></div>
           <div id="diff-pane" class="diff-pane"></div>
           <section id="definition-peek" class="definition-peek" aria-label="Definitions" hidden></section>
         </section>
@@ -213,6 +226,21 @@
         <div class="dialog-actions">
           <button value="cancel" class="ghost" title="Cancel (Esc)">Cancel</button>
           <button value="confirm" class="danger">Restart</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="messenger-dialog" class="confirm-dialog messenger-dialog" aria-labelledby="messenger-title">
+      <form method="dialog">
+        <h2 id="messenger-title">Connect your messengers</h2>
+        <p class="muted">
+          The assistant reads them only when you ask, announces new messages only in chats you list under notify, and
+          never sends, deletes or marks anything as read.
+        </p>
+        <ul id="messenger-status-list" class="messenger-status-list"></ul>
+        <div id="messenger-guides" class="messenger-guides"></div>
+        <div class="dialog-actions">
+          <button value="close" class="ghost" title="Close (Esc)">Close</button>
         </div>
       </form>
     </dialog>

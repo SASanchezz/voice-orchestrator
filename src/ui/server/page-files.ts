@@ -35,6 +35,7 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/force-stop.css": "text/css",
   "/styles/code.css": "text/css",
   "/styles/resize.css": "text/css",
+  "/styles/messengers.css": "text/css",
   "/styles/notice.css": "text/css",
 };
 

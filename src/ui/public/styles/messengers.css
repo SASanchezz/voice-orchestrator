@@ -1,0 +1,99 @@
+/* ---------------------------------------------------------------- ⚙ › Messengers setup guide */
+
+.messenger-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+}
+.messenger-guides {
+  display: grid;
+  gap: 12px;
+}
+.messenger-guides h3 {
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+.messenger-guides ol {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 6px;
+}
+.guide {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--surface-2);
+}
+.guide summary {
+  cursor: pointer;
+}
+.guide[open] summary {
+  margin-bottom: 8px;
+}
+.guide-config {
+  margin-top: 10px;
+}
+.guide-copyable {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 4px;
+}
+.guide-copyable pre {
+  flex: 1;
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--bg);
+  font-family: var(--mono);
+  white-space: pre-wrap;
+}
+.messenger-guides a {
+  color: var(--accent-text);
+}
+
+/* Which messengers are connected, beside the button and atop the dialog */
+.messenger-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.messenger-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.messenger-chip::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--idle);
+}
+.messenger-chip.connected::before {
+  background: var(--ok);
+}
+.messenger-chip.half::before {
+  background: var(--warn);
+}
+.messenger-status-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.messenger-chip.checking::before {
+  background: var(--warn);
+  animation: messenger-checking 1.2s ease-in-out infinite;
+}
+.messenger-chip.failed::before {
+  background: var(--danger);
+}
+@keyframes messenger-checking {
+  50% {
+    opacity: 0.3;
+  }
+}

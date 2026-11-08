@@ -16,6 +16,8 @@ import { noteShownSession, wireSeenResults } from "./seen-results.js";
 import { renderVoiceDraft, showVoiceDraft } from "./voice-draft.js";
 import { navigate, navigateFromLink } from "./navigation.js";
 import { reloadIfRestarted, wireRestart } from "./restart.js";
+import { wireMessengerSetup } from "./messenger-setup.js";
+import { wireMessengerStatus } from "./messenger-status.js";
 import { AttachmentTray } from "./attachments.js";
 import { byId } from "./dom.js";
 import { reportDraft, reportDraftWhileShown } from "./draft-report.js";
@@ -105,6 +107,8 @@ wireMicButton(); // before wireVoiceDiscard: Esc discards the recording first
 wireVoiceDiscard();
 wireTodoDialog();
 wireRestart();
+wireMessengerSetup();
+wireMessengerStatus();
 wirePanelResize();
 wireViewMode();
 wireReview();
