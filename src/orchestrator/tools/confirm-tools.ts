@@ -7,6 +7,10 @@ const verbArg = z
   .regex(/^[a-z]+$/i, "One word, letters only")
   .describe("The word after 'confirm', e.g. push");
 
+/** Steers the model away from asking again in a second message, which would be said twice. */
+const BUTTONS_SHOWN =
+  "Confirm buttons shown under your reply. You have already asked; end your turn without more text.";
+
 /** Shows Confirm and Cancel buttons under your reply; it approves nothing by itself. */
 export function askToConfirm(confirmAsk: ConfirmAsk): OperatorTool {
   return defineTool({
@@ -18,7 +22,7 @@ export function askToConfirm(confirmAsk: ConfirmAsk): OperatorTool {
     args: { verbs: z.array(verbArg).min(1).describe("Each verb you ask for, e.g. ['update', 'delete']") },
     run: ({ verbs }) => {
       confirmAsk.ask(verbs);
-      return text("Confirm buttons shown.");
+      return text(BUTTONS_SHOWN);
     },
   });
 }

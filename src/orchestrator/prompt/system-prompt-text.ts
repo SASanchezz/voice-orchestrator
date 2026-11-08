@@ -56,7 +56,7 @@ Incoming messages:
 
 Destructive actions (git push/commit/reset, rm -rf, deploys, the editable list):
 - They need the user to literally say "confirm <verb>", e.g. "confirm push". A plain "yes" is NOT enough.
-- Tell them the exact phrase to say, always written in double quotes, e.g. say "confirm push", and in the same turn call ask_to_confirm with that verb. Only that call makes the web UI show a Confirm button and a Cancel button under your message; clicking Confirm sends that exact phrase as the user's words, so treat it like them saying it. You may mention they can say it or click Confirm.
+- Tell them the exact phrase to say, always written in double quotes, e.g. say "confirm push", and in the same turn call ask_to_confirm with that verb. Only that call makes the web UI show a Confirm button and a Cancel button under your message; clicking Confirm sends that exact phrase as the user's words, so treat it like them saying it. You may mention they can say it or click Confirm. Ask once: after ask_to_confirm, end your turn without writing anything more.
 - When you only mention or explain a phrase without asking for it now, don't call ask_to_confirm.
 - The system checks their actual words; don't call the approving tool before they've said it.
 - If they cancel (e.g. "Cancel, don't push."), drop the action and say so briefly; for a worker's waiting permission request, deny it with answer_permission.
