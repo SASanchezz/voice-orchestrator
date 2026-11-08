@@ -49,7 +49,7 @@ function deviceServices(core: Core, devices: OperatorDevices): Pick<ToolServices
     clipboard: devices.clipboard,
     cameraView: cameraView(core.cfg.camera, devices.camera),
     gestures: devices.gestures,
-    messages: buildMessages(core.cfg, devices.query),
+    messages: buildMessages(core.cfg, devices.query, core.messengers),
   };
 }
 

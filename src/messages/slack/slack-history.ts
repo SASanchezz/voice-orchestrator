@@ -44,7 +44,7 @@ async function rawMessage(message: SlackMessage, workspace: SlackWorkspace): Pro
   };
 }
 
-async function senderName(message: SlackMessage, { names, me }: SlackWorkspace): Promise<string> {
+export async function senderName(message: SlackMessage, { names, me }: SlackWorkspace): Promise<string> {
   if (message.user === me) return YOU;
   if (message.user) return names.userName(message.user);
   return message.bot_profile?.name ?? message.username ?? "a bot";

@@ -13,7 +13,20 @@ test("messages config: a missing block turns reading off", () => {
 
 test("messages config: a Slack workspace reads no channels unless named", () => {
   const settings = parsed("slack:\n  - workspace: acme\n    profile: work\n");
-  assert.deepEqual(settings.slack, [{ workspace: "acme", profile: "work", channels: [] }]);
+  assert.deepEqual(settings.slack, [{ workspace: "acme", profile: "work", channels: [], notify: [] }]);
+});
+
+test("messages config: a Slack workspace's notify list is read", () => {
+  const settings = parsed("slack:\n  - workspace: acme\n    profile: work\n    notify: [Bob, general]\n");
+  assert.deepEqual(settings.slack[0].notify, ["Bob", "general"]);
+});
+
+test("messages config: telegram announces no chat unless notify names it", () => {
+  assert.deepEqual(parsed("telegram:\n  profile: personal\n  chats: all\n").telegram?.notify, []);
+});
+
+test("messages config: an empty telegram notify announces no chat", () => {
+  assert.deepEqual(parsed("telegram:\n  profile: personal\n  notify:\n").telegram?.notify, []);
 });
 
 test("messages config: telegram chats accepts all", () => {

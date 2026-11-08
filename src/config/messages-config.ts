@@ -16,6 +16,8 @@ const slackWorkspaceSchema = z.object({
   profile: z.string(),
   /** Channels read besides DMs and mentions; none unless named here. */
   channels: names,
+  /** DMs, group DMs and channels from those read whose new messages are announced as they arrive; none by default. */
+  notify: names,
 });
 
 const telegramSchema = z.object({
@@ -23,6 +25,8 @@ const telegramSchema = z.object({
   /** Missing: no chat is read. */
   chats: z.preprocess(missingAsNone, z.union([z.literal(ALL_CHATS), z.array(z.string())])),
   exclude: names,
+  /** Chats from those read whose new messages are announced as they arrive; none by default. */
+  notify: names,
 });
 
 /** The optional `messages` block; without it, no Slack workspace and no Telegram are read. */

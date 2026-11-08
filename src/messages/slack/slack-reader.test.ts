@@ -8,7 +8,7 @@ import { SlackReader } from "./slack-reader.js";
 
 const NOW = new Date("2025-11-05T12:00:00.000Z");
 const BOB_TS = "1762333300.000200";
-const ACME: SlackWorkspaceSettings = { workspace: "acme", profile: "work", channels: [] };
+const ACME: SlackWorkspaceSettings = { workspace: "acme", profile: "work", channels: [], notify: [] };
 
 const directList: SlackRoute = (params) =>
   params.get("cursor") === "p2"

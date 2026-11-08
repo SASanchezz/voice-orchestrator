@@ -1,11 +1,10 @@
 import type { SlackWorkspaceSettings } from "../../config/messages-config.js";
 import type { SourceCursor } from "../cursors.js";
 import type { MessageSource, SourceReading } from "../message-types.js";
-import { authTestSchema } from "./slack-api.js";
 import type { SlackCalls } from "./slack-client.js";
-import { SlackNames, type UserNameCache } from "./slack-names.js";
+import type { UserNameCache } from "./slack-names.js";
 import { SlackReading } from "./slack-reading.js";
-import type { SlackWorkspace } from "./slack-workspace.js";
+import { openWorkspace } from "./slack-workspace.js";
 
 /** The Keychain service the workspace tokens are saved under, one account per workspace. */
 export const SLACK_KEYCHAIN_SERVICE = "voice-orchestrator.slack";
@@ -38,14 +37,9 @@ export class SlackReader implements MessageSource {
   }
 
   async read(cursor: SourceCursor, chat?: string): Promise<SourceReading> {
-    const reading = new SlackReading(await this.connect(), cursor, this.now());
+    const workspace = await openWorkspace(this.open, this.settings.workspace, this.userNames);
+    const reading = new SlackReading(workspace, cursor, this.now());
     const { channels } = this.settings;
     return chat ? reading.oneChat(channels, chat) : reading.everything(channels);
-  }
-
-  private async connect(): Promise<SlackWorkspace> {
-    const client = await this.open(this.settings.workspace);
-    const { user_id: me } = await client.call("auth.test", {}, authTestSchema);
-    return { client, names: new SlackNames(client, this.userNames), me };
   }
 }

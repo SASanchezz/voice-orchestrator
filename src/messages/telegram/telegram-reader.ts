@@ -1,20 +1,22 @@
 import { Api, TelegramClient } from "telegram";
 import { FloodWaitError, RPCError } from "telegram/errors/index.js";
+import { NewMessage, type NewMessageEvent } from "telegram/events/index.js";
 import { Logger, LogLevel } from "telegram/extensions/Logger.js";
 import { StringSession } from "telegram/sessions/index.js";
 import type { Dialog } from "telegram/tl/custom/dialog.js";
 import type { Keychain } from "../../secrets/keychain.js";
+import { errorMessage } from "../../shared/errors.js";
 import {
   LOGIN_AGAIN,
   TelegramWaitError,
+  type IncomingMessage,
   type TelegramChat,
   type TelegramChats,
   type TelegramMessage,
 } from "./telegram-port.js";
+import { KEYCHAIN_ACCOUNTS, TELEGRAM_KEYCHAIN_SERVICE } from "./telegram-keychain.js";
 import { chatKind, senderName } from "./telegram-names.js";
 
-export const TELEGRAM_KEYCHAIN_SERVICE = "voice-orchestrator.telegram";
-export const KEYCHAIN_ACCOUNTS = { apiId: "api-id", apiHash: "api-hash", session: "session" } as const;
 const CONNECTION_RETRIES = 3;
 const MAX_DIALOGS = 500;
 const MS_PER_SECOND = 1000;
@@ -50,8 +52,9 @@ export async function telegramClient(keychain: Keychain): Promise<TelegramClient
 }
 
 /**
- * The only way the app reaches Telegram: the client is private, and only getDialogs and getMessages are called.
- * Neither marks anything as read. Secret chats live only on your devices, so they never show up here.
+ * The only way the app reaches Telegram: the client is private, only getDialogs and getMessages are called, and
+ * new messages are only listened for. Nothing marks anything as read. Secret chats live only on your devices,
+ * so they never show up here.
  */
 class TelegramReader implements TelegramChats {
   private peers = new Map<string, Api.TypeInputPeer>();
@@ -71,9 +74,26 @@ class TelegramReader implements TelegramChats {
     return messages.toReversed().map(messageOf);
   }
 
+  onIncoming(heard: (message: IncomingMessage) => void): void {
+    const passOn = ({ message }: NewMessageEvent): void => {
+      incomingOf(message).then(heard).catch(logLostMessage);
+    };
+    this.client.addEventHandler(passOn, new NewMessage({ incoming: true }));
+  }
+
   async close(): Promise<void> {
     await this.client.destroy();
   }
+}
+
+/** A short update carries only the sender's ID, so the sender is fetched (from GramJS's cache when it can). */
+async function incomingOf(message: Api.Message): Promise<IncomingMessage> {
+  await message.getSender();
+  return { chatId: message.chatId?.toString() ?? "", from: senderName(message) };
+}
+
+function logLostMessage(error: unknown): void {
+  console.warn(`[messages] Telegram: a new message couldn't be announced: ${errorMessage(error)}`);
 }
 
 function idOf(dialog: Dialog): string {

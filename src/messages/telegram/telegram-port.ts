@@ -20,12 +20,23 @@ export interface TelegramMessage {
   hasMedia: boolean;
 }
 
-/** The only things the app can do with Telegram: list chats and read messages. Nothing is sent, deleted or marked read. */
+/** A message someone else just sent you: only where and from whom, never its text. */
+export interface IncomingMessage {
+  chatId: string;
+  from: string;
+}
+
+/**
+ * The only things the app can do with Telegram: list chats, read messages and hear of new ones.
+ * Nothing is sent, deleted or marked read.
+ */
 export interface TelegramChats {
   listChats(): Promise<TelegramChat[]>;
   /** A chat's newest `limit` messages after `afterId`, oldest first. */
   readMessages(chatId: string, afterId: number, limit: number): Promise<TelegramMessage[]>;
-  /** Disconnects; a new connection is opened for each catch-up. */
+  /** Calls `heard` for each message others send you while this connection stays open. */
+  onIncoming(heard: (message: IncomingMessage) => void): void;
+  /** Lets go of the connection; the last one to let go disconnects. */
   close(): Promise<void>;
 }
 

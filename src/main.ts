@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { requireAssistantAgent } from "./app/assistant-agent-check.js";
 import { buildApp, startOperator, type App } from "./app/build-app.js";
 import { buildGestures, gestureActions, gestureSetting } from "./app/build-gestures.js";
+import { buildMessageAlerts } from "./app/build-message-alerts.js";
 import { checkLogins } from "./app/login-check.js";
 import { macVoice, realAdapters } from "./app/real-adapters.js";
 import { RESTART_EXIT_CODE, RESTARTED_ENV } from "./app/restart.js";
@@ -35,9 +36,11 @@ const app = buildApp(
 
 await openUi(cfg, app);
 app.editor.server.start(); // once the UI has made the token file it reads
+const messageAlerts = buildMessageAlerts(cfg.messages, app.core.messengers, app.operator.orchestrator);
 
 startOperator(app, voice)
   .then(connectGestures) // once the mic is ready
+  .then(() => messageAlerts.start())
   .catch((e: unknown) => {
     console.error(errorMessage(e));
     process.exit(1);

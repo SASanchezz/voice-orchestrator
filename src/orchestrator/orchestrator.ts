@@ -4,7 +4,10 @@ import type { OperatorLoop } from "./conversation/operator-loop.js";
 import type { SpeechOutput } from "./conversation/speech-output.js";
 import type { TurnContext } from "./conversation/turn-context.js";
 
-/** What the web UI can do with the operator: talk to it by typing, tell it about clicks, clear it, set its speech. */
+/**
+ * What the web UI can do with the operator: talk to it by typing, tell it about clicks, clear it, set its speech.
+ * Message watches announce new messages through it.
+ */
 export class Orchestrator {
   constructor(
     private loop: OperatorLoop,
@@ -15,6 +18,11 @@ export class Orchestrator {
   /** A message typed in the UI; handled like speech, answered on screen. */
   receiveTyped(text: string): void {
     this.loop.enqueue({ kind: "user", text, source: "ui" });
+  }
+
+  /** Said once, in turn with other notices and never over you, without a model turn; the model reads `note` later. */
+  announce(spoken: string, note: string): void {
+    this.loop.enqueue({ kind: "notice", text: note, spoken });
   }
 
   /** Keep the model in sync with clicks, without spending a turn on them. */

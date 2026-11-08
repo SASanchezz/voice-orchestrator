@@ -99,14 +99,16 @@ editor:
   codePath: /Applications/Visual Studio Code.app/Contents/Resources/app/bin/code-tunnel # code-tunnel, not bin/code
   port: 4778 # on 127.0.0.1; the web UI passes /editor through to it
 
-# Slack and Telegram catch-up: "catch me up on Slack and Telegram". Read only when asked; nothing is sent or marked read.
+# Slack and Telegram catch-up: "catch me up on Slack and Telegram". Read only when asked, except the chats under notify; nothing is sent or marked read.
 # Optional: without this block the feature is off. Setup: npm run slack-login -- acme, npm run telegram-login; see docs/messages-setup.md.
 messages:
   slack:
     - workspace: acme # = the Keychain account name (-a) its token is saved under
       profile: work # the Claude account that summarizes it; work messages never reach the personal account
       channels: [] # DMs, group DMs and mentions are always read; channels only when named here, e.g. [general, deploys]
+      notify: [] # optional: DMs and channels (from those read) to announce as messages arrive, e.g. [Bob, deploys]; checked once a minute
   telegram:
     profile: personal
     chats: all # every chat with new messages; or a list of chat names to limit it, e.g. [Family, Bob]. Missing: none
     exclude: [] # optional: chat names to always skip. With all, every new message (groups and channels too) goes to the summarizer
+    notify: [] # optional: chats (from those read) to announce as messages arrive, e.g. [Family, Bob]; sender and count only, no text

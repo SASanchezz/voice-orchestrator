@@ -13,6 +13,7 @@ import { BranchScopedRules } from "../permissions/branch-scoped-rules.js";
 import { BranchProtection } from "../safety/branch-protection.js";
 import type { DestructiveList } from "../safety/destructive-list.js";
 import { GitBranches } from "../safety/git-branches.js";
+import { messengerLinks, type MessengerLinks } from "./build-messages.js";
 
 /** What every part of the app builds on: config, events, projects and sessions, the destructive rules and attached files. */
 export interface Core {
@@ -27,6 +28,8 @@ export interface Core {
   /** The destructive rules as they apply to workers, where some depend on the branch a command runs on. */
   workerRules: BranchScopedRules;
   attachments: AttachmentFiles;
+  /** How Slack and Telegram are opened, so the whole app shares one Telegram connection. */
+  messengers: MessengerLinks;
 }
 
 export function buildCore(cfg: AppConfig, destructive: DestructiveList): Core {
@@ -45,6 +48,7 @@ export function buildCore(cfg: AppConfig, destructive: DestructiveList): Core {
     destructive,
     workerRules: workerRules(cfg, destructive),
     attachments: new AttachmentFiles(resolve(STATE_DIR, "attachments")),
+    messengers: messengerLinks(),
   };
 }
 
