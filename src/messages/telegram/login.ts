@@ -3,17 +3,20 @@ import { keychainOnThisMac, type Keychain } from "../../secrets/keychain.js";
 import { keychainWriterOnThisMac, type KeychainWriter } from "../../secrets/keychain-writer.js";
 import { errorMessage } from "../../shared/errors.js";
 import { TerminalPrompts } from "../../shared/terminal-prompts.js";
-import { KEYCHAIN_ACCOUNTS, telegramClient, TELEGRAM_KEYCHAIN_SERVICE } from "./telegram-reader.js";
+import { showLoginQr } from "./login-qr.js";
+import { KEYCHAIN_ACCOUNTS, TELEGRAM_KEYCHAIN_SERVICE } from "./telegram-keychain.js";
+import { telegramClient } from "./telegram-reader.js";
 
-/** Telegram's errors for a mistyped code or password, which are asked again; anything else stops the login. */
-const RETRYABLE = /PHONE_CODE_INVALID|PASSWORD_HASH_INVALID/;
+/** Telegram's error for a mistyped password, which is asked again; anything else stops the login. */
+const RETRYABLE = /PASSWORD_HASH_INVALID/;
 const API_ID = /^\d+$/;
 const API_HASH = /^[0-9a-f]{32}$/;
 
 /**
  * npm run telegram-login: saves your app's api-id and api-hash if they aren't in the Keychain yet, signs this app
- * in to your Telegram account, and saves the session. Secrets are typed hidden, never printed, and reach the
- * Keychain through `security -i` on stdin.
+ * in to your Telegram account by a QR code scanned in the Telegram app, and saves the session. A QR code needs no
+ * login code, which Telegram often doesn't deliver to apps like this one. Secrets are typed hidden, never printed,
+ * and reach the Keychain through `security -i` on stdin.
  */
 async function main(): Promise<void> {
   const terminal = new TerminalPrompts();
@@ -45,12 +48,15 @@ async function saveAppCredentials(
 }
 
 async function signIn(client: TelegramClient, writer: KeychainWriter, terminal: TerminalPrompts): Promise<void> {
-  await client.start({
-    phoneNumber: async () => terminal.ask("Phone number, with country code: "),
-    phoneCode: async () => terminal.ask("The code Telegram sent you: "),
-    password: async () => terminal.askHidden("Your two-step verification password (it isn't shown): "),
-    onError: async (error) => reportLoginError(error),
-  });
+  await client.connect();
+  await client.signInUserWithQrCode(
+    { apiId: client.apiId, apiHash: client.apiHash },
+    {
+      qrCode: async ({ token }) => showLoginQr(token),
+      password: async () => terminal.askHidden("Your two-step verification password (it isn't shown): "),
+      onError: async (error) => reportLoginError(error),
+    },
+  );
   const session: unknown = client.session.save();
   if (typeof session !== "string") throw new Error("Telegram gave no session to save.");
   await writer.save(TELEGRAM_KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNTS.session, session);
@@ -58,7 +64,7 @@ async function signIn(client: TelegramClient, writer: KeychainWriter, terminal: 
   console.log("Logged in. The session is saved in the Keychain; the app can now read Telegram.");
 }
 
-/** Stops the login unless the code or password was only mistyped. */
+/** Stops the login unless the password was only mistyped. */
 function reportLoginError(error: Error): boolean {
   console.error(`Telegram: ${errorMessage(error)}`);
   return !RETRYABLE.test(errorMessage(error));
