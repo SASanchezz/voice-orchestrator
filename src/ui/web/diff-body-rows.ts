@@ -3,7 +3,7 @@
 import { diffLines, type DiffLine, type HiddenRange, withHiddenRanges } from "../diff-lines.js";
 import type { FileDiffView } from "../change-views.js";
 import { splitEntries } from "../split-diff.js";
-import { fetchHiddenLines } from "./api.js";
+import { type DiffRoute, fetchHiddenLines } from "./api.js";
 import type { CommentBox } from "./diff-comment.js";
 import type { DiffLayout } from "./diff-layout.js";
 import { diffEntryRow, type LinesLoader } from "./diff-rows.js";
@@ -14,7 +14,7 @@ export class DiffBodyRows {
   private readonly loadLines: LinesLoader;
 
   constructor(
-    project: string,
+    route: DiffRoute,
     diff: FileDiffView,
     private readonly comment: CommentBox,
   ) {
@@ -23,7 +23,7 @@ export class DiffBodyRows {
     this.entries = expansion ? withHiddenRanges(lines, expansion.lineCount) : lines;
     // Only hidden ranges load lines, and there are none without an expansion.
     const fingerprint = expansion?.fingerprint ?? "";
-    this.loadLines = (range) => fetchHiddenLines(project, diff.path, { ...range, fingerprint });
+    this.loadLines = (range) => fetchHiddenLines(route, diff.path, { ...range, fingerprint });
   }
 
   rowsIn(layout: DiffLayout): HTMLElement[] {

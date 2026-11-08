@@ -50,6 +50,21 @@ export function parseNumstat(output: string): Map<string, LineCounts> {
   return counts;
 }
 
+/** `git diff --name-status --no-renames -z`: a state letter and the path, as two records. */
+export function parseNameStatus(output: string): StatusEntry[] {
+  const records = recordsOf(output);
+  const entries: StatusEntry[] = [];
+  for (let index = 0; index + 1 < records.length; index += 2) {
+    entries.push({ path: records[index + 1], kind: kindOfLetter(records[index]), staged: false });
+  }
+  return entries;
+}
+
+function kindOfLetter(letter: string): ChangeKind {
+  if (letter === "A") return "added";
+  return letter === "D" ? "deleted" : "modified";
+}
+
 function lineCount(field: string): number {
   return field === NO_LINE_COUNT ? 0 : Number(field);
 }

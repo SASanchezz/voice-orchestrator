@@ -6,6 +6,7 @@ import { refreshChanges } from "./change-poll.js";
 import { DiffBodyRows } from "./diff-body-rows.js";
 import { CommentBox } from "./diff-comment.js";
 import { type DiffLayout, layoutOf, layoutToggle, onLayoutChange } from "./diff-layout.js";
+import type { DiffSource } from "./diff-source.js";
 import { button, el } from "./dom.js";
 import { isMarkedReviewed, setMarkedReviewed } from "./review-marks.js";
 import { onSymbolModifierClick } from "./symbol-links.js";
@@ -13,13 +14,14 @@ import { showDefinitions } from "./definition-peek.js";
 
 const LOADING = "Loading…";
 
-export function diffFile(project: string, file: ChangedFileView): HTMLDetailsElement {
+export function diffFile(file: ChangedFileView, source: DiffSource): HTMLDetailsElement {
+  const { project } = source;
   const reviewed = isMarkedReviewed(project, file);
   const section = el(
     "details",
     { class: "diff-file", "data-path": file.path },
     fileSummary(file),
-    fileActions(project, file, reviewed),
+    fileActions(file, source, reviewed),
     el("div", { class: "diff-body" }, el("p", { class: "diff-note" }, LOADING)),
   );
   section.open = !reviewed;
@@ -33,11 +35,17 @@ function fileSummary(file: ChangedFileView): HTMLElement {
   return el("summary", {}, el("span", {}, file.path), el("span", { class: "badge" }, file.kind), counts, staged);
 }
 
-function fileActions(project: string, file: ChangedFileView, reviewed: boolean): HTMLDivElement {
+function fileActions(file: ChangedFileView, source: DiffSource, reviewed: boolean): HTMLDivElement {
+  const { project } = source;
   const mark = button(reviewed ? "Reviewed ✓" : "Mark reviewed", "ghost diff-mark", () => toggleReview(project, file));
+  const stage = source.canStage ? stageButton(project, file) : "";
+  return el("div", { class: "diff-actions" }, mark, stage, layoutToggle(project, file.path));
+}
+
+function stageButton(project: string, file: ChangedFileView): HTMLButtonElement {
   const stage = button("Stage", "ghost", () => void stageFile(project, file));
   stage.disabled = file.staged;
-  return el("div", { class: "diff-actions" }, mark, stage, layoutToggle(project, file.path));
+  return stage;
 }
 
 function toggleReview(project: string, file: ChangedFileView): void {
@@ -60,12 +68,13 @@ export function syncDiffFile(section: HTMLDetailsElement, project: string, file:
 }
 
 /** The diff, or why there is none. All of it goes in as text. Switching layout keeps the comment you're writing. */
-export function fillDiff(section: HTMLDetailsElement, project: string, diff: FileDiffView): void {
+export function fillDiff(section: HTMLDetailsElement, diff: FileDiffView, source: DiffSource): void {
+  const { project } = source;
   const body = section.querySelector<HTMLElement>(".diff-body");
   if (!body) return;
   if (diff.notShownReason) return body.replaceChildren(el("p", { class: "diff-note" }, diff.notShownReason));
   const comment = new CommentBox(diff.path);
-  const rows = new DiffBodyRows(project, diff, comment);
+  const rows = new DiffBodyRows(source.route, diff, comment);
   const show = (layout: DiffLayout): void => body.replaceChildren(diffLinesIn(layout, rows), comment.box);
   onSymbolModifierClick(body, (symbol) => void showDefinitions(project, symbol, diff.path));
   onLayoutChange(section, show);

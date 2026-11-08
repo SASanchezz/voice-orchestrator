@@ -1,6 +1,13 @@
 // Talking to the server: the access token, actions over POST, live events over server-sent events.
 
-import type { DefinitionView, FileDiffView, ProjectChangesView } from "../change-views.js";
+import type {
+  BranchListView,
+  ComparisonView,
+  DefinitionView,
+  FileDiffView,
+  ProjectChangesView,
+} from "../change-views.js";
+import type { MessengerStatusView } from "../messenger-status-views.js";
 import type { AccountUsageView } from "../plan-usage-views.js";
 import type { ActionReply, ChatMessageView, ServerEvents } from "../protocol.js";
 
@@ -53,23 +60,66 @@ export async function fetchPlanUsage(): Promise<AccountUsageView[]> {
   return fromServer<AccountUsageView[]>(await res.json());
 }
 
+/** Which messengers catch-up reads: in config.yaml and logged in. */
+export async function fetchMessengerStatus(): Promise<MessengerStatusView[]> {
+  const res = await fetch(`/api/messengers?token=${encodeURIComponent(token)}`);
+  if (!res.ok) throw new Error(res.statusText);
+  return fromServer<MessengerStatusView[]>(await res.json());
+}
+
+/** Where one kind of diff is read: a project's uncommitted changes, or what one of its branches adds to another. */
+export interface DiffRoute {
+  path: string;
+  params: Record<string, string>;
+}
+
+export function changesRoute(project: string): DiffRoute {
+  return { path: `${projectPath(project)}/changes`, params: {} };
+}
+
+export function comparisonRoute(project: string, { base, head }: ComparisonView): DiffRoute {
+  return { path: `${projectPath(project)}/compare`, params: { base, head } };
+}
+
 /** One changed file's diff; a file that stopped being changed has none. */
-export async function fetchFileDiff(project: string, path: string): Promise<FileDiffView> {
-  const query = `path=${encodeURIComponent(path)}&token=${encodeURIComponent(token)}`;
-  const res = await fetch(`/api/projects/${encodeURIComponent(project)}/changes/diff?${query}`);
+export async function fetchFileDiff(route: DiffRoute, path: string): Promise<FileDiffView> {
+  const res = await fetch(urlOf(`${route.path}/diff`, { ...route.params, path }));
   if (res.ok) return fromServer<FileDiffView>(await res.json());
   return { path, patch: "", notShownReason: "This file has no changes any more." };
 }
 
 /** Lines a diff left out; refuses, with the reason, when the file moved on from `request.fingerprint`. */
-export async function fetchHiddenLines(project: string, path: string, request: HiddenLinesRequest): Promise<string[]> {
-  const { from, to, fingerprint } = request;
-  const range = `from=${from}&to=${to}&fingerprint=${encodeURIComponent(fingerprint)}`;
-  const query = `path=${encodeURIComponent(path)}&${range}&token=${encodeURIComponent(token)}`;
-  const res = await fetch(`/api/projects/${encodeURIComponent(project)}/changes/lines?${query}`);
+export async function fetchHiddenLines(route: DiffRoute, path: string, request: HiddenLinesRequest): Promise<string[]> {
+  const range = { from: String(request.from), to: String(request.to), fingerprint: request.fingerprint };
+  const res = await fetch(urlOf(`${route.path}/lines`, { ...route.params, path, ...range }));
+  return await replyOf<string[]>(res);
+}
+
+/** A project's local and remote branches. */
+export async function fetchBranches(project: string): Promise<BranchListView> {
+  return await replyOf<BranchListView>(await fetch(urlOf(`${projectPath(project)}/branches`, {})));
+}
+
+/** The files a branch changed since it left its base; refuses, with the reason, when a branch doesn't exist. */
+export async function fetchComparison(project: string, comparison: ComparisonView): Promise<ProjectChangesView> {
+  const route = comparisonRoute(project, comparison);
+  return await replyOf<ProjectChangesView>(await fetch(urlOf(route.path, route.params)));
+}
+
+function projectPath(project: string): string {
+  return `/api/projects/${encodeURIComponent(project)}`;
+}
+
+function urlOf(path: string, params: Record<string, string>): string {
+  return `${path}?${new URLSearchParams({ ...params, token }).toString()}`;
+}
+
+/** The payload, or the server's reason for refusing. */
+// oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- the caller names the protocol type it receives
+async function replyOf<T>(res: Response): Promise<T> {
   const reply: unknown = await res.json();
   if (!res.ok) throw new Error(fromServer<ActionReply>(reply).error ?? res.statusText);
-  return fromServer<string[]>(reply);
+  return fromServer<T>(reply);
 }
 
 /** Where a name in `file` may be defined, best first. */

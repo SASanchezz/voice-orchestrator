@@ -6,6 +6,7 @@ import { fetchFileDiff } from "./api.js";
 import { closeDefinitions } from "./definition-peek.js";
 import { button, byId, el } from "./dom.js";
 import { diffFile, fillDiff, syncDiffFile } from "./diff-file.js";
+import type { DiffSource } from "./diff-source.js";
 
 /** Starts loading a little before a file scrolls into view. */
 const LOAD_AHEAD = "600px";
@@ -17,17 +18,17 @@ const requestedSections = new WeakSet<HTMLDetailsElement>();
 /** Where the pane was scrolled when the Review view was left; the pane forgets it while hidden. */
 let keptScrollTop = 0;
 
-export function showDiffsOf({ project, files }: ProjectChangesView): void {
+export function showDiffsOf({ files }: ProjectChangesView, source: DiffSource): void {
   observer?.disconnect();
   closeDefinitions();
   keptScrollTop = 0;
   const pane = byId("diff-pane", HTMLElement);
   // The pane is the root, because it clips its sections: a margin on the window would never reach past its edges.
-  observer = new IntersectionObserver((entries) => loadVisible(project, entries), {
+  observer = new IntersectionObserver((entries) => loadVisible(source, entries), {
     root: pane,
     rootMargin: LOAD_AHEAD,
   });
-  const sections = files.map((file) => diffFile(project, file));
+  const sections = files.map((file) => diffFile(file, source));
   pane.replaceChildren(refreshBar(), symbolHint(), ...sections);
   sections.forEach(watchSection);
 }
@@ -44,24 +45,24 @@ function recheckSection(section: HTMLDetailsElement): void {
   observer?.observe(section);
 }
 
-function loadVisible(project: string, entries: IntersectionObserverEntry[]): void {
+function loadVisible(source: DiffSource, entries: IntersectionObserverEntry[]): void {
   for (const entry of entries) {
     const isNearOpenSection = entry.isIntersecting && entry.target instanceof HTMLDetailsElement && entry.target.open;
-    if (isNearOpenSection) loadSection(project, entry.target);
+    if (isNearOpenSection) loadSection(source, entry.target);
   }
 }
 
-function loadSection(project: string, section: HTMLDetailsElement): void {
+function loadSection(source: DiffSource, section: HTMLDetailsElement): void {
   requestedSections.add(section);
   observer?.unobserve(section);
-  void loadInto(project, section);
+  void loadInto(source, section);
 }
 
 /** A pane redrawn while the diff loaded has dropped the section, so the diff goes nowhere. */
-async function loadInto(project: string, section: HTMLDetailsElement): Promise<void> {
+async function loadInto(source: DiffSource, section: HTMLDetailsElement): Promise<void> {
   const path = section.dataset.path ?? "";
-  const diff = await fetchFileDiff(project, path);
-  if (section.isConnected) fillDiff(section, project, diff);
+  const diff = await fetchFileDiff(source.route, path);
+  if (section.isConnected) fillDiff(section, diff, source);
 }
 
 export function keepDiffScroll(): void {
@@ -91,10 +92,14 @@ export function markDiffsOutdated(isOutdated: boolean, refresh: () => void): voi
 }
 
 export function showNoDiffs(project: string | undefined): void {
+  showDiffNote(project ? `${project} has no uncommitted changes.` : "Pick a project to see its changes.");
+}
+
+/** In place of the diffs: why there are none, or that they are still loading. */
+export function showDiffNote(message: string): void {
   observer?.disconnect();
   closeDefinitions();
   keptScrollTop = 0;
-  const message = project ? `${project} has no uncommitted changes.` : "Pick a project to see its changes.";
   byId("diff-pane", HTMLElement).replaceChildren(el("p", { class: "empty" }, message));
 }
 

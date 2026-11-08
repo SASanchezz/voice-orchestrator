@@ -25,3 +25,9 @@ export async function repositoryRootOf(git: GitRunner, folder: string): Promise<
     return "";
   }
 }
+
+export async function requireRepositoryRoot(git: GitRunner, folder: string): Promise<string> {
+  const root = await repositoryRootOf(git, folder);
+  if (!root) throw new Error("Not a git repository.");
+  return root;
+}

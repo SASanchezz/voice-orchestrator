@@ -3,20 +3,15 @@ import { join } from "node:path";
 import { namesSecretFile } from "../safety/secret-files.js";
 import { errorMessage } from "../shared/errors.js";
 import type { ChangedFileView, FileDiffView, ProjectChangesView } from "../ui/change-views.js";
-import { expansionOf, fingerprintOf, MAX_FILE_BYTES, readLines, StaleFileError } from "./file-lines.js";
+import { MAX_LISTED_FILES, MAX_PATCH_BYTES, notShown, SECRET_NOT_SHOWN, TOO_LARGE_NOT_SHOWN } from "./diff-limits.js";
+import { expansionOf, fingerprintOf, readLines, StaleFileError } from "./file-lines.js";
 import { parseNumstat, parseStatus, patchAddingFile, type StatusEntry } from "./git-output.js";
 import { repositoryRootOf, runGit, type GitRunner } from "./git-runner.js";
-
-/** Beyond these, the list and a diff would only slow the page down; VS Code still opens them. */
-const MAX_LISTED_FILES = 300;
-const MAX_PATCH_BYTES = MAX_FILE_BYTES;
 
 const STATUS = ["status", "--porcelain", "--no-renames", "--untracked-files=all", "-z"];
 const NUMSTAT = ["diff", "HEAD", "--numstat", "--no-renames", "-z"];
 const PATCH = ["diff", "HEAD", "--no-ext-diff", "--no-color", "--no-renames"];
 
-const SECRET_NOT_SHOWN = "This looks like a secrets file, so its diff isn't shown here.";
-const TOO_LARGE_NOT_SHOWN = "This diff is too large to show here.";
 const BINARY_NOT_SHOWN = "Binary file.";
 const STALE_LINES = "This file changed since its diff loaded. Refresh to see these lines.";
 
@@ -106,8 +101,4 @@ async function patchOfUntracked(file: string): Promise<string> {
   const text = await readFile(file, "utf8");
   if (text.includes("\0")) throw new Error(BINARY_NOT_SHOWN);
   return patchAddingFile(text);
-}
-
-function notShown(path: string, notShownReason: string): FileDiffView {
-  return { path, patch: "", notShownReason };
 }

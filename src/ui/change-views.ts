@@ -24,6 +24,19 @@ export interface ProjectChangesView {
   moreFiles: number;
 }
 
+/** A project's branches, local and remote, for comparing one with another. */
+export interface BranchListView {
+  /** Empty on a detached HEAD or outside a repository. */
+  current: string;
+  branches: string[];
+}
+
+/** What a branch adds on top of a base, as a pull request from `head` into `base` would show it. */
+export interface ComparisonView {
+  base: string;
+  head: string;
+}
+
 /** One changed file's diff, or why it isn't shown. */
 export interface FileDiffView {
   path: string;

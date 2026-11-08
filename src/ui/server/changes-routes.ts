@@ -6,7 +6,7 @@ import { HTTP_STATUS, HttpError } from "./http-error.js";
 import type { UiAccess } from "./ui-access.js";
 import type { UiLookup } from "./ui-lookup.js";
 
-const linesQuery = z
+export const linesQuery = z
   .object({
     from: z.coerce.number().int().positive(),
     to: z.coerce.number().int().positive(),

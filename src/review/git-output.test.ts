@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseNumstat, parseStatus, patchAddingFile } from "./git-output.js";
+import { parseNameStatus, parseNumstat, parseStatus, patchAddingFile } from "./git-output.js";
 
 test("status: a modified file that isn't staged", () => {
   assert.deepEqual(parseStatus(" M src/a.ts\0"), [{ path: "src/a.ts", kind: "modified", staged: false }]);
@@ -40,4 +40,13 @@ test("numstat: a binary file counts no lines", () => {
 
 test("a new file's patch adds each of its lines", () => {
   assert.equal(patchAddingFile("one\ntwo\n"), "@@ -0,0 +1,2 @@\n+one\n+two");
+});
+
+test("name status: each letter becomes the kind of its file", () => {
+  const kinds = parseNameStatus("A\0new.ts\0M\0old.ts\0D\0gone.ts\0").map((entry) => entry.kind);
+  assert.deepEqual(kinds, ["added", "modified", "deleted"]);
+});
+
+test("name status: a path with spaces and tabs comes through whole", () => {
+  assert.equal(parseNameStatus("M\0a b\tc.ts\0")[0].path, "a b\tc.ts");
 });

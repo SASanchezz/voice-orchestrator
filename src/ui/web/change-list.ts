@@ -1,7 +1,9 @@
-// The Review view's left side: each project with its changed files, a tick for the ones you've reviewed.
+// The Review view's left side: each project with its changed files, a tick for the ones you've reviewed. A project
+// comparing branches lists the files its branch changed instead.
 
 import type { ChangedFileView, ProjectChangesView } from "../change-views.js";
 import { changeTotals } from "../reviewed-files.js";
+import { shownChanges } from "./branch-comparison.js";
 import { revealDiff, syncReviewed } from "./diff-pane.js";
 import { byId, el } from "./dom.js";
 import { isMarkedReviewed, setMarkedReviewed } from "./review-marks.js";
@@ -13,7 +15,7 @@ let openProject = "";
 export function renderChangeList(): void {
   const list = byId("change-list", HTMLElement);
   const scrollTop = list.scrollTop;
-  list.replaceChildren(...store.changes.map(projectGroup));
+  list.replaceChildren(...store.changes.map(shownChanges).map(projectGroup));
   list.scrollTop = scrollTop; // every poll that found something new rebuilds it
 }
 
