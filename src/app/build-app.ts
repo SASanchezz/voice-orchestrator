@@ -3,13 +3,15 @@ import { CommandExplainer } from "../permissions/command-explainer.js";
 import type { DestructiveList } from "../safety/destructive-list.js";
 import type { ExplainCommand } from "../permissions/permission-types.js";
 import type { PopupActions } from "../ui/popup-actions.js";
-import { ConfirmPopups } from "../ui/confirm-popups.js";
+import { ConfirmPopups, type ConfirmPanelDevice } from "../ui/confirm-popups.js";
 import { PermissionPopups, type PopupDevice } from "../ui/permission-popups.js";
 import { QuestionPopups, type QuestionPanelDevice } from "../ui/question-popups.js";
 import { LiveClients } from "../ui/server/live-clients.js";
 import { PageOpener, type BrowserPage } from "../ui/server/page-opener.js";
 import { LinkedNoticePanel } from "../ui/notices/linked-notice-panel.js";
 import { TaskNotices, type NoticePanelDevice } from "../ui/notices/task-notices.js";
+import { AfterTalking } from "../voice/after-talking.js";
+import { VoiceWithDictation } from "../voice/voice-with-dictation.js";
 import { ToolCallGate } from "../workers/tool-call-gate.js";
 import { buildEditor, type EditorParts } from "./build-editor.js";
 import { buildNotices, popupActionsFor, type NoticeParts } from "./build-notices.js";
@@ -29,8 +31,10 @@ export interface Adapters extends OperatorDevices {
   explainCommands: boolean;
   /** Native pop-ups for permission requests. */
   popups: PopupDevice;
-  /** Native pop-ups for a worker's questions, and for the assistant's confirm phrases. */
+  /** Native pop-ups for a worker's questions. */
   questionPanels: QuestionPanelDevice;
+  /** Native pop-ups for the assistant's confirm phrases. */
+  confirmPanels: ConfirmPanelDevice;
   /** The native notice panel, where ended tasks wait to be read and replied to. */
   notices: NoticePanelDevice;
   /** The web UI's page in your browser, brought to the front from a notice. */
@@ -51,20 +55,21 @@ export interface App {
 
 /** Builds everything; the operator listens to events before the timeline and the chats do. */
 export function buildApp(cfg: AppConfig, adapters: Adapters): App {
+  const devices = { ...adapters, voice: new VoiceWithDictation(adapters.voice, adapters.dictation) };
   const core = buildCore(cfg, adapters.destructive);
   const permissions = buildPermissions(core, commandExplanations(core, adapters));
   const questions = buildQuestions(core);
   const workers = buildWorkers(core, new ToolCallGate(permissions.broker, questions.broker), adapters.query);
   const todo = buildTodo(core, workers.intake);
   const editor = buildEditor(cfg.editor);
-  const neighbors = { permissions, questions, workers, todo, devices: adapters, editor, clients: new LiveClients() };
+  const neighbors = { permissions, questions, workers, todo, devices, editor, clients: new LiveClients() };
   const operator = buildOperator(core, neighbors);
   const pages = new PageOpener(neighbors.clients, adapters.browser, () => ui.server.link());
   const actions = popupActionsFor(pages, operator);
   const notices = buildNotices(workers.summarizer, actions);
   const ui = buildUi(core, { ...neighbors, notices }, operator);
   const app = { core, permissions, questions, workers, todo, operator, ui, editor, notices };
-  showNatively(app, adapters, actions);
+  showNatively(app, devices, actions);
   return app;
 }
 
@@ -80,11 +85,14 @@ function commandExplanations(core: Core, adapters: Adapters): ExplainCommand | u
  * so you see them from any app.
  */
 function showNatively({ core, ui, notices, operator }: App, adapters: Adapters, actions: PopupActions): void {
-  new PermissionPopups(adapters.popups, ui.permissionClicks).follow(core.events);
+  const permissionPopups = new PermissionPopups(adapters.popups, ui.permissionClicks);
+  permissionPopups.follow(core.events);
   const noticePanel = new LinkedNoticePanel(adapters.notices, () => ui.server.noticeLink());
-  new TaskNotices(noticePanel, notices.inbox, notices.shownSessions).follow(core.events);
+  const afterTalking = new AfterTalking(adapters.voice);
+  new TaskNotices(noticePanel, notices.inbox, notices.shownSessions).follow(core.events, afterTalking);
   new QuestionPopups(adapters.questionPanels, ui.questionClicks, actions).follow(core.events);
-  new ConfirmPopups(adapters.questionPanels, operator.orchestrator).follow(operator.confirmAsk, operator.lines);
+  const confirmPopups = new ConfirmPopups(adapters.confirmPanels, operator.clickedWords, permissionPopups);
+  confirmPopups.follow(operator.confirmAsk, operator.lines);
 }
 
 /** The operator's model session starts, then it listens for your voice. */

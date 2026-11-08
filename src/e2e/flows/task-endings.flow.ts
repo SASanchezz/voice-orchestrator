@@ -24,28 +24,39 @@ test("a worker that ends a turn while its helpers still run is reported finished
   );
 });
 
-/** A failed dbadmin task, emitted while you are talking so its announcement waits in the queue; its notice's id. */
-function failWhileTalking(task: string): string {
+/** A failed dbadmin task, emitted with nothing said yet: its announcement waits in the queue. Its notice's id. */
+function failTask(task: string): string {
+  emitFailure(task);
+  return app.notices.inbox.views().at(-1)!.id;
+}
+
+function emitFailure(task: string): void {
   const session = core.registry.activeSession("dbadmin");
   const subject = { project: "dbadmin", session: session.id, label: "dbadmin", sessionNumber: session.number };
-  voice.listening = true;
   core.events.emitEvent({ kind: "task_failed", ...subject, task, error: "boom" });
-  return app.notices.inbox.views().at(-1)!.id;
 }
 
 test("touching a task's notice before its announcement is said drops the announcement", async () => {
   const i = mark();
-  app.notices.actions.markSeen(failWhileTalking("Rotate the backup keys"));
-  voice.listening = false;
+  app.notices.actions.markSeen(failTask("Rotate the backup keys"));
   await pause(AFTER_THE_END_MS);
   assert.equal(countSince(i, /failed: Rotate the backup keys/), 0);
 });
 
 test("touching a task's notice stops speech, as the talk key does", () => {
   const stopsBefore = voice.stops;
-  app.notices.actions.markSeen(failWhileTalking("Prune the old snapshots"));
-  voice.listening = false;
+  app.notices.actions.markSeen(failTask("Prune the old snapshots"));
   assert.equal(voice.stops, stopsBefore + 1);
+});
+
+test("a task that ends while you talk brings up its notice only once you stop", async () => {
+  const before = notices.shownLinks.length;
+  voice.listening = true;
+  emitFailure("Compact the audit log");
+  const shownWhileTalking = notices.shownLinks.length;
+  voice.listening = false;
+  while (notices.shownLinks.length === before) await pause(20);
+  assert.equal(shownWhileTalking, before);
 });
 
 test("a finished task brings up the notice panel on the notice page", async () => {

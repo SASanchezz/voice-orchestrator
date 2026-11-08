@@ -1,10 +1,8 @@
 import type { SpeechMode } from "../../config/app-config.js";
-import { sleep } from "../../shared/sleep.js";
+import { untilQuiet } from "../../voice/until-quiet.js";
 import type { VoiceInputState, VoiceIO } from "../../voice/voice-io.js";
 import type { EventInput, UserInput } from "./inputs.js";
 import type { SingleVoice } from "./single-voice.js";
-
-const USER_DONE_POLL_MS = 200;
 
 /** What the operator says aloud, and when: never over you, and only as much as the speech mode allows. */
 export class SpeechOutput {
@@ -47,9 +45,4 @@ export class SpeechOutput {
     if (about?.isSilenced()) return;
     await this.voice.speak(text);
   }
-}
-
-/** You may have started talking meanwhile. */
-export async function untilQuiet(voice: VoiceIO): Promise<void> {
-  while (voice.isListening()) await sleep(USER_DONE_POLL_MS);
 }

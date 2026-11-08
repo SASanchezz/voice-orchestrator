@@ -14,6 +14,8 @@ export interface DictationControl {
   /** Your words; throws when nothing was said. */
   finish(): Promise<string>;
   cancel(): Promise<string>;
+  /** From start until finished or cancelled; transcribing the end no longer counts. */
+  isRecording(): boolean;
   on(event: "words", listener: (words: string) => void): this;
 }
 
@@ -58,6 +60,10 @@ export class Dictation extends EventEmitter implements DictationControl {
     return "Recording discarded.";
   }
 
+  isRecording(): boolean {
+    return this.current !== undefined;
+  }
+
   private takeCurrent(): DictationTake {
     const take = this.current;
     if (!take) throw new Error(NOT_LISTENING);
@@ -78,5 +84,9 @@ export class UnavailableDictation extends EventEmitter implements DictationContr
 
   cancel(): Promise<string> {
     return Promise.resolve(NOT_LISTENING);
+  }
+
+  isRecording(): boolean {
+    return false;
   }
 }

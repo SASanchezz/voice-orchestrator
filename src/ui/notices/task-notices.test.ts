@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { AppEvents, type AppEvent } from "../../events/app-events.js";
 import { TestNoticePanel } from "../../testing/test-notices.js";
+import { AfterTalking } from "../../voice/after-talking.js";
 import { LinkedNoticePanel } from "./linked-notice-panel.js";
 import { NoticeInbox } from "./notice-inbox.js";
 import { ShownSessions } from "./shown-sessions.js";
@@ -12,16 +13,28 @@ const KAGGLE_1 = { project: "kaggle", session: "s1", label: "kaggle", sessionNum
 const TASK_DONE: AppEvent = { kind: "task_done", ...KAGGLE_1, result: "ok", note: "ok" };
 
 const NO_SHOWN_SESSIONS = new ShownSessions();
+const QUIET = { isListening: () => false };
 
 function noticesFor(...events: AppEvent[]) {
   return noticesWhileShown(NO_SHOWN_SESSIONS, ...events);
 }
 
 function noticesWhileShown(shownSessions: ShownSessions, ...events: AppEvent[]) {
+  return noticesHeard(shownSessions, QUIET, events);
+}
+
+/** You talk until `talking.stopped` is set. */
+function noticesWhileTalking(...events: AppEvent[]) {
+  const talking = { stopped: false, isListening: () => !talking.stopped };
+  return { talking, ...noticesHeard(NO_SHOWN_SESSIONS, talking, events) };
+}
+
+function noticesHeard(shownSessions: ShownSessions, voice: { isListening(): boolean }, events: AppEvent[]) {
   const appEvents = new AppEvents();
   const panel = new TestNoticePanel();
   const inbox = new NoticeInbox();
-  new TaskNotices(new LinkedNoticePanel(panel, () => NOTICE_LINK), inbox, shownSessions).follow(appEvents);
+  const notices = new TaskNotices(new LinkedNoticePanel(panel, () => NOTICE_LINK), inbox, shownSessions);
+  notices.follow(appEvents, new AfterTalking(voice));
   events.forEach((e) => appEvents.emitEvent(e));
   return { panel, inbox };
 }
@@ -73,3 +86,28 @@ test("task notices: a task ending in the session a page has on screen is not kep
 test("task notices: a task ending while a page shows another session brings up the panel", () => {
   assert.deepEqual(noticesWhileShown(shownOnPage("s2"), TASK_DONE).panel.shownLinks, [NOTICE_LINK]);
 });
+
+test("task notices: a task ending while you talk brings up no panel yet", () => {
+  const { talking, panel } = noticesWhileTalking(TASK_DONE);
+  const shownLinks = [...panel.shownLinks];
+  talking.stopped = true;
+  assert.deepEqual(shownLinks, []);
+});
+
+test("task notices: a task ending while you talk is not in the panel yet", () => {
+  const { talking, inbox } = noticesWhileTalking(TASK_DONE);
+  const isEmpty = inbox.isEmpty();
+  talking.stopped = true;
+  assert.equal(isEmpty, true);
+});
+
+test("task notices: a task that ended while you talked comes up once you stop", async () => {
+  const { talking, inbox } = noticesWhileTalking(TASK_DONE);
+  talking.stopped = true;
+  await waitForPanel(inbox);
+  assert.equal(inbox.views().length, 1);
+});
+
+function waitForPanel(inbox: NoticeInbox): Promise<void> {
+  return new Promise((resolve) => inbox.once("changed", resolve));
+}

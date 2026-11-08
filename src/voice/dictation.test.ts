@@ -104,3 +104,18 @@ test("dictation: starting again drops the recording a closed page left running, 
 test("dictation: text mode has no mic to start", () => {
   assert.throws(() => new UnavailableDictation().start(), /no mic/);
 });
+
+test("dictation: it is recording once started", async () => {
+  const { mic } = dictation();
+  mic.start();
+  const recording = mic.isRecording();
+  await mic.cancel();
+  assert.equal(recording, true);
+});
+
+test("dictation: it stops recording once finished", async () => {
+  const { mic } = dictation();
+  mic.start();
+  await mic.finish();
+  assert.equal(mic.isRecording(), false);
+});

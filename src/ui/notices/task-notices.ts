@@ -1,4 +1,5 @@
 import type { AppEvent, AppEvents, TaskEndEvent } from "../../events/app-events.js";
+import type { AfterTalking } from "../../voice/after-talking.js";
 import type { NoticeInbox } from "./notice-inbox.js";
 import type { ShownSessions } from "./shown-sessions.js";
 
@@ -17,8 +18,9 @@ export interface NoticePanel {
 
 /**
  * Each ended task waits in the notice panel, so you can read it from any app instead of listening, and reply to the
- * worker right there. A task that ends in the session a web UI page has on screen gets no notice. The panel goes away
- * once its last notice is closed.
+ * worker right there. A task that ends in the session a web UI page has on screen gets no notice. While you talk or
+ * record, a notice waits until you stop, so it doesn't pop up over what you're saying. The panel goes away once its
+ * last notice is closed.
  */
 export class TaskNotices {
   constructor(
@@ -27,9 +29,9 @@ export class TaskNotices {
     private shownSessions: ShownSessions,
   ) {}
 
-  follow(events: AppEvents): void {
+  follow(events: AppEvents, afterTalking: AfterTalking): void {
     events.on("event", (e: AppEvent) => {
-      if (e.kind === "task_done" || e.kind === "task_failed") this.noticeUnlessShown(e);
+      if (e.kind === "task_done" || e.kind === "task_failed") afterTalking.run(() => this.noticeUnlessShown(e));
     });
     this.inbox.on("changed", () => {
       if (this.inbox.isEmpty()) this.panel.hide();
