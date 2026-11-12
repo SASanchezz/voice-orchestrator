@@ -23,6 +23,7 @@ export class UiStateView {
       voiceInput: this.voice.voiceInput,
       voiceOffer: this.voice.offer(),
       confirmVerbs: this.voice.confirmVerbs,
+      goAheadAsked: this.voice.goAheadAsked,
     };
   }
 }

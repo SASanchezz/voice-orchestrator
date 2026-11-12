@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { openConfirmRequest } from "./confirm-request.js";
+import { openConfirmRequest, openGoAheadLineId } from "./confirm-request.js";
 import type { FeedEntryView } from "./protocol.js";
 
 const AT = "2026-10-13T10:00:00.000Z";
@@ -36,4 +36,19 @@ test("a later reply takes the buttons", () => {
 
 test("a chat without assistant lines has nowhere to put them", () => {
   assert.equal(openConfirmRequest([entry(1, "user", "hello")], ["push"]), undefined);
+});
+
+const ASKS_TO_START = entry(2, "orchestrator", "Shall I start the refactor?");
+
+test("the go-ahead buttons go under the assistant's latest line", () => {
+  const entries = [entry(1, "user", "refactor the parser"), ASKS_TO_START, entry(3, "event", "asks: Bash")];
+  assert.equal(openGoAheadLineId(entries, true), 2);
+});
+
+test("a go-ahead the server didn't ask for shows no buttons", () => {
+  assert.equal(openGoAheadLineId([ASKS_TO_START], false), undefined);
+});
+
+test("your next words close the go-ahead question", () => {
+  assert.equal(openGoAheadLineId([ASKS_TO_START, entry(3, "user", "yes")], true), undefined);
 });

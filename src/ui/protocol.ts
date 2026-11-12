@@ -114,6 +114,8 @@ export interface UiState {
   voiceOffer?: VoiceOfferView;
   /** The confirm phrases the assistant asked you to say, e.g. ["push"]; Confirm buttons answer them. */
   confirmVerbs: string[];
+  /** The assistant asked a yes-or-no go-ahead question; Yes and Cancel buttons answer it. */
+  goAheadAsked: boolean;
   budget: BudgetView;
   todo: TodoListView;
   editor: EditorStateName;

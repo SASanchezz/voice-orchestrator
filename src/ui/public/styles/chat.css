@@ -146,7 +146,7 @@
   color: var(--danger);
 }
 
-/* Confirm and Cancel under the assistant's request for a confirm phrase. */
+/* Confirm or Yes, and Cancel, under the assistant's request for a confirm phrase or a go-ahead. */
 .confirm-bar {
   display: flex;
   gap: 8px;

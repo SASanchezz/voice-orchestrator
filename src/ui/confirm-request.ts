@@ -1,5 +1,5 @@
-// The assistant's open request for a confirm phrase, which the chat answers with Confirm and Cancel buttons.
-// The server says which verbs are asked (the assistant's ask_to_confirm tool); the reply's wording never does.
+// The assistant's open request for a confirm phrase or a go-ahead, which the chat answers with buttons.
+// The server says what is asked (the assistant's ask_to_confirm and ask_go_ahead tools); the reply's wording never does.
 // No runtime imports, so the page bundles it and Node tests it.
 
 import type { FeedEntryView } from "./protocol.js";
@@ -13,9 +13,18 @@ export interface ConfirmRequest {
 /** Under the assistant's latest line, while you haven't said or typed anything since. */
 export function openConfirmRequest(entries: FeedEntryView[], verbs: string[]): ConfirmRequest | undefined {
   if (!verbs.length) return undefined;
+  const entryId = latestAssistantLineId(entries);
+  return entryId === undefined ? undefined : { entryId, verbs };
+}
+
+/** The assistant's line the Yes and Cancel buttons go under, while you haven't said or typed anything since. */
+export function openGoAheadLineId(entries: FeedEntryView[], isAsked: boolean): number | undefined {
+  return isAsked ? latestAssistantLineId(entries) : undefined;
+}
+
+function latestAssistantLineId(entries: FeedEntryView[]): number | undefined {
   const latest = entries.findLast(isConversationLine);
-  if (latest?.kind !== "orchestrator") return undefined;
-  return { entryId: latest.id, verbs };
+  return latest?.kind === "orchestrator" ? latest.id : undefined;
 }
 
 function isConversationLine(entry: FeedEntryView): boolean {
@@ -26,6 +35,12 @@ function isConversationLine(entry: FeedEntryView): boolean {
 export function confirmWords(verb: string): string {
   return `confirm ${verb}`;
 }
+
+/** What a Yes click on a go-ahead question says for you. */
+export const GO_AHEAD_YES_WORDS = "yes";
+
+/** What a Cancel click on a go-ahead question says for you. */
+export const GO_AHEAD_CANCEL_WORDS = "cancel";
 
 /** What a Cancel click says for you, e.g. "Cancel, don't push or delete." */
 export function cancelWords(verbs: string[]): string {

@@ -65,3 +65,39 @@ test("the assistant's own lines keep it open", () => {
   lines.say({ role: "orchestrator", text: 'Say "confirm push".' });
   assert.deepEqual(ask.verbs, ["push"]);
 });
+
+test("a go-ahead question waits for your answer", () => {
+  const ask = new ConfirmAsk();
+  ask.askGoAhead();
+  assert.equal(ask.goAheadAsked, true);
+});
+
+test("your next words close a go-ahead question", () => {
+  const { ask, lines } = followingAsk();
+  ask.askGoAhead();
+  lines.say({ role: "user", text: "yes" });
+  assert.equal(ask.goAheadAsked, false);
+});
+
+test("a confirm request replaces a go-ahead question", () => {
+  const ask = new ConfirmAsk();
+  ask.askGoAhead();
+  ask.ask(["push"]);
+  assert.equal(ask.goAheadAsked, false);
+});
+
+test("a go-ahead question replaces a confirm request", () => {
+  const ask = new ConfirmAsk();
+  ask.ask(["push"]);
+  ask.askGoAhead();
+  assert.deepEqual(ask.verbs, []);
+});
+
+test("a go-ahead question announces that the replaced confirm request closed", () => {
+  const ask = new ConfirmAsk();
+  let closings = 0;
+  ask.on("closed", () => closings++);
+  ask.ask(["push"]);
+  ask.askGoAhead();
+  assert.equal(closings, 1);
+});

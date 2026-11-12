@@ -29,6 +29,7 @@ const INITIAL_STATE: UiState = {
   gestures: "unavailable", // hidden until the server says whether there is a mic
   voiceInput: "idle",
   confirmVerbs: [],
+  goAheadAsked: false,
   todo: { items: [] },
   editor: "off", // no Code view until the server says VS Code is there
   notices: [],

@@ -15,7 +15,7 @@ export interface VoiceParts {
 
 /**
  * The voice side of the page: how replies are spoken, whether you're talking, whether gestures can talk for you,
- * a voice message waiting for you, and the confirm phrases the assistant asked you to say.
+ * a voice message waiting for you, and the confirm phrases or go-ahead the assistant asked you for.
  */
 export class VoiceViews {
   private orchestrator: Orchestrator;
@@ -53,5 +53,9 @@ export class VoiceViews {
 
   get confirmVerbs(): string[] {
     return this.confirmAsk.verbs;
+  }
+
+  get goAheadAsked(): boolean {
+    return this.confirmAsk.goAheadAsked;
   }
 }

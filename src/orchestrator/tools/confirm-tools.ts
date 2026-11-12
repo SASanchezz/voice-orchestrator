@@ -26,3 +26,22 @@ export function askToConfirm(confirmAsk: ConfirmAsk): OperatorTool {
     },
   });
 }
+
+const GO_AHEAD_BUTTONS_SHOWN =
+  "Yes and Cancel buttons shown under your reply. You have already asked; end your turn without more text.";
+
+/** Shows Yes and Cancel buttons under your reply, which say "yes" or "cancel" for the user. */
+export function askGoAhead(confirmAsk: ConfirmAsk): OperatorTool {
+  return defineTool({
+    name: "ask_go_ahead",
+    description:
+      "Call this whenever your reply asks the user a yes-or-no go-ahead question before you start work, in the " +
+      "same turn. The web UI then shows 'Yes' and 'Cancel' buttons under your reply until the user's next words; " +
+      'a click sends "yes" or "cancel" as their words. Not for destructive actions: those use ask_to_confirm.',
+    args: {},
+    run: () => {
+      confirmAsk.askGoAhead();
+      return text(GO_AHEAD_BUTTONS_SHOWN);
+    },
+  });
+}

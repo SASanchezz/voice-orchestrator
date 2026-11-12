@@ -33,7 +33,7 @@ import { lookAtCamera, lookAtScreen, remember, resetContext, restartOrchestrator
 import type { CameraView } from "./camera-views.js";
 import { readAttachment } from "./attachment-tools.js";
 import { readClipboard } from "./clipboard-tools.js";
-import { askToConfirm } from "./confirm-tools.js";
+import { askGoAhead, askToConfirm } from "./confirm-tools.js";
 import { destructiveAdd, destructiveRemove, destructiveRules } from "./destructive-tools.js";
 import { setGestures } from "./gesture-tools.js";
 import { catchUpMessages, listMessageSources } from "./message-tools.js";
@@ -141,6 +141,7 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => catchUpMessages(s.messages),
   (s) => listMessageSources(s.messages),
   (s) => askToConfirm(s.confirmAsk),
+  (s) => askGoAhead(s.confirmAsk),
   (s) => destructiveRules(s.destructive),
   (s) => destructiveAdd(s.destructive, s.context),
   (s) => destructiveRemove(s.destructive, s.context),
