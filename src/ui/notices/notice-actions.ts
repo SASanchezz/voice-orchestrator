@@ -6,6 +6,8 @@ import type { PopupActions } from "../popup-actions.js";
 import type { NoticeInbox } from "./notice-inbox.js";
 
 const GONE = "That notice was closed.";
+/** Review stays open beside its notice, which you may still want to reply to or explain. */
+const CLOSES_ON_OPEN: ReadonlySet<NoticeTarget> = new Set(["assistant", "session"]);
 
 /** Writes a longer explanation of a project's latest changes, on the project's own account. */
 export type ChangeExplainer = Pick<ChangeSummarizer, "explainInWriting">;
@@ -43,9 +45,11 @@ export class NoticeActions {
     return "Closed.";
   }
 
+  /** The assistant's reply or the worker's session tells the rest, so the notice closes once it is open there. */
   async open(id: string, target: NoticeTarget): Promise<string> {
     this.markSeen(id);
     await this.actions.openPage(navigationOf(target, this.inbox.eventOf(id)));
+    if (CLOSES_ON_OPEN.has(target)) this.inbox.dismiss(id);
     return "Opened in the web UI.";
   }
 

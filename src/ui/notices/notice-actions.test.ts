@@ -82,6 +82,24 @@ test("notice actions: Review changes opens the project's changes", async () => {
   assert.deepEqual(opened, [{ view: "review", project: "kaggle" }]);
 });
 
+test("notice actions: Open assistant closes the notice", async () => {
+  const { actions, inbox, id } = actionsOnOneNotice();
+  await actions.open(id, "assistant");
+  assert.equal(inbox.isEmpty(), true);
+});
+
+test("notice actions: Open session closes the notice", async () => {
+  const { actions, inbox, id } = actionsOnOneNotice();
+  await actions.open(id, "session");
+  assert.equal(inbox.isEmpty(), true);
+});
+
+test("notice actions: Review changes keeps the notice", async () => {
+  const { actions, inbox, id } = actionsOnOneNotice();
+  await actions.open(id, "review");
+  assert.equal(inbox.isEmpty(), false);
+});
+
 test("notice actions: opening a view silences the task's announcement", async () => {
   const { actions, silenced, id } = actionsOnOneNotice();
   await actions.open(id, "session");
