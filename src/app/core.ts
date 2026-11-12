@@ -3,6 +3,7 @@ import { AttachmentFiles } from "../attachments/attachment-files.js";
 import type { AppConfig } from "../config/app-config.js";
 import { STATE_DIR } from "../config/paths.js";
 import { AppEvents } from "../events/app-events.js";
+import { QuietSessions } from "../events/quiet-sessions.js";
 import { openRegistry } from "../registry/open-registry.js";
 import type { Projects } from "../registry/projects.js";
 import type { Registry } from "../registry/registry.js";
@@ -19,6 +20,10 @@ import { messengerLinks, type MessengerLinks } from "./build-messages.js";
 export interface Core {
   cfg: AppConfig;
   events: AppEvents;
+  /** Sessions kept from making a sound or a pop-up until you are back. */
+  quiet: QuietSessions;
+  /** The events less those of quiet sessions, for whoever speaks or shows a pop-up. */
+  audibleEvents: AppEvents;
   projects: Projects;
   sessions: Sessions;
   registry: Registry;
@@ -40,6 +45,7 @@ export function buildCore(cfg: AppConfig, destructive: DestructiveList): Core {
   return {
     cfg,
     events,
+    ...quietParts(events),
     projects,
     sessions,
     registry,
@@ -50,6 +56,11 @@ export function buildCore(cfg: AppConfig, destructive: DestructiveList): Core {
     attachments: new AttachmentFiles(resolve(STATE_DIR, "attachments")),
     messengers: messengerLinks(),
   };
+}
+
+function quietParts(events: AppEvents): Pick<Core, "quiet" | "audibleEvents"> {
+  const quiet = new QuietSessions();
+  return { quiet, audibleEvents: quiet.audible(events) };
 }
 
 function workerRules(cfg: AppConfig, destructive: DestructiveList): BranchScopedRules {

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_PROTECTED_BRANCHES, type AppConfig } from "../../config/app-config.js";
 import { DEFAULT_BUDGET } from "../../config/budget-config.js";
+import { DEFAULT_LIMITS } from "../../config/limits-config.js";
 import { DEFAULT_CAMERA } from "../../config/camera-config.js";
 import { DEFAULT_EDITOR_SETTINGS } from "../../config/editor-config.js";
 import { DEFAULT_MESSAGES } from "../../config/messages-config.js";
@@ -67,6 +68,7 @@ export const cfg: AppConfig = {
     protectedBranches: DEFAULT_PROTECTED_BRANCHES,
   },
   budget: DEFAULT_BUDGET,
+  limits: DEFAULT_LIMITS,
   sensors: DEFAULT_SENSORS,
   camera: DEFAULT_CAMERA,
   editor: DEFAULT_EDITOR_SETTINGS,

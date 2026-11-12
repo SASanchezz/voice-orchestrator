@@ -6,7 +6,7 @@ import type { UserTurns } from "./user-turns.js";
 
 /** Who handles each kind of input. */
 export interface InputHandlers {
-  user: UserTurns;
+  user: Pick<UserTurns, "handle">;
   event: EventTurns;
   notice: Notices;
   clear: ContextReset;

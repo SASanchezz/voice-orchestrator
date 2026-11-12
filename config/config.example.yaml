@@ -80,6 +80,14 @@ budget:
   sessionCostUsd: 5 # one session's total
   dailyCostUsd: 25 # all sessions together, per day
 
+# Tasks saved to todo by a usage limit run again on their own once the limit resets, kept quiet until you're back.
+limits:
+  autoResume: true
+  checkMinutes: 5
+  graceMinutes: 3 # wait this long after the reset time
+  unknownResetMinutes: 60 # when the error named no reset time
+  maxAgeHours: 24 # older saved tasks wait for you
+
 # Camera gestures: hold an open palm to talk, thumbs-down to discard (sensors/gestures; set it up as its README says).
 sensors:
   gestures:

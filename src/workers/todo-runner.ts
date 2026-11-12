@@ -19,10 +19,19 @@ export class TodoRunner {
   /** Runs a saved task in its project's active session and takes it off the todo list. */
   runSaved(id: string): string {
     const saved = this.todo.find(id);
+    return this.runIn(saved, () => this.intake.run(saved.project, saved.task));
+  }
+
+  /** Runs a saved task in the session given, as `instruction`, and takes it off the todo list. */
+  resume(saved: SavedTodo, sessionId: string, instruction: string): string {
+    return this.runIn(saved, () => this.intake.runInSession(sessionId, instruction));
+  }
+
+  private runIn(saved: SavedTodo, start: () => string): string {
     this.intake.checkSaved(saved);
     this.limits.endEpisode(saved.account); // a new limit failure is announced again
-    const started = this.intake.run(saved.project, saved.task);
-    this.todo.remove(id);
+    const started = start();
+    this.todo.remove(saved.id);
     return started;
   }
 

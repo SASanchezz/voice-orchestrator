@@ -3,6 +3,7 @@ import { budgetSchema } from "./budget-config.js";
 import { cameraSchema } from "./camera-config.js";
 import { editorSchema } from "./editor-config.js";
 import { messagesSchema } from "./messages-config.js";
+import { limitsSchema } from "./limits-config.js";
 import { expandHome } from "./paths.js";
 import { sensorsSchema } from "./sensor-config.js";
 import { numberOr } from "./yaml-values.js";
@@ -114,6 +115,7 @@ export const configFileSchema = z.object({
   ui: uiSchema,
   permissions: permissionsSchema,
   budget: budgetSchema,
+  limits: limitsSchema,
   sensors: sensorsSchema,
   camera: cameraSchema,
   editor: editorSchema,

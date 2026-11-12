@@ -9,8 +9,10 @@ export class Notices {
     private context: TurnContext,
   ) {}
 
+  /** A notice with nothing to say is only noted. */
   async handle(notice: NoticeInput): Promise<void> {
-    if (!this.speech.isMuted()) await this.speech.speakWhenQuiet(notice.spoken, notice.voice);
+    const isSpoken = notice.spoken !== "" && !this.speech.isMuted();
+    if (isSpoken) await this.speech.speakWhenQuiet(notice.spoken, notice.voice);
     this.context.addUiNote(notice.text);
   }
 }

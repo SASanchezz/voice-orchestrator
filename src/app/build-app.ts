@@ -82,15 +82,15 @@ function commandExplanations(core: Core, adapters: Adapters): ExplainCommand | u
 
 /**
  * Native pop-ups for requests, questions and the assistant's confirm phrases, and the notice panel when a task ends,
- * so you see them from any app.
+ * so you see them from any app; none for quiet sessions.
  */
 function showNatively({ core, ui, notices, operator }: App, adapters: Adapters, actions: PopupActions): void {
   const permissionPopups = new PermissionPopups(adapters.popups, ui.permissionClicks);
-  permissionPopups.follow(core.events);
+  permissionPopups.follow(core.audibleEvents);
   const noticePanel = new LinkedNoticePanel(adapters.notices, () => ui.server.noticeLink());
   const afterTalking = new AfterTalking(adapters.voice);
-  new TaskNotices(noticePanel, notices.inbox, notices.shownSessions).follow(core.events, afterTalking);
-  new QuestionPopups(adapters.questionPanels, ui.questionClicks, actions).follow(core.events);
+  new TaskNotices(noticePanel, notices.inbox, notices.shownSessions).follow(core.audibleEvents, afterTalking);
+  new QuestionPopups(adapters.questionPanels, ui.questionClicks, actions).follow(core.audibleEvents);
   const confirmPopups = new ConfirmPopups(adapters.confirmPanels, operator.clickedWords, permissionPopups);
   confirmPopups.follow(operator.confirmAsk, operator.lines);
 }

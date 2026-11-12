@@ -25,6 +25,10 @@ export class Registry {
     return this.sessions.session(this.projects.get(project).activeSession);
   }
 
+  hasSessionNumbered(project: string, number: number): boolean {
+    return this.sessions.sessionsOf(project).some((session) => session.number === number);
+  }
+
   /** The project's session with this spoken number. */
   sessionByNumber(project: string, number: number): SessionState {
     return numbered(this.sessions.sessionsOf(project), project, number);

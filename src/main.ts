@@ -36,6 +36,7 @@ const app = buildApp(
 
 await openUi(cfg, app);
 app.editor.server.start(); // once the UI has made the token file it reads
+if (cfg.limits.autoResume) app.workers.resumer.start();
 const messageAlerts = buildMessageAlerts(cfg.messages, app.core.messengers, app.operator.orchestrator);
 
 startOperator(app, voice)

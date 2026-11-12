@@ -4,6 +4,7 @@ import { ClickedWords } from "../orchestrator/conversation/clicked-words.js";
 import { ConfirmAsk } from "../orchestrator/conversation/confirm-ask.js";
 import { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import { inputFor } from "../orchestrator/conversation/event-inputs.js";
+import { isWorthNoting, quietInputFor } from "../orchestrator/conversation/quiet-inputs.js";
 import { EventTurns } from "../orchestrator/conversation/event-turns.js";
 import { EventVoices } from "../orchestrator/conversation/event-voices.js";
 import { InputDispatcher } from "../orchestrator/conversation/input-dispatcher.js";
@@ -19,6 +20,7 @@ import { TurnTaker } from "../orchestrator/conversation/turn-taker.js";
 import { UserTurns } from "../orchestrator/conversation/user-turns.js";
 import { VoiceCancel } from "../orchestrator/conversation/voice-cancel.js";
 import { VoiceHold } from "../orchestrator/conversation/voice-hold.js";
+import { WakingUserTurns } from "../orchestrator/conversation/waking-user-turns.js";
 import { ContextReset } from "../orchestrator/lifecycle/context-reset.js";
 import { ResetRequests } from "../orchestrator/lifecycle/reset-requests.js";
 import { ResetSchedule } from "../orchestrator/lifecycle/reset-schedule.js";
@@ -67,12 +69,20 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   listen(neighbors.devices, pointing, (text) => voiceHold.receive(pointing.annotate(text)));
   releaseShotsAfterTurns(neighbors.devices, kit.context);
   kit.confirmAsk.follow(kit.lines);
-  core.events.on("event", (e: AppEvent) => loop.enqueue(inputFor(e, kit.voices)));
+  followEvents(core, loop, kit);
   core.events.on("permission_closed", (requestId: string) => kit.replies.answered(requestId));
   const orchestrator = new Orchestrator(loop, kit.context, kit.speech);
   const clickedWords = new ClickedWords(kit.replies, orchestrator);
   const parts = { orchestrator, session, lifecycle, tools, voiceHold, voiceCancel, pointing, clickedWords };
   return { ...parts, ...kitParts(kit) };
+}
+
+/** Every app event reaches the model; a quiet session's only as a note, without a sound. */
+function followEvents({ events, quiet }: Core, loop: OperatorLoop, { voices }: ConversationKit): void {
+  events.on("event", (e: AppEvent) => {
+    if (!quiet.covers(e)) return loop.enqueue(inputFor(e, voices));
+    if (isWorthNoting(e)) loop.enqueue(quietInputFor(e));
+  });
 }
 
 type KitPart = "lines" | "context" | "voices" | "confirmAsk";
@@ -104,7 +114,7 @@ function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighb
 }
 
 function operatorLoop(
-  { cfg }: Core,
+  { cfg, quiet }: Core,
   { permissions, devices }: OperatorNeighbors,
   { kit, session }: { kit: ConversationKit; session: OperatorSession },
 ): { loop: OperatorLoop; lifecycle: SessionLifecycle } {
@@ -113,8 +123,9 @@ function operatorLoop(
   const reset = new ContextReset(session, memory, requests);
   const schedule = new ResetSchedule(cfg.orchestrator, session, permissions.waiting);
   const lifecycle = new SessionLifecycle(requests, schedule, reset);
+  const userTurns = new UserTurns(userTurnTaker(cfg.camera, devices.camera, turns), gate, speech);
   const dispatcher = new InputDispatcher({
-    user: new UserTurns(userTurnTaker(cfg.camera, devices.camera, turns), gate, speech),
+    user: new WakingUserTurns(userTurns, quiet),
     event: new EventTurns(turns, gate, speech),
     notice: new Notices(speech, context),
     clear: reset,

@@ -2,12 +2,15 @@ import { resolve } from "node:path";
 import type { QueryFn } from "../agent/query-fn.js";
 import { STATE_DIR } from "../config/paths.js";
 import { TodoList } from "../limits/todo-list.js";
+import { ResumePolicy } from "../limits/resume-policy.js";
 import { UsageLimits } from "../limits/usage-limits.js";
 import { MeteredStream } from "../budget/metered-stream.js";
 import type { DailySpend } from "../budget/daily-spend.js";
 import { ChangeSummarizer } from "../workers/change-summarizer.js";
 import { HandoffWriter } from "../workers/handoff-writer.js";
 import { LimitParking } from "../workers/limit-parking.js";
+import { LimitResumer } from "../workers/limit-resumer.js";
+import { QuietResume } from "../workers/quiet-resume.js";
 import { SessionControl } from "../workers/session-control.js";
 import { SessionHandoff } from "../workers/session-handoff.js";
 import { QueuedTasks } from "../workers/queued-tasks.js";
@@ -37,6 +40,8 @@ export interface WorkerParts {
   /** Sessions' queued instructions, to list them or drop one. */
   queuedTasks: QueuedTasks;
   todos: TodoRunner;
+  /** Runs tasks saved by a usage limit again once it resets; started only with limits.autoResume. */
+  resumer: LimitResumer;
   summarizer: ChangeSummarizer;
   handoff: SessionHandoff;
   /** What all workers spent each day. */
@@ -68,12 +73,23 @@ export function buildWorkers(core: Core, gate: ToolCallGate, query: QueryFn): Wo
     intake,
     control: new SessionControl(core.registry, kit.directory, runs),
     queuedTasks: new QueuedTasks(queue, kit.directory, kit.chat),
-    todos: new TodoRunner(kit.todo, kit.limits, intake),
+    ...todoParts(core, kit, intake),
     summarizer: new ChangeSummarizer(kit.options, query),
     handoff: new SessionHandoff(writer, runs, successor),
     spend: kit.budget.daily,
     todo: kit.todo,
   };
+}
+
+/** The todo list's runner, and the resumer that runs its tasks again once their limit resets. */
+function todoParts(
+  { cfg, registry, quiet }: Core,
+  kit: WorkerKit,
+  intake: TaskIntake,
+): Pick<WorkerParts, "todos" | "resumer"> {
+  const todos = new TodoRunner(kit.todo, kit.limits, intake);
+  const quietResume = new QuietResume(todos, registry, quiet);
+  return { todos, resumer: new LimitResumer(todos, new ResumePolicy(cfg.limits), quietResume) };
 }
 
 function workerKit(core: Core): WorkerKit {

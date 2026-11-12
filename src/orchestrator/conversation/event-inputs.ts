@@ -38,7 +38,7 @@ export function inputFor(e: AppEvent, voices: Pick<EventVoices, "voiceOf">): Inp
   };
 }
 
-function describeEvent(e: AppEvent): string {
+export function describeEvent(e: AppEvent): string {
   if (e.kind === "task_done")
     return `[NOTICE] ${e.label} finished its task. End of the worker's closing note: ${e.result.slice(-NOTE_CHARS)}\nTask (session ${e.sessionNumber}): ${e.task}`;
   if (e.kind === "task_failed")
