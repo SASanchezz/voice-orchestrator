@@ -37,11 +37,11 @@ function cardHead(request: PendingRequestView): HTMLDivElement {
 }
 
 function actionsFor(request: PendingRequestView): HTMLButtonElement[] {
-  const deny = button("Deny", "", () => void answer(request.id, "deny"));
+  const deny = button("Deny", "intent-dismiss", () => void answer(request.id, "deny"));
   if (request.destructiveVerb)
     return [button(`Allow ${request.destructiveVerb}…`, "danger", () => confirmDestructive(request)), deny];
   return [
-    button("Allow once", "primary", () => void answer(request.id, "once")),
+    button("Allow once", "intent-allow", () => void answer(request.id, "once")),
     button("Always", "", () => void answer(request.id, "always")),
     deny,
   ];

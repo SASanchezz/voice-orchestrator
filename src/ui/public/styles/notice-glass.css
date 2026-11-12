@@ -1,0 +1,72 @@
+/* The notice panel on glass: the native panel draws the glass, the page only adds frosted cards on it, a glow along
+   the top in the task's outcome colour, and its buttons in two groups (go somewhere, put away). */
+
+.notice {
+  --outcome: var(--ok);
+  background: radial-gradient(120% 70px at 50% 0, color-mix(in srgb, var(--outcome) 22%, transparent), transparent);
+  box-shadow: inset 0 2px 0 color-mix(in srgb, var(--outcome) 70%, transparent);
+}
+.notice:has(.notice-badge.failed) {
+  --outcome: var(--danger);
+}
+
+.notice-badge {
+  border: 1px solid color-mix(in srgb, var(--outcome) 45%, transparent);
+  box-shadow: var(--glass-rim);
+}
+
+.notice-full > div,
+.notice-explanation {
+  border: 1px solid var(--glass-edge);
+  border-radius: 10px;
+  background: var(--glass-frost);
+}
+.notice-explanation {
+  background: color-mix(in srgb, var(--assistant-soft) 70%, transparent);
+}
+
+.notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.notice-actions button {
+  padding: 4px 10px;
+}
+/* The three that open the task somewhere else sit together as one pill. */
+.notice-open-group {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 18%);
+}
+.notice-open-group button {
+  border-radius: 999px;
+}
+.notice-dismiss-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.reply textarea {
+  border-color: var(--glass-edge);
+  background: rgb(0 0 0 / 22%);
+}
+.reply .mic-button {
+  width: 34px;
+  padding: 4px 0;
+  border-radius: 999px;
+  background: var(--glass-sheen), var(--glass-frost);
+  box-shadow: var(--glass-rim);
+}
+
+.hover-hint {
+  border-color: var(--glass-edge);
+  background: rgb(22 27 34 / 92%);
+  backdrop-filter: blur(12px);
+}

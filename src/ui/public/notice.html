@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="/styles/base.css" />
     <link rel="stylesheet" href="/styles/markdown.css" />
     <link rel="stylesheet" href="/styles/notice.css" />
+    <link rel="stylesheet" href="/styles/notice-glass.css" />
+    <link rel="stylesheet" href="/styles/buttons.css" />
   </head>
   <body class="notice-page">
     <main id="notice" class="notice" hidden>
@@ -36,23 +38,42 @@
       <p id="notice-problem" class="notice-problem" role="alert" hidden></p>
 
       <nav class="notice-actions" aria-label="Notice actions">
-        <button type="button" data-command="close" title="Close this notice">Close</button>
+        <div class="notice-open-group">
+          <button
+            type="button"
+            class="intent-assistant"
+            data-command="openAssistant"
+            title="The assistant's reply to this task, in the web UI"
+          >
+            Assistant
+          </button>
+          <button
+            type="button"
+            class="intent-session"
+            data-command="openSession"
+            title="The worker's session, in the web UI"
+          >
+            Session
+          </button>
+          <button type="button" class="intent-review" data-command="review" title="The project's changes, in Review">
+            Review
+          </button>
+        </div>
         <button
           type="button"
           id="notice-explain"
+          class="intent-explain"
           data-command="explain"
           title="A longer written explanation of the changes, made on the project's own account"
         >
           Explain more
         </button>
-        <button type="button" data-command="openAssistant" title="The assistant's reply to this task, in the web UI">
-          Assistant
-        </button>
-        <button type="button" data-command="openSession" title="The worker's session, in the web UI">Session</button>
-        <button type="button" data-command="review" title="The project's changes, in Review">Review</button>
-        <button type="button" class="ghost close-all" data-command="closeAll" title="Close every notice">
-          Close all
-        </button>
+        <div class="notice-dismiss-group">
+          <button type="button" class="intent-dismiss" data-command="close" title="Close this notice">Close</button>
+          <button type="button" class="intent-dismiss-all" data-command="closeAll" title="Close every notice">
+            Close all
+          </button>
+        </div>
       </nav>
 
       <form id="reply-form" class="reply">

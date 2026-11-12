@@ -1,0 +1,131 @@
+/* Buttons by what they do, alike in the web UI, the notice panel and the native pop-ups, so the eye finds the same
+   action in the same colour and icon everywhere:
+   Review green ±, Session blue >_, Assistant violet ✦, Explain amber 💡, Allow green ✓, Close/Cancel/Deny clear ✕.
+   Loaded last, so an action's colour wins over a button's place-specific look. */
+
+.intent-review,
+.intent-allow {
+  --tint: var(--ok);
+  --tint-text: #7ee787;
+}
+.intent-session {
+  --tint: #388bfd;
+  --tint-text: #79c0ff;
+}
+.intent-assistant {
+  --tint: var(--assistant);
+  --tint-text: #d8c4ff;
+}
+.intent-explain {
+  --tint: var(--warn);
+  --tint-text: #e3b341;
+}
+
+/* Coloured glass: mostly solid colour under a sheen, so each action is told apart at a glance. */
+button:is(.intent-review, .intent-allow, .intent-session, .intent-assistant) {
+  background:
+    var(--glass-sheen),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--tint) 78%, transparent),
+      color-mix(in srgb, var(--tint) 60%, transparent)
+    ),
+    var(--surface);
+  border-color: var(--tint-text);
+  color: #fff;
+  font-weight: 600;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 35%);
+  box-shadow:
+    var(--glass-rim),
+    0 1px 10px color-mix(in srgb, var(--tint) 35%, transparent);
+}
+button:is(.intent-review, .intent-allow, .intent-session, .intent-assistant):hover:enabled {
+  filter: brightness(1.15);
+}
+
+/* Lighter than the coloured ones: it asks for more words rather than taking you anywhere. */
+button.intent-explain {
+  background: color-mix(in srgb, var(--tint) 24%, var(--surface));
+  border-color: var(--tint);
+  font-weight: 600;
+  color: var(--tint-text);
+}
+button.intent-explain:hover:enabled {
+  background: color-mix(in srgb, var(--tint) 36%, var(--surface));
+}
+
+/* Plain grey glass: it only puts something away. */
+button.intent-dismiss {
+  background: var(--glass-sheen), var(--surface-2);
+  border-color: rgb(255 255 255 / 22%);
+  color: var(--text);
+  box-shadow: var(--glass-rim);
+}
+button.intent-dismiss:hover:enabled {
+  background: var(--glass-sheen-hover), #2d333b;
+}
+
+/* A plain word at the far end, red on hover since it closes everything at once. */
+button.intent-dismiss-all {
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+  padding-inline: 4px;
+}
+button.intent-dismiss-all:hover:enabled {
+  background: transparent;
+  color: var(--danger);
+}
+
+/* ------------------------------------------------ icons, before the words */
+
+button:is(.intent-review, .intent-allow, .intent-session, .intent-assistant, .intent-explain, .intent-dismiss)::before {
+  display: inline-block;
+  margin-right: 6px;
+  font-weight: 700;
+}
+.intent-review::before {
+  content: "±";
+}
+.intent-allow::before {
+  content: "✓";
+}
+.intent-session::before {
+  content: ">_";
+  font: 700 11px/1 var(--mono);
+  letter-spacing: -0.04em;
+}
+.intent-assistant::before {
+  content: "✦";
+}
+.intent-explain::before {
+  content: "💡";
+  font-size: 0.9em;
+}
+.intent-dismiss::before {
+  content: "✕";
+  font-size: 0.85em;
+}
+
+/* The same marks on the tabs that open the same places. */
+.project-tab.assistant-tab::before {
+  content: "✦";
+}
+.session-tab .session-name::before {
+  content: ">_ ";
+  color: #79c0ff;
+  font: 700 10.5px/1 var(--mono);
+  letter-spacing: -0.04em;
+}
+
+/* ------------------------------------------------ a shortcut chip after the words */
+
+button[data-chip]::after {
+  content: attr(data-chip);
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 22%);
+  font: 500 10.5px/1.5 var(--mono);
+  opacity: 0.75;
+}

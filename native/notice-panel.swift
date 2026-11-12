@@ -81,13 +81,19 @@ let webView = NoticeWebView(frame: NSRect(x: 0, y: 0, width: width, height: minH
 webView.navigationDelegate = pageGuard
 webView.uiDelegate = pageGuard
 webView.autoresizingMask = [.width, .height]
+webView.setValue(false, forKey: "drawsBackground")  // the page is see-through, so the panel's glass shows behind it
 
 let panel = NoticePanel(
   contentRect: NSRect(x: 0, y: 0, width: width, height: minHeight),
   styleMask: [.titled, .nonactivatingPanel, .utilityWindow],
   backing: .buffered, defer: false)
 panel.title = "Voice Orchestrator"
-panel.contentView = webView
+/** Holds the page below the see-through title bar, whose buttons would otherwise sit over the page's header. */
+let pageHolder = NSView(frame: NSRect(x: 0, y: 0, width: width, height: minHeight))
+pageHolder.addSubview(webView)
+glaze(panel, around: pageHolder)
+let titlebarInset = titlebarHeight(of: panel)
+webView.frame = NSRect(x: 0, y: 0, width: width, height: pageHolder.bounds.height - titlebarInset)
 panel.level = .floating
 panel.isFloatingPanel = true
 panel.hidesOnDeactivate = false  // this app is never active, so it would never show
@@ -118,10 +124,10 @@ editItem.submenu = editMenu()
 mainMenu.addItem(editItem)
 app.mainMenu = mainMenu
 
-/** Fits the panel to the page's height, keeping its bottom-right corner where it is. */
+/** Fits the panel to the page's height and the title bar above it, keeping its bottom-right corner where it is. */
 func fit(height: CGFloat) {
   let screen = (panel.screen ?? NSScreen.main ?? NSScreen.screens[0]).visibleFrame
-  let contentHeight = min(max(height, minHeight), screen.height * maxScreenShare)
+  let contentHeight = min(max(height + titlebarInset, minHeight), screen.height * maxScreenShare)
   let size = panel.frameRect(forContentRect: NSRect(x: 0, y: 0, width: width, height: contentHeight)).size
   guard abs(size.height - panel.frame.height) >= 1 else { return }
   let frame = panel.frame

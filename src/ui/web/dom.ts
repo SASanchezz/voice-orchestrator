@@ -54,7 +54,7 @@ export function confirmInDialog(dialog: HTMLDialogElement, onConfirm: () => void
   };
   dialog.addEventListener("close", onClose, { once: true });
   dialog.showModal();
-  dialog.querySelector<HTMLButtonElement>(".ghost")?.focus(); // Enter must not confirm by accident
+  dialog.querySelector<HTMLButtonElement>(".ghost, .intent-dismiss")?.focus(); // Enter must not confirm by accident
 }
 
 export function collapsible(summary: string, body: HTMLElement): HTMLDetailsElement {

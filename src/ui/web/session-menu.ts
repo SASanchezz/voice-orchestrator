@@ -21,7 +21,7 @@ const closeAllDialog = el(
     el(
       "div",
       { class: "dialog-actions" },
-      el("button", { value: "cancel", class: "ghost" }, "Cancel"),
+      el("button", { value: "cancel", class: "intent-dismiss" }, "Cancel"),
       el("button", { value: "confirm", class: "danger" }, "Close sessions"),
     ),
   ),

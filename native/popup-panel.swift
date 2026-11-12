@@ -15,6 +15,8 @@ let usageExitCode: Int32 = 64
 let width: CGFloat = 420
 let padding: CGFloat = 16
 let screenMargin: CGFloat = 12
+/** Between the see-through title bar and the title, which sits under it instead of below a solid bar. */
+let titlebarGap: CGFloat = 4
 let positionalCount = 4
 
 let arguments = Array(CommandLine.arguments.dropFirst())
@@ -91,23 +93,40 @@ warningLabel.isHidden = warning.isEmpty
 let commandLabel = wrappingLabel(command, font: .monospacedSystemFont(ofSize: 11, weight: .regular), color: .secondaryLabelColor)
 commandLabel.isHidden = command.isEmpty
 
-let answerButtons = buttonOptions().map { option -> NSButton in
+func approves(_ answer: String) -> Bool {
+  answer == "allow" || answer.hasPrefix("confirm:")
+}
+
+/** A question's options numbered; Allow and Confirm green, or red under a warning; Deny and Cancel clear. */
+func look(for answer: String, at index: Int) -> ButtonLook {
+  if stacked { return optionLook(number: index + 1) }
+  if !approves(answer) { return dismissLook }
+  return warning.isEmpty ? allowLook : destructiveLook
+}
+
+let answerButtons = buttonOptions().enumerated().map { index, option -> NSButton in
   let button = NSButton(title: option.label, target: clicks, action: #selector(Clicks.clicked(_:)))
   button.identifier = NSUserInterfaceItemIdentifier(option.answer)
-  let approves = option.answer == "allow" || option.answer.hasPrefix("confirm:")
-  button.hasDestructiveAction = approves && !warning.isEmpty
+  button.hasDestructiveAction = approves(option.answer) && !warning.isEmpty
+  dress(button, as: look(for: option.answer, at: index))
   return button
 }
 let buttons = NSStackView(views: stacked ? answerButtons : [NSView()] + answerButtons)
 buttons.orientation = stacked ? .vertical : .horizontal
 buttons.alignment = stacked ? .leading : .centerY
+if stacked {
+  answerButtons.forEach { $0.widthAnchor.constraint(equalTo: buttons.widthAnchor).isActive = true }
+}
 
 let ownAnswer = NSTextField(string: "")
 ownAnswer.placeholderString = ownAnswerPlaceholder
 ownAnswer.cell?.sendsActionOnEndEditing = false
 ownAnswer.target = clicks
 ownAnswer.action = #selector(Clicks.sent(_:))
-let ownAnswerRow = NSStackView(views: [ownAnswer, NSButton(title: "Send", target: clicks, action: #selector(Clicks.sent(_:)))])
+let sendButton = NSButton(title: "Send", target: clicks, action: #selector(Clicks.sent(_:)))
+dress(sendButton, as: sendLook)
+ownAnswer.controlSize = .large
+let ownAnswerRow = NSStackView(views: [ownAnswer, sendButton])
 ownAnswerRow.orientation = .horizontal
 ownAnswerRow.isHidden = ownAnswerPlaceholder == nil
 
@@ -127,7 +146,8 @@ let panel = NSPanel(
   styleMask: [.titled, .nonactivatingPanel, .utilityWindow],
   backing: .buffered, defer: false)
 panel.title = "Voice Orchestrator"
-panel.contentView = content
+glaze(panel, around: content)
+content.edgeInsets.top = titlebarHeight(of: panel) + titlebarGap
 panel.level = .floating
 panel.isFloatingPanel = true
 panel.hidesOnDeactivate = false  // this app is never active, so it would never show

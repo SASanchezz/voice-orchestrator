@@ -95,8 +95,8 @@
   flex: none;
 }
 .review-button.shown {
-  border-color: var(--accent);
-  background: var(--accent-soft);
+  border-color: var(--ok);
+  background: var(--glass-sheen-hover), color-mix(in srgb, var(--ok) 42%, var(--surface));
 }
 
 /* ---------------------------------------------------------------- session tab menu */

@@ -9,6 +9,7 @@ import { closeUntouched, markShownSeen, runCommand } from "./notice-commands.js"
 import { box, isBusy, pointer, render } from "./notice-page.js";
 import { commandOfKey, isNoticeCommand } from "./notice-shortcuts.js";
 import { followPointer, reportHeight } from "./panel-bridge.js";
+import { showShortcutChips } from "./shortcut-chips.js";
 
 const autoClose = new AutoClose(isBusy, closeUntouched);
 const replyInput = byId("reply-input", HTMLTextAreaElement);
@@ -67,6 +68,7 @@ store.onChange(() => {
 });
 document.addEventListener("pointerdown", markShownSeen, { capture: true });
 document.addEventListener("keydown", markShownSeen, { capture: true });
+showShortcutChips();
 wireClicks();
 wireReply(); // before wireKeys: Esc discards a recording before it closes anything
 wireKeys();

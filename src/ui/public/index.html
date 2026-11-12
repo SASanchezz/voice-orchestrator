@@ -28,15 +28,22 @@
     <link rel="stylesheet" href="/styles/todo.css" />
     <link rel="stylesheet" href="/styles/force-stop.css" />
     <link rel="stylesheet" href="/styles/code.css" />
+    <link rel="stylesheet" href="/styles/code-roles.css" />
     <link rel="stylesheet" href="/styles/resize.css" />
     <link rel="stylesheet" href="/styles/messengers.css" />
+    <link rel="stylesheet" href="/styles/buttons.css" />
   </head>
   <body>
     <header class="topbar">
       <span class="connection" id="connection" title="Disconnected"></span>
       <nav id="project-tabs" class="project-tabs" aria-label="Projects"></nav>
       <div id="plan-usage" class="plan-usage" hidden></div>
-      <button type="button" id="review-button" class="ghost review-button" title="Every project's changes in one place">
+      <button
+        type="button"
+        id="review-button"
+        class="intent-review review-button"
+        title="Every project's changes in one place"
+      >
         Review
       </button>
       <div class="segmented" id="view-mode" role="radiogroup" aria-label="View" hidden>
@@ -199,7 +206,9 @@
       <div id="voice-status" class="voice-status" hidden>
         <span id="voice-status-text" class="voice-status-text" aria-live="polite"></span>
         <span id="voice-draft" class="voice-draft" hidden></span>
-        <button type="button" id="voice-discard" class="ghost" title="Discard this voice message (Esc)">Cancel</button>
+        <button type="button" id="voice-discard" class="intent-dismiss" title="Discard this voice message (Esc)">
+          Cancel
+        </button>
       </div>
       <p id="latest-reply" class="latest-reply"></p>
       <button type="button" id="chat-toggle" class="ghost chat-toggle" hidden>Chat</button>
@@ -213,7 +222,7 @@
         <pre id="confirm-command" class="command"></pre>
         <p class="muted">This runs once. Destructive actions can't be always allowed.</p>
         <div class="dialog-actions">
-          <button value="cancel" class="ghost" title="Cancel (Esc)">Cancel</button>
+          <button value="cancel" class="intent-dismiss" title="Cancel (Esc)">Cancel</button>
           <button value="confirm" class="danger" id="confirm-button">Allow once</button>
         </div>
       </form>
@@ -224,7 +233,7 @@
         <h2>Restart the orchestrator?</h2>
         <p id="restart-warning" class="explanation"></p>
         <div class="dialog-actions">
-          <button value="cancel" class="ghost" title="Cancel (Esc)">Cancel</button>
+          <button value="cancel" class="intent-dismiss" title="Cancel (Esc)">Cancel</button>
           <button value="confirm" class="danger">Restart</button>
         </div>
       </form>
@@ -240,7 +249,7 @@
         <ul id="messenger-status-list" class="messenger-status-list"></ul>
         <div id="messenger-guides" class="messenger-guides"></div>
         <div class="dialog-actions">
-          <button value="close" class="ghost" title="Close (Esc)">Close</button>
+          <button value="close" class="intent-dismiss" title="Close (Esc)">Close</button>
         </div>
       </form>
     </dialog>
@@ -274,7 +283,7 @@
           <select id="todo-project-input"></select>
         </label>
         <div class="dialog-actions">
-          <button type="button" id="todo-cancel" class="ghost" title="Cancel (Esc)">Cancel</button>
+          <button type="button" id="todo-cancel" class="intent-dismiss" title="Cancel (Esc)">Cancel</button>
           <button value="save" class="primary">Save</button>
         </div>
       </form>

@@ -1,8 +1,12 @@
 /* The notice panel: one ended task to read, its buttons, and a box to reply to its worker. The native panel fits its
    height to the page, up to most of the screen; past that the note scrolls and the rest stays put. */
 
+/* Mostly solid, with only a little of the native panel's glass showing through at the edges. */
+html:has(body.notice-page) {
+  background: transparent;
+}
 body.notice-page {
-  background: var(--surface);
+  background: rgb(13 17 23 / 35%);
   font-size: 13.5px;
 }
 
@@ -95,18 +99,6 @@ body.notice-page {
   margin: 0;
   color: var(--danger);
   font-size: 12.5px;
-}
-
-.notice-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.notice-actions button {
-  padding: 4px 10px;
-}
-.notice-actions .close-all {
-  margin-left: auto;
 }
 
 .reply-fields {
