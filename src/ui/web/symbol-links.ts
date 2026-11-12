@@ -1,6 +1,7 @@
 // VS Code's links on names in code: ⌘-click (Ctrl-click elsewhere) jumps, and holding the key shows what would link.
 
-import { codePieces } from "../code-symbols.js";
+import { type CodePiece, codePieces } from "../code-symbols.js";
+import { symbolRole } from "../symbol-roles.js";
 import { el } from "./dom.js";
 
 const SYMBOL_CLASS = "diff-symbol";
@@ -9,6 +10,21 @@ const KEYS_HELD_CLASS = "symbol-keys-held";
 /** A line of code as text, with each name in its own span. */
 export function codeWithSymbols(line: string): (HTMLElement | string)[] {
   return codePieces(line).map(({ text, isSymbol }) => (isSymbol ? el("span", { class: SYMBOL_CLASS }, text) : text));
+}
+
+/** As codeWithSymbols, with each name also marked as a class, method or variable for colouring. */
+export function codeWithColouredSymbols(line: string): (HTMLElement | string)[] {
+  const pieces = codePieces(line);
+  return pieces.map((piece, index) => colouredPiece(piece, textAfter(pieces, index)));
+}
+
+function colouredPiece({ text, isSymbol }: CodePiece, after: string): HTMLElement | string {
+  if (!isSymbol) return text;
+  return el("span", { class: `${SYMBOL_CLASS} symbol-${symbolRole(text, after)}` }, text);
+}
+
+function textAfter(pieces: CodePiece[], index: number): string {
+  return pieces.at(index + 1)?.text ?? "";
 }
 
 /** Runs before the row's own click, so jumping doesn't also aim a comment. */

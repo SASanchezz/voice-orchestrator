@@ -1,0 +1,10 @@
+/* Muted colours for names in the definition peek; keywords and punctuation keep the plain text colour. */
+.peek-code .symbol-class {
+  color: #e2c08d;
+}
+.peek-code .symbol-method {
+  color: #c4b5fd;
+}
+.peek-code .symbol-variable {
+  color: #9cc4e4;
+}

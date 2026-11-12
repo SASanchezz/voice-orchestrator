@@ -4,7 +4,7 @@
 import type { DefinitionView } from "../change-views.js";
 import { fetchDefinitions } from "./api.js";
 import { button, byId, el } from "./dom.js";
-import { codeWithSymbols, onSymbolClick } from "./symbol-links.js";
+import { codeWithColouredSymbols, onSymbolClick } from "./symbol-links.js";
 
 let latestLookup = 0;
 
@@ -37,7 +37,7 @@ function renderPeek(symbol: string, body: HTMLElement): void {
     { class: "peek-head" },
     el("strong", {}, symbol),
     el("span", { class: "muted" }, "definitions"),
-    button("Close", "ghost", closeDefinitions),
+    button("Close", "intent-dismiss", closeDefinitions),
   );
   peek.replaceChildren(head, body);
   peek.hidden = false;
@@ -72,6 +72,6 @@ function selectPlace(place: HTMLButtonElement, definition: DefinitionView, code:
 
 function snippetRow(line: number, text: string, targetLine: number): HTMLDivElement {
   const number = el("span", { class: "diff-number" }, String(line));
-  const code = el("span", { class: "diff-text" }, ...codeWithSymbols(text));
+  const code = el("span", { class: "diff-text" }, ...codeWithColouredSymbols(text));
   return el("div", { class: `diff-line${line === targetLine ? " peek-target" : ""}` }, number, code);
 }
