@@ -80,6 +80,14 @@ export interface PendingQuestionView {
   createdAt: number;
 }
 
+/** A wake word training going on in the background. */
+export interface WakeTrainingView {
+  /** Epoch ms. */
+  startedAt: number;
+  /** The last progress line it printed; empty until the first. */
+  step: string;
+}
+
 /** Your voice message, waiting while you choose whether the files in the draft go with it. */
 export interface VoiceOfferView {
   id: string;
@@ -96,6 +104,8 @@ export interface UiState {
   gestures: GestureStateName;
   /** The wake word, switched apart from gestures; off means the mic is open only while you talk. */
   wakeWord: WakeWordStateName;
+  /** Set while the wake word trains in the background: no other training, recording or deletion until it ends. */
+  wakeTraining?: WakeTrainingView;
   voiceInput: VoiceInputName;
   voiceOffer?: VoiceOfferView;
   /** The confirm phrases the assistant asked you to say, e.g. ["push"]; Confirm buttons answer them. */

@@ -1,9 +1,13 @@
 // ⚙ › Wake word › Train…: record yourself saying the wake word and other talk, train a model on it, and try it out;
-// Review recordings opens a window to listen back and delete poor takes. Each step records from the Mac's mic or
-// trains, and the server answers when it's done.
+// Review recordings opens a window to listen back and delete poor takes. Each recording step answers when it's done;
+// training goes on in the background, so the window can be closed, and you hear how it went. Until it ends, every
+// step stays off, here and in other tabs: a second training, or a recording changed under it, would be refused; the
+// status line shows how long it has run and what it is doing.
 
 import { fetchWakeRecordings, post } from "./api.js";
 import { button, byId, el } from "./dom.js";
+import { store } from "./store.js";
+import { TrainingClock } from "./wake-training-clock.js";
 import { createWakeReview } from "./wake-review-dialog.js";
 
 interface WakeStep {
@@ -24,7 +28,7 @@ const STEPS: Record<string, WakeStep> = {
     body: { label: "other" },
     doing: "Recording for 6 seconds: talk about anything else, or let the room be as it usually is…",
   },
-  train: { path: "/api/wake-training/train", body: {}, doing: "Training… (see the terminal for progress)" },
+  train: { path: "/api/wake-training/train", body: {}, doing: "Starting training…" },
   try: { path: "/api/wake-training/try", body: {}, doing: "Listening for 3 seconds: say it now…" },
 };
 const STATUS_PATH = "/api/wake-training/status";
@@ -34,6 +38,12 @@ const REVIEW_HINT = "Listen back to your recordings, and delete the poor ones be
 
 type StatusLook = "is-working" | "is-refused" | "";
 
+/** A step clicked here is waiting for its answer. */
+let stepRunning = false;
+/** As the server last said: whether a training was going on. */
+let wasTraining = false;
+const trainingClock = new TrainingClock((text) => showStatus(text, "is-working"));
+
 export function wireWakeTraining(): void {
   const dialog = byId("wake-training-dialog", HTMLDialogElement);
   addReviewButton(dialog);
@@ -41,6 +51,18 @@ export function wireWakeTraining(): void {
   for (const stepButton of stepButtons(dialog)) {
     stepButton.addEventListener("click", () => void runStep(dialog, stepButton));
   }
+  store.onChange(() => followTraining(dialog));
+}
+
+/** Once a training ends, an open window shows the recordings again, and its steps come back on. */
+function followTraining(dialog: HTMLDialogElement): void {
+  const { wakeTraining } = store.state;
+  const finished = wasTraining && !wakeTraining;
+  wasTraining = Boolean(wakeTraining);
+  renderStepButtons(dialog);
+  if (wakeTraining) return trainingClock.follow(wakeTraining);
+  trainingClock.stop();
+  if (finished && dialog.open) void answer(dialog, STATUS_PATH, {});
 }
 
 async function openTraining(dialog: HTMLDialogElement): Promise<void> {
@@ -77,23 +99,22 @@ async function showRecordingCount(dialog: HTMLDialogElement): Promise<void> {
 
 /** Every step button waits for the answer: two recordings at once would talk over each other. */
 async function answer(dialog: HTMLDialogElement, path: string, body: object): Promise<void> {
-  disableSteps(dialog);
+  stepRunning = true;
+  renderStepButtons(dialog);
   try {
     showStatus((await post(path, body)) ?? "", "");
   } catch (error) {
     showStatus(error instanceof Error ? error.message : String(error), "is-refused");
   } finally {
     await showRecordingCount(dialog);
-    enableSteps(dialog);
+    stepRunning = false;
+    renderStepButtons(dialog);
   }
 }
 
-function disableSteps(dialog: HTMLDialogElement): void {
-  for (const stepButton of stepButtons(dialog)) stepButton.disabled = true;
-}
-
-function enableSteps(dialog: HTMLDialogElement): void {
-  for (const stepButton of stepButtons(dialog)) stepButton.disabled = false;
+function renderStepButtons(dialog: HTMLDialogElement): void {
+  const isLocked = stepRunning || Boolean(store.state.wakeTraining);
+  for (const stepButton of stepButtons(dialog)) stepButton.disabled = isLocked;
 }
 
 function stepButtons(dialog: HTMLDialogElement): HTMLButtonElement[] {

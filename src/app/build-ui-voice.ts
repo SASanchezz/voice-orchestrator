@@ -4,9 +4,9 @@ import { VoiceOfferActions } from "../ui/server/voice-offer-actions.js";
 import { VoiceViews } from "../ui/server/voice-views.js";
 import type { OperatorDevices } from "./operator-types.js";
 
-/** The voice side of the page, with the Gestures and Wake word switches it shows. */
-export function voiceViews(operator: OperatorParts, { gestures, wakeWord }: OperatorDevices): VoiceViews {
-  return new VoiceViews(operator, gestures, wakeWord);
+/** The voice side of the page, with the Gestures and Wake word switches it shows, and whether training goes on. */
+export function voiceViews(operator: OperatorParts, { gestures, wakeWord, wakeTraining }: OperatorDevices): VoiceViews {
+  return new VoiceViews(operator, { gestures, wakeWord, wakeTraining });
 }
 
 /** What the page's voice message buttons, its mic button, the Gestures and Wake word switches and wake word training act on. */

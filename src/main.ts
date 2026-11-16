@@ -16,6 +16,7 @@ import { errorMessage } from "./shared/errors.js";
 import { UnavailableDictation } from "./voice/dictation.js";
 import { TextVoice } from "./voice/text-voice.js";
 import { UnavailableWakeWord, WakeSwitch } from "./wake/wake-switch.js";
+import { TrainingNews } from "./wake/training-news.js";
 import { UnavailableWakeTraining } from "./wake/wake-training.js";
 
 /** Time for workers to stop before the process exits. */
@@ -32,8 +33,9 @@ const voice = mac?.voice ?? new TextVoice();
 const dictation = mac?.dictation ?? new UnavailableDictation();
 const gestures = mac ? new GestureSwitch(gestureSetting(cfg.sensors.gestures)) : undefined; // text mode has no mic
 const wakeWord = mac ? new WakeSwitch(wakeWordSetting()) : undefined;
+const trainingNews = new TrainingNews();
 const wakeTraining = wakeWord
-  ? buildWakeTraining(cfg.sensors.wakeWord, cfg.voice.recordBin, wakeWord)
+  ? buildWakeTraining(cfg, wakeWord, trainingNews)
   : new UnavailableWakeTraining("Wake word training needs the mic, and text mode has none.");
 const snapshots = new SensorSnapshots(); // the camera's frames come from the gesture sensor while it runs
 const app = buildApp(
@@ -52,6 +54,7 @@ const app = buildApp(
   ),
 );
 
+trainingNews.connect(app.operator.orchestrator);
 mac?.voice.endRecordingWhen((words) => app.permissions.spoken.canAnswer(words)); // "allow commit" needs no "finish"
 await openUi(cfg, app);
 app.editor.server.start(); // once the UI has made the token file it reads

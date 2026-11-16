@@ -1,13 +1,14 @@
+import type { WakeTrainingView } from "../ui/protocol.js";
 import type { WakeRecordingView } from "../ui/wake-recording-views.js";
 import type { RecordingLabel, TrainingCommand } from "./training-command.js";
 import { deletedReply, samplesReply, trainedReply, triedReply } from "./training-replies.js";
 import type { RecordingRef, WakeRecordings } from "./wake-recordings.js";
 import type { WakeSwitch } from "./wake-switch.js";
 
-const BUSY = "Wait a moment: the last recording or training hasn't finished.";
+export const BUSY = "Wait a moment: the last recording or training hasn't finished.";
 
-/** The web UI's Train wake word dialog: record yourself, listen back, delete poor takes, train, and try it out. */
-export interface WakeTrainingControl {
+/** The steps of training: record yourself, listen back, delete poor takes, train, and try it out. */
+export interface WakeTrainingSteps {
   status(): Promise<string>;
   record(label: RecordingLabel): Promise<string>;
   train(): Promise<string>;
@@ -18,6 +19,13 @@ export interface WakeTrainingControl {
   deleteRecordings(recordings: RecordingRef[]): Promise<string>;
 }
 
+/** The web UI's Train wake word dialog: the steps, and whether a training goes on without it. */
+export interface WakeTrainingControl extends WakeTrainingSteps {
+  isTraining(): boolean;
+  /** While training: how long it has run, and what it is doing now. */
+  progressView(): WakeTrainingView;
+}
+
 type Listener = Pick<WakeSwitch, "pausedDuring" | "state">;
 type TrainingSteps = Pick<TrainingCommand, "samples" | "record" | "train" | "tryOut">;
 type Recordings = Pick<WakeRecordings, "list" | "pathOf" | "deleteAll">;
@@ -26,7 +34,7 @@ type Recordings = Pick<WakeRecordings, "list" | "pathOf" | "deleteAll">;
  * Trains the wake word in sensors/wake, one step at a time. The listener is paused while a step uses the mic or the
  * model, so it doesn't wake on a training recording, and starts again afterwards with the newly trained model.
  */
-export class WakeTraining implements WakeTrainingControl {
+export class WakeTraining implements WakeTrainingSteps {
   private busy = false;
 
   constructor(
@@ -37,6 +45,11 @@ export class WakeTraining implements WakeTrainingControl {
 
   async status(): Promise<string> {
     return samplesReply(await this.command.samples());
+  }
+
+  /** A recording, training or deletion is going on, so the next step would be refused. */
+  isBusy(): boolean {
+    return this.busy;
   }
 
   record(label: RecordingLabel): Promise<string> {
@@ -101,6 +114,14 @@ export class UnavailableWakeTraining implements WakeTrainingControl {
 
   tryOut(): Promise<string> {
     return this.refuse();
+  }
+
+  isTraining(): boolean {
+    return false;
+  }
+
+  progressView(): WakeTrainingView {
+    throw new Error(this.reason);
   }
 
   recordings(): WakeRecordingView[] {

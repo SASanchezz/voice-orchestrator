@@ -4,11 +4,13 @@ import type { VoiceHold } from "../../orchestrator/conversation/voice-hold.js";
 import type { Orchestrator } from "../../orchestrator/orchestrator.js";
 import type { GestureControl } from "../../sensors/gesture-switch.js";
 import type { WakeWordControl } from "../../wake/wake-switch.js";
+import type { WakeTrainingControl } from "../../wake/wake-training.js";
 import type {
   GestureStateName,
   SpeechModeName,
   VoiceInputName,
   VoiceOfferView,
+  WakeTrainingView,
   WakeWordStateName,
 } from "../protocol.js";
 
@@ -18,6 +20,13 @@ export interface VoiceParts {
   voiceHold: VoiceHold;
   voiceCancel: VoiceCancel;
   confirmAsk: ConfirmAsk;
+}
+
+/** The sensors' switches the page shows, and whether the wake word is training. */
+export interface VoiceDevices {
+  gestures: GestureControl;
+  wakeWord: WakeWordControl;
+  wakeTraining: Pick<WakeTrainingControl, "isTraining" | "progressView">;
 }
 
 /**
@@ -33,8 +42,7 @@ export class VoiceViews {
 
   constructor(
     { orchestrator, voiceHold, voiceCancel, confirmAsk }: VoiceParts,
-    private gestureControl: GestureControl,
-    private wakeWordControl: WakeWordControl,
+    private devices: VoiceDevices,
   ) {
     this.orchestrator = orchestrator;
     this.hold = voiceHold;
@@ -47,11 +55,16 @@ export class VoiceViews {
   }
 
   get gestures(): GestureStateName {
-    return this.gestureControl.state;
+    return this.devices.gestures.state;
   }
 
   get wakeWord(): WakeWordStateName {
-    return this.wakeWordControl.state;
+    return this.devices.wakeWord.state;
+  }
+
+  get wakeTraining(): WakeTrainingView | undefined {
+    const { wakeTraining } = this.devices;
+    return wakeTraining.isTraining() ? wakeTraining.progressView() : undefined;
   }
 
   /** A spoken message queued behind a reply in progress shows too, since it can still be discarded. */

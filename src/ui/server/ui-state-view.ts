@@ -21,6 +21,7 @@ export class UiStateView {
       speechMode: this.voice.speechMode,
       gestures: this.voice.gestures,
       wakeWord: this.voice.wakeWord,
+      wakeTraining: this.voice.wakeTraining,
       voiceInput: this.voice.voiceInput,
       voiceOffer: this.voice.offer(),
       confirmVerbs: this.voice.confirmVerbs,

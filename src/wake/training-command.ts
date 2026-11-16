@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { createInterface } from "node:readline";
 import type { SensorCommand } from "../sensors/restarting-process.js";
+import type { TrainingProgress } from "./training-progress.js";
 import {
   readTrainingLine,
   type SamplesEvent,
@@ -18,12 +19,13 @@ type EventOf<Type extends TrainingEventType> = Extract<TrainingEvent, { type: Ty
 
 /**
  * The wake listener's training commands (sensors/wake), each run once to its JSON result. Their progress goes to the
- * terminal; a failure is thrown with the listener's own reason.
+ * terminal, and its latest line to `progress`; a failure is thrown with the listener's own reason.
  */
 export class TrainingCommand {
   constructor(
     private python: SensorCommand,
     private recordBin: string,
+    private progress: Pick<TrainingProgress, "heard">,
   ) {}
 
   samples(): Promise<SamplesEvent> {
@@ -54,7 +56,8 @@ export class TrainingCommand {
   }
 
   private lastEvent(args: string[]): Promise<TrainingEvent> {
-    const child = spawn(this.python.bin, args, { stdio: ["ignore", "pipe", "inherit"] });
+    const child = spawn(this.python.bin, args, { stdio: ["ignore", "pipe", "pipe"] });
+    createInterface({ input: child.stderr }).on("line", (line) => this.showProgress(line));
     const events: TrainingEvent[] = [];
     createInterface({ input: child.stdout }).on("line", (line) => {
       const parsed = readTrainingLine(line);
@@ -68,5 +71,10 @@ export class TrainingCommand {
         else reject(new Error(`Wake word training stopped (exit code ${String(code)}) with no result.`));
       });
     });
+  }
+
+  private showProgress(line: string): void {
+    console.error(line);
+    this.progress.heard(line);
   }
 }
