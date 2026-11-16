@@ -82,12 +82,12 @@ function renderUncommittedDiffs(view: ProjectChangesView | undefined): void {
 
 /** A comparison changes only when you pick branches or press Refresh, so it reloads at once. */
 function renderComparedDiffs(project: string): void {
-  const { comparison, files } = comparisonOf(project);
+  const { repository, comparison, files } = comparisonOf(project);
   if ("note" in files) {
     forgetLoadedDiffs();
     return showDiffNote(files.note);
   }
-  const source = branchSource(project, comparison);
+  const source = branchSource(project, repository, comparison);
   const isLoaded = source.key === loadedSource && changesVersion(files.view) === loadedVersion;
   if (!isLoaded) loadDiffs(files.view, source);
 }

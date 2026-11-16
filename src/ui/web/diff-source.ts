@@ -16,7 +16,7 @@ export function uncommittedSource(project: string): DiffSource {
   return { project, key: `${project}\nchanges`, route: changesRoute(project), canStage: true };
 }
 
-export function branchSource(project: string, comparison: ComparisonView): DiffSource {
-  const key = `${project}\n${comparison.head}\n${comparison.base}`;
-  return { project, key, route: comparisonRoute(project, comparison), canStage: false };
+export function branchSource(project: string, repository: string, comparison: ComparisonView): DiffSource {
+  const key = `${project}\n${repository}\n${comparison.head}\n${comparison.base}`;
+  return { project, key, route: comparisonRoute(project, repository, comparison), canStage: false };
 }

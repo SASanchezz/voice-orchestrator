@@ -6,7 +6,7 @@ import type { ComparisonView, ProjectChangesView } from "../change-views.js";
 import { linesQuery, sendJson } from "./changes-routes.js";
 import { HTTP_STATUS, HttpError } from "./http-error.js";
 import type { UiAccess } from "./ui-access.js";
-import type { UiLookup } from "./ui-lookup.js";
+import type { RepositoryLookup } from "./repository-lookup.js";
 
 /** A leading dash would read as an option to git. */
 const branchName = z
@@ -14,25 +14,35 @@ const branchName = z
   .min(1)
   .refine((name) => !name.startsWith("-"));
 const comparisonQuery = z.object({ base: branchName, head: branchName });
+/** Missing for the project's own folder. */
+const repositoryQuery = z.object({ repository: z.string().default("") });
 /** The fingerprint of a branch's diff is the head commit its hidden lines are read from. */
 const comparedLinesQuery = linesQuery.and(z.object({ fingerprint: z.string().regex(/^[0-9a-f]{40}([0-9a-f]{24})?$/) }));
 
-/** What the Review view reads to compare two branches: the branches, the files that differ, and one file's diff. */
+/**
+ * What the Review view reads to compare two branches: the project's repositories, a repository's branches, the files
+ * that differ, and one file's diff.
+ */
 export class CompareRoutes {
   constructor(
     private access: UiAccess,
-    private lookup: UiLookup,
+    private repositories: RepositoryLookup,
     private compare: BranchCompare,
   ) {}
 
+  async repositoryList(url: URL, project: string, res: ServerResponse): Promise<void> {
+    this.access.requireToken(url.searchParams.get("token"), "Bad token");
+    sendJson(res, await this.repositories.list(project));
+  }
+
   async branches(url: URL, project: string, res: ServerResponse): Promise<void> {
     this.access.requireToken(url.searchParams.get("token"), "Bad token");
-    sendJson(res, await this.compare.branchesOf(this.lookup.folderOf(project)));
+    sendJson(res, await this.compare.branchesOf(this.folderOf(url, project)));
   }
 
   async files(url: URL, project: string, res: ServerResponse): Promise<void> {
     this.access.requireToken(url.searchParams.get("token"), "Bad token");
-    sendJson(res, await this.readFiles(project, comparisonOf(url)));
+    sendJson(res, await this.readFiles(url, project));
   }
 
   async fileDiff(url: URL, project: string, res: ServerResponse): Promise<void> {
@@ -49,9 +59,11 @@ export class CompareRoutes {
   }
 
   /** A branch that doesn't exist is a missing page, not a broken server. */
-  private async readFiles(project: string, comparison: ComparisonView): Promise<ProjectChangesView> {
+  private async readFiles(url: URL, project: string): Promise<ProjectChangesView> {
+    const folder = this.folderOf(url, project);
+    const comparison = comparisonOf(url);
     try {
-      return await this.compare.ofProject(project, this.lookup.folderOf(project), comparison);
+      return await this.compare.ofProject(project, folder, comparison);
     } catch (e) {
       throw new HttpError(HTTP_STATUS.notFound, errorMessage(e));
     }
@@ -59,12 +71,17 @@ export class CompareRoutes {
 
   /** Only files that differ between the branches can be read, so a request can't name anything else. */
   private async requireCompared(url: URL, project: string): Promise<ComparedFile> {
-    const folder = this.lookup.folderOf(project);
+    const folder = this.folderOf(url, project);
     const comparison = comparisonOf(url);
     const path = url.searchParams.get("path") ?? "";
     const isCompared = await this.compare.isChanged(folder, comparison, path).catch(() => false);
     if (!isCompared) throw new HttpError(HTTP_STATUS.notFound, `No changes in ${path}`);
     return [folder, comparison, path];
+  }
+
+  private folderOf(url: URL, project: string): string {
+    const { repository } = repositoryQuery.parse(Object.fromEntries(url.searchParams));
+    return this.repositories.folderOf(project, repository);
   }
 }
 

@@ -6,11 +6,13 @@ import type {
   DefinitionView,
   FileDiffView,
   ProjectChangesView,
+  RepositoryView,
 } from "../change-views.js";
 import type { MessengerStatusView } from "../messenger-status-views.js";
 import type { AccountUsageView } from "../plan-usage-views.js";
 import type { ActionReply, ChatMessageView, ServerEvents } from "../protocol.js";
 import type { WakeRecordingView } from "../wake-recording-views.js";
+import { PAGE_ID } from "./page-id.js";
 
 export interface HiddenLinesRequest {
   from: number;
@@ -88,8 +90,9 @@ export function changesRoute(project: string): DiffRoute {
   return { path: `${projectPath(project)}/changes`, params: {} };
 }
 
-export function comparisonRoute(project: string, { base, head }: ComparisonView): DiffRoute {
-  return { path: `${projectPath(project)}/compare`, params: { base, head } };
+/** An empty `repository` is the project's own folder. */
+export function comparisonRoute(project: string, repository: string, { base, head }: ComparisonView): DiffRoute {
+  return { path: `${projectPath(project)}/compare`, params: { base, head, repository } };
 }
 
 /** One changed file's diff; a file that stopped being changed has none. */
@@ -106,14 +109,24 @@ export async function fetchHiddenLines(route: DiffRoute, path: string, request: 
   return await replyOf<string[]>(res);
 }
 
-/** A project's local and remote branches. */
-export async function fetchBranches(project: string): Promise<BranchListView> {
-  return await replyOf<BranchListView>(await fetch(urlOf(`${projectPath(project)}/branches`, {})));
+/** The project's own repository, or the ones directly inside its folder. */
+export async function fetchRepositories(project: string): Promise<RepositoryView[]> {
+  return await replyOf<RepositoryView[]>(await fetch(urlOf(`${projectPath(project)}/repositories`, {})));
+}
+
+/** A repository's local and remote branches. */
+export async function fetchBranches(project: string, repository: string): Promise<BranchListView> {
+  const res = await fetch(urlOf(`${projectPath(project)}/branches`, { repository }));
+  return await replyOf<BranchListView>(res);
 }
 
 /** The files a branch changed since it left its base; refuses, with the reason, when a branch doesn't exist. */
-export async function fetchComparison(project: string, comparison: ComparisonView): Promise<ProjectChangesView> {
-  const route = comparisonRoute(project, comparison);
+export async function fetchComparison(
+  project: string,
+  repository: string,
+  comparison: ComparisonView,
+): Promise<ProjectChangesView> {
+  const route = comparisonRoute(project, repository, comparison);
   return await replyOf<ProjectChangesView>(await fetch(urlOf(route.path, route.params)));
 }
 
@@ -157,8 +170,9 @@ export function attachedImageUrl(path: string): string {
   return `/api/attachments?path=${encodeURIComponent(path)}&token=${encodeURIComponent(token)}`;
 }
 
+/** The stream says which page it is, so the server can tell this page about the recordings meant for its box. */
 export function openEvents(): EventSource {
-  return new EventSource(`/api/events?token=${encodeURIComponent(token)}`);
+  return new EventSource(`/api/events?token=${encodeURIComponent(token)}&page=${PAGE_ID}`);
 }
 
 /** Listens for one kind of server event, with its payload already parsed. */

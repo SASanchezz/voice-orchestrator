@@ -24,6 +24,14 @@ export interface ProjectChangesView {
   moreFiles: number;
 }
 
+/** A git repository whose branches a project's Review can compare. */
+export interface RepositoryView {
+  /** Inside the project's folder; empty when the project's folder is in the repository itself. */
+  folder: string;
+  /** Empty on a detached HEAD. */
+  current: string;
+}
+
 /** A project's branches, local and remote, for comparing one with another. */
 export interface BranchListView {
   /** Empty on a detached HEAD or outside a repository. */

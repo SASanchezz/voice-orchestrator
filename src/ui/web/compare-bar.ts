@@ -1,5 +1,5 @@
 // The bar over the Review view's diffs: the selected project's uncommitted changes, or what one of its branches adds
-// to another, as a pull request would show it.
+// to another, as a pull request would show it, in the repository picked when its folder holds several.
 
 import {
   compareBranches,
@@ -10,6 +10,7 @@ import {
   stopComparing,
 } from "./branch-comparison.js";
 import { button, byId, el } from "./dom.js";
+import { repositoriesKey, repositoryPickers } from "./repository-picker.js";
 import { store } from "./store.js";
 
 export function renderCompareBar(): void {
@@ -19,13 +20,14 @@ export function renderCompareBar(): void {
   const key = project ? barKey(project) : "";
   if (!project || bar.dataset.key === key) return; // redrawing would close a branch list you have open
   bar.dataset.key = key;
-  bar.replaceChildren(modeButtons(project), ...branchPickers(project));
+  bar.replaceChildren(modeButtons(project), ...comparisonPickers(project));
 }
 
 function barKey(project: string): string {
   if (!isComparing(project)) return `${project}\nchanges`;
-  const { branches, comparison } = comparisonOf(project);
-  return [project, comparison.head, comparison.base, ...branches.branches].join("\n");
+  const entry = comparisonOf(project);
+  const { branches, comparison } = entry;
+  return [project, repositoriesKey(entry), comparison.head, comparison.base, ...branches.branches].join("\n");
 }
 
 function modeButtons(project: string): HTMLDivElement {
@@ -43,8 +45,12 @@ function modeButton(label: string, isShown: boolean, onClick: () => void): HTMLB
   return mode;
 }
 
-function branchPickers(project: string): HTMLElement[] {
+function comparisonPickers(project: string): HTMLElement[] {
   if (!isComparing(project)) return [];
+  return [...repositoryPickers(project, comparisonOf(project)), ...branchPickers(project)];
+}
+
+function branchPickers(project: string): HTMLElement[] {
   const { branches, comparison } = comparisonOf(project);
   const head = branchSelect("Branch to review", branches.branches, comparison.head);
   const base = branchSelect("Base branch", branches.branches, comparison.base);

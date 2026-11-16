@@ -135,6 +135,12 @@
   border: 1px solid var(--border);
   border-radius: 6px;
 }
+/* Set apart from the branches, since picking it changes what the branch lists hold. */
+.compare-bar .repository-picker {
+  margin-right: 8px;
+  font-weight: 600;
+  border-color: var(--accent-soft);
+}
 .compare-bar button:not(.compare-mode) {
   padding: 2px 8px;
   font-size: 12px;

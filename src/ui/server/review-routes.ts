@@ -21,6 +21,7 @@ export class ReviewRoutes {
       [/^\/api\/projects\/([^/]+)\/changes\/diff$/, (u, p, r) => changes.fileDiff(u, p, r)],
       [/^\/api\/projects\/([^/]+)\/changes\/lines$/, (u, p, r) => changes.hiddenLines(u, p, r)],
       [/^\/api\/projects\/([^/]+)\/definitions$/, (u, p, r) => definitions.find(u, p, r)],
+      [/^\/api\/projects\/([^/]+)\/repositories$/, (u, p, r) => compare.repositoryList(u, p, r)],
       [/^\/api\/projects\/([^/]+)\/branches$/, (u, p, r) => compare.branches(u, p, r)],
       [/^\/api\/projects\/([^/]+)\/compare$/, (u, p, r) => compare.files(u, p, r)],
       [/^\/api\/projects\/([^/]+)\/compare\/diff$/, (u, p, r) => compare.fileDiff(u, p, r)],
