@@ -2,6 +2,7 @@ import type { QueryFn } from "../agent/query-fn.js";
 import type { CameraSource } from "../camera/camera-source.js";
 import type { ClipboardSource } from "../clipboard/clipboard-source.js";
 import type { ConfirmAsk } from "../orchestrator/conversation/confirm-ask.js";
+import type { SettledVerbs } from "../orchestrator/conversation/settled-verbs.js";
 import type { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import type { InputQueue } from "../orchestrator/conversation/input-queue.js";
 import type { QuestionGate } from "../orchestrator/conversation/question-gate.js";
@@ -16,6 +17,8 @@ import type { ConversationMemory } from "../orchestrator/memory/conversation-mem
 import type { ScreenSource } from "../screen/screen-source.js";
 import type { SkillLibrary } from "../skills/skill-library.js";
 import type { GestureControl } from "../sensors/gesture-switch.js";
+import type { WakeWordControl } from "../wake/wake-switch.js";
+import type { WakeTrainingControl } from "../wake/wake-training.js";
 import type { DictationControl } from "../voice/dictation.js";
 import type { LiveClients } from "../ui/server/live-clients.js";
 import type { VoiceIO } from "../voice/voice-io.js";
@@ -41,6 +44,10 @@ export interface OperatorDevices {
   query: QueryFn;
   /** Camera gestures, switched on and off from the web UI or by voice. */
   gestures: GestureControl;
+  /** The wake word, switched on and off from the web UI, apart from gestures. */
+  wakeWord: WakeWordControl;
+  /** Training your own wake word model from the web UI. */
+  wakeTraining: WakeTrainingControl;
   /** The web UI's mic button, recording and transcribing on this Mac. */
   dictation: DictationControl;
   /** config/config.yaml, which a removed project is taken out of. */
@@ -72,4 +79,6 @@ export interface ConversationKit {
   memory: ConversationMemory;
   requests: ResetRequests;
   confirmAsk: ConfirmAsk;
+  /** Confirm phrases whose request was already answered, which the assistant's buttons leave out. */
+  settledVerbs: SettledVerbs;
 }

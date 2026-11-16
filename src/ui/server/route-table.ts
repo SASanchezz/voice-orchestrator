@@ -1,12 +1,17 @@
 import type { VoiceCancel } from "../../orchestrator/conversation/voice-cancel.js";
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
 import type { GestureControl } from "../../sensors/gesture-switch.js";
+import type { WakeWordControl } from "../../wake/wake-switch.js";
+import type { WakeTrainingControl } from "../../wake/wake-training.js";
+import { wakeTrainingRoutes } from "./wake-training-routes.js";
 import type { DictationControl } from "../../voice/dictation.js";
 import type { AppActions } from "./app-actions.js";
 import type { AssistantActions } from "./assistant-actions.js";
 import type { AttachedText } from "./attached-text.js";
 import type { ChangeActions } from "./change-actions.js";
+import type { FrontSessionActions } from "./front-session-actions.js";
 import type { HandoffActions } from "./handoff-actions.js";
+import type { LinkActions } from "./link-actions.js";
 import { MAX_ATTACHED_BODY_BYTES } from "./attachment-body.js";
 import type { PermissionActions } from "./permission-actions.js";
 import type { QuestionActions } from "./question-actions.js";
@@ -19,8 +24,10 @@ import {
   noticeOpenBody,
   permissionModeBody,
   shownSessionBody,
+  wakeWordModeBody,
 } from "./request-body.js";
 import type { SessionActions } from "./session-actions.js";
+import type { SessionModelActions } from "./session-model-actions.js";
 import type { SessionSweepActions } from "./session-sweep-actions.js";
 import type { TabActions } from "./tab-actions.js";
 import type { TaskActions } from "./task-actions.js";
@@ -46,7 +53,13 @@ export interface RouteHandlers {
   /** The mic button: your words, recorded and transcribed on this Mac. */
   dictation: DictationControl;
   gestures: GestureControl;
+  wakeWord: WakeWordControl;
+  /** The Train wake word dialog: your recordings, the model trained on them, and trying it out. */
+  wakeTraining: WakeTrainingControl;
+  frontSession: FrontSessionActions;
   handoffs: HandoffActions;
+  /** Links clicked in a project's chat, opened in its Chrome profile. */
+  links: LinkActions;
   /** The notice panel's buttons; its replies go through `tasks`. */
   notices: NoticeActions;
   policy: PermissionPolicy;
@@ -57,6 +70,8 @@ export interface RouteHandlers {
   tasks: TaskActions;
   todoItems: TodoItemHandlers;
   sessions: SessionActions;
+  /** The model a session's worker runs on. */
+  models: SessionModelActions;
   /** Which session each open page has on screen, so a task ending there brings up no notice. */
   shownSessions: ShownSessions;
   sweeps: SessionSweepActions;
@@ -72,7 +87,7 @@ export class RouteTable {
 
   constructor(h: RouteHandlers) {
     const sendMessage: Route = (b) => h.assistant.sendMessage(h.attached.message(b));
-    const runTask: Route = (b, m) => h.tasks.runTask(m[1], h.attached.instruction(b));
+    const runTask: Route = (b, m) => h.tasks.runTask(m[1], h.attached.task(b));
     const attachToVoice: Route = (b, m) => h.voiceOffers.sendWithFiles(m[1], h.attached.savedFiles(b));
     this.attachedRoutes = [sendMessage, runTask, attachToVoice];
     this.routes = [
@@ -104,15 +119,18 @@ function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
     [/^\/api\/restart$/, () => h.app.restartApp()],
     [/^\/api\/assistant\/clear$/, () => h.assistant.clearAssistant()],
     [/^\/api\/clicked-words$/, (b) => h.assistant.sendClickedWords(b)],
+    [/^\/api\/links\/open$/, (b) => h.links.open(b)],
     [/^\/api\/permissions\/(\w+)$/, (b, m) => h.permissions.answer(m[1], b)],
     [/^\/api\/questions\/(\w+)\/answer$/, (b, m) => h.questions.answer(m[1], b)],
     [/^\/api\/questions\/(\w+)\/skip$/, (_b, m) => h.questions.skip(m[1])],
     [/^\/api\/permission-mode$/, (b) => h.policy.setMode(permissionModeBody.parse(b).mode)],
     [/^\/api\/speech-mode$/, (b) => h.assistant.setSpeechMode(b)],
     [/^\/api\/gestures$/, (b) => h.gestures.setMode(gestureModeBody.parse(b).mode)],
+    [/^\/api\/wake-word$/, (b) => h.wakeWord.setMode(wakeWordModeBody.parse(b).mode)],
     ...sessionRoutes(h),
     ...noticeRoutes(h),
     ...voiceRoutes(h),
+    ...wakeTrainingRoutes(h.wakeTraining),
   ];
 }
 
@@ -128,6 +146,7 @@ function sessionRoutes(h: RouteHandlers): [RegExp, Route][] {
     [/^\/api\/sessions\/([\w-]+)\/stop$/, (_b, m) => h.sessions.stopTask(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/queue\/remove$/, (b, m) => h.queue.removeQueued(m[1], b)],
     [/^\/api\/sessions\/([\w-]+)\/handoff$/, (_b, m) => h.handoffs.handOff(m[1])],
+    [/^\/api\/sessions\/([\w-]+)\/model$/, (b, m) => h.models.setModel(m[1], b)],
   ];
 }
 
@@ -154,8 +173,8 @@ function noteShownSession(shownSessions: ShownSessions, body: unknown): string {
 }
 
 /**
- * Discarding your voice message, and whether one waiting goes with the draft's files. The mic button's words go back
- * to the page, into its message box.
+ * Discarding your voice message, whether one waiting goes with the draft's files, and the project tab it goes to. The
+ * mic button's words go back to the page, into its message box.
  */
 function voiceRoutes(h: RouteHandlers): [RegExp, Route][] {
   return [
@@ -163,6 +182,7 @@ function voiceRoutes(h: RouteHandlers): [RegExp, Route][] {
     [/^\/api\/dictation\/cancel$/, () => h.dictation.cancel()],
     [/^\/api\/dictation\/finish$/, () => h.dictation.finish()],
     [/^\/api\/voice\/discard$/, () => h.voice.discardLatest()],
+    [/^\/api\/front-session$/, (b) => h.frontSession.note(b)],
     [/^\/api\/draft$/, (b) => h.voiceOffers.draftChanged(b)],
     [/^\/api\/voice-offers\/(\w+)\/keep$/, (_b, m) => h.voiceOffers.keepInDraft(m[1])],
     [/^\/api\/voice-offers\/(\w+)\/discard$/, (_b, m) => h.voiceOffers.discard(m[1])],

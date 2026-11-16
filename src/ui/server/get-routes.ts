@@ -1,6 +1,7 @@
 import type { ServerResponse } from "node:http";
 import { ATTACHED_IMAGE_PATH, NOTICE_SCRIPT_PATH, SCRIPT_PATH, type PageFiles } from "./page-files.js";
 import { NOTICE_PATH } from "./ui-access.js";
+import { MANIFEST_PATH } from "./web-manifest.js";
 import type { ReadRoutes } from "./read-routes.js";
 import type { ReviewRoutes } from "./review-routes.js";
 
@@ -32,6 +33,7 @@ export class GetRoutes {
     if (url.pathname === ATTACHED_IMAGE_PATH) return this.pages.attachedImage(url, res);
     if (url.pathname === SCRIPT_PATH) return this.pages.serveScript(res);
     if (url.pathname === NOTICE_SCRIPT_PATH) return this.pages.serveNoticeScript(res);
+    if (url.pathname === MANIFEST_PATH) return this.pages.manifest(url, res);
     this.pages.staticFile(url.pathname, res);
   }
 }

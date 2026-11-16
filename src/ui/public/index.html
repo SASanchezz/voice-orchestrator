@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="ui-token" content="__UI_TOKEN__" />
+    <meta name="theme-color" content="#161b22" />
+    <link rel="manifest" href="/manifest.webmanifest?token=__UI_TOKEN__" />
     <title>Orchestrator</title>
     <link
       rel="icon"
@@ -18,6 +20,8 @@
     <link rel="stylesheet" href="/styles/approvals.css" />
     <link rel="stylesheet" href="/styles/questions.css" />
     <link rel="stylesheet" href="/styles/chat.css" />
+    <link rel="stylesheet" href="/styles/session-tabs.css" />
+    <link rel="stylesheet" href="/styles/session-picker.css" />
     <link rel="stylesheet" href="/styles/permission-lines.css" />
     <link rel="stylesheet" href="/styles/detail.css" />
     <link rel="stylesheet" href="/styles/dialogs.css" />
@@ -31,6 +35,7 @@
     <link rel="stylesheet" href="/styles/code-roles.css" />
     <link rel="stylesheet" href="/styles/resize.css" />
     <link rel="stylesheet" href="/styles/messengers.css" />
+    <link rel="stylesheet" href="/styles/wake-training.css" />
     <link rel="stylesheet" href="/styles/buttons.css" />
   </head>
   <body>
@@ -90,6 +95,31 @@
               </button>
             </div>
           </div>
+          <div class="control" id="wake-word-control" hidden>
+            <span class="control-label">Wake word</span>
+            <div class="segmented" id="wake-word-mode" role="radiogroup" aria-label="Wake word">
+              <button
+                data-value="on"
+                title="Listen for the wake word on this Mac; say it again or pause to send. Audio stays on this Mac"
+              >
+                On
+              </button>
+              <button
+                data-value="off"
+                title="The mic is used only while you talk with the talk key, gesture or dictate"
+              >
+                Off
+              </button>
+            </div>
+            <button
+              type="button"
+              id="wake-training-button"
+              class="ghost"
+              title="Record yourself saying the wake word, train a model on your voice, and try it out"
+            >
+              Train…
+            </button>
+          </div>
           <div class="control">
             <button
               type="button"
@@ -147,28 +177,61 @@
           <ul id="attachment-list" class="attachment-list" aria-label="Attached files" hidden></ul>
 
           <form id="composer" class="composer">
-            <button
-              type="button"
-              id="attach-button"
-              class="ghost attach-button"
-              title="Attach files (up to 10, 10 MB each), or drop them on the chat"
-            >
-              Attach
-            </button>
-            <input type="file" id="attach-input" multiple hidden />
-            <textarea
-              id="composer-input"
-              rows="1"
-              placeholder="Message the orchestrator…"
-              title="Enter sends, Shift+Enter adds a line"
-            ></textarea>
-            <button type="button" id="mic-cancel" class="ghost mic-cancel" title="Discard this recording (Esc)" hidden>
-              ✕
-            </button>
-            <button type="button" id="mic-button" class="ghost mic-button" aria-label="Record your words">🎙</button>
-            <button type="submit" id="composer-send" class="primary" title="Send (Enter; Shift+Enter adds a line)">
-              Send
-            </button>
+            <div class="composer-box">
+              <textarea
+                id="composer-input"
+                rows="1"
+                placeholder="Message the orchestrator…"
+                title="Enter sends, Shift+Enter adds a line"
+              ></textarea>
+              <div class="composer-tools">
+                <button
+                  type="button"
+                  id="attach-button"
+                  class="ghost icon-button attach-button"
+                  aria-label="Attach files"
+                  title="Attach files (up to 10, 10 MB each), or drop them on the chat"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                    <path
+                      d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+                <input type="file" id="attach-input" multiple hidden />
+                <select
+                  id="composer-model"
+                  class="composer-model"
+                  aria-label="Model for this task"
+                  title="The model this task runs on. Picking another applies to this task only; the session keeps its own model (right-click its tab to change that)."
+                  hidden
+                ></select>
+                <span class="composer-spacer"></span>
+                <button
+                  type="button"
+                  id="mic-cancel"
+                  class="ghost icon-button mic-cancel"
+                  title="Discard this recording (Esc)"
+                  hidden
+                >
+                  ✕
+                </button>
+                <button type="button" id="mic-button" class="ghost mic-button" aria-label="Record your words">🎙</button>
+                <button
+                  type="submit"
+                  id="composer-send"
+                  class="primary"
+                  title="Send (Enter; Shift+Enter adds a line). While recording, stops and sends your final words."
+                >
+                  Send
+                </button>
+              </div>
+            </div>
           </form>
         </div>
 
@@ -196,10 +259,9 @@
       ></div>
     </main>
 
-    <section id="approvals" class="approvals" hidden>
+    <section id="questions" class="questions" hidden>
       <h2 class="section-title">Waiting for you</h2>
       <div id="question-list" class="approval-list"></div>
-      <div id="approval-list" class="approval-list"></div>
     </section>
 
     <footer class="strip">
@@ -213,20 +275,6 @@
       <p id="latest-reply" class="latest-reply"></p>
       <button type="button" id="chat-toggle" class="ghost chat-toggle" hidden>Chat</button>
     </footer>
-
-    <dialog id="confirm-dialog" class="confirm-dialog">
-      <form method="dialog">
-        <h2 id="confirm-title">Allow destructive action?</h2>
-        <p id="confirm-project" class="muted"></p>
-        <p id="confirm-explanation" class="explanation"></p>
-        <pre id="confirm-command" class="command"></pre>
-        <p class="muted">This runs once. Destructive actions can't be always allowed.</p>
-        <div class="dialog-actions">
-          <button value="cancel" class="intent-dismiss" title="Cancel (Esc)">Cancel</button>
-          <button value="confirm" class="danger" id="confirm-button">Allow once</button>
-        </div>
-      </form>
-    </dialog>
 
     <dialog id="restart-dialog" class="confirm-dialog">
       <form method="dialog">
@@ -248,6 +296,47 @@
         </p>
         <ul id="messenger-status-list" class="messenger-status-list"></ul>
         <div id="messenger-guides" class="messenger-guides"></div>
+        <div class="dialog-actions">
+          <button value="close" class="intent-dismiss" title="Close (Esc)">Close</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="wake-training-dialog" class="confirm-dialog wake-training-dialog" aria-labelledby="wake-training-title">
+      <form method="dialog">
+        <h2 id="wake-training-title">Train your wake word</h2>
+        <p class="muted">
+          Teach it your voice saying “Hey Oracle”. Your recordings and the model stay on this Mac, in sensors/wake; the
+          wake word stops listening while you record or train here.
+        </p>
+        <ol class="wake-steps">
+          <li>
+            <div>
+              <strong>Say “Hey Oracle”.</strong> Click, then say it once right away. 20 or more times is best: nearer
+              and farther, softer and louder, the way you'd really say it.
+            </div>
+            <button type="button" class="primary" data-wake-step="record-wake">Record “Hey Oracle”</button>
+          </li>
+          <li>
+            <div>
+              <strong>Talk about anything else.</strong> 6 seconds of ordinary talk, or of your room as it usually
+              sounds, so it learns what not to wake on. 5 or more is good; in some, use “Oracle” in a sentence.
+            </div>
+            <button type="button" class="ghost" data-wake-step="record-other">Record other talk</button>
+          </li>
+          <li>
+            <div>
+              <strong>Train.</strong> About 2 minutes the first time, under a minute after that. The wake word then
+              listens with the new model.
+            </div>
+            <button type="button" class="ghost" data-wake-step="train">Train</button>
+          </li>
+          <li>
+            <div><strong>Try it.</strong> Click, then say “Hey Oracle”, or something else, within 3 seconds.</div>
+            <button type="button" class="ghost" data-wake-step="try">Try it</button>
+          </li>
+        </ol>
+        <p id="wake-training-status" class="wake-training-status" role="status" aria-live="polite"></p>
         <div class="dialog-actions">
           <button value="close" class="intent-dismiss" title="Close (Esc)">Close</button>
         </div>

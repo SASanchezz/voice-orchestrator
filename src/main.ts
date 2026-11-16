@@ -3,8 +3,9 @@ import { requireAssistantAgent } from "./app/assistant-agent-check.js";
 import { buildApp, startOperator, type App } from "./app/build-app.js";
 import { buildGestures, gestureActions, gestureSetting } from "./app/build-gestures.js";
 import { buildMessageAlerts } from "./app/build-message-alerts.js";
+import { buildWakeTraining, buildWakeWord, isWakeWordSetUp, wakeWordSetting } from "./app/build-wake-word.js";
 import { checkLogins } from "./app/login-check.js";
-import { macVoice, realAdapters } from "./app/real-adapters.js";
+import { chromeAdapters, macVoice, realAdapters } from "./app/real-adapters.js";
 import { RESTART_EXIT_CODE, RESTARTED_ENV } from "./app/restart.js";
 import type { AppConfig } from "./config/app-config.js";
 import { MacSpaces } from "./macos/mac-spaces.js";
@@ -14,6 +15,8 @@ import { SensorSnapshots } from "./sensors/sensor-snapshots.js";
 import { errorMessage } from "./shared/errors.js";
 import { UnavailableDictation } from "./voice/dictation.js";
 import { TextVoice } from "./voice/text-voice.js";
+import { UnavailableWakeWord, WakeSwitch } from "./wake/wake-switch.js";
+import { UnavailableWakeTraining } from "./wake/wake-training.js";
 
 /** Time for workers to stop before the process exits. */
 const WORKER_STOP_GRACE_MS = 300;
@@ -28,12 +31,28 @@ const mac = textMode ? undefined : macVoice(cfg.voice);
 const voice = mac?.voice ?? new TextVoice();
 const dictation = mac?.dictation ?? new UnavailableDictation();
 const gestures = mac ? new GestureSwitch(gestureSetting(cfg.sensors.gestures)) : undefined; // text mode has no mic
+const wakeWord = mac ? new WakeSwitch(wakeWordSetting()) : undefined;
+const wakeTraining = wakeWord
+  ? buildWakeTraining(cfg.sensors.wakeWord, cfg.voice.recordBin, wakeWord)
+  : new UnavailableWakeTraining("Wake word training needs the mic, and text mode has none.");
 const snapshots = new SensorSnapshots(); // the camera's frames come from the gesture sensor while it runs
 const app = buildApp(
   cfg,
-  await realAdapters({ voice, dictation, assistantAgent }, gestures ?? new UnavailableGestures(), snapshots),
+  await realAdapters(
+    {
+      voice,
+      dictation,
+      assistantAgent,
+      wakeWord: wakeWord ?? new UnavailableWakeWord(),
+      wakeTraining,
+      ...chromeAdapters(cfg.ui.chromeApp),
+    },
+    gestures ?? new UnavailableGestures(),
+    snapshots,
+  ),
 );
 
+mac?.voice.endRecordingWhen((words) => app.permissions.spoken.canAnswer(words)); // "allow commit" needs no "finish"
 await openUi(cfg, app);
 app.editor.server.start(); // once the UI has made the token file it reads
 if (cfg.limits.autoResume) app.workers.resumer.start();
@@ -41,15 +60,20 @@ const messageAlerts = buildMessageAlerts(cfg.messages, app.core.messengers, app.
 
 startOperator(app, voice)
   .then(connectGestures) // once the mic is ready
+  .then(connectWakeWord)
   .then(() => messageAlerts.start())
   .catch((e: unknown) => {
     console.error(errorMessage(e));
     process.exit(1);
   });
 
-process.on("SIGINT", () => shutDown(0));
+process.on("SIGINT", () => {
+  app.editor.server.stop();
+  shutDown(0);
+});
 app.operator.lifecycle.on("restart", () => {
   console.log("Restarting…");
+  app.editor.server.keepRunning(); // the Code view's terminals, and the servers running in them, outlive the restart
   shutDown(RESTART_EXIT_CODE);
 });
 
@@ -58,6 +82,17 @@ function connectGestures(): void {
   if (!mac || !gestures) return;
   const actions = gestureActions(mac, app.operator, new MacSpaces());
   gestures.connect(() => buildGestures(cfg.sensors.gestures, actions, snapshots));
+}
+
+/** The mic stays open between your messages while the web UI's Wake word switch is on (and sensors/wake is set up). */
+function connectWakeWord(): void {
+  if (!mac || !wakeWord) return;
+  const settings = cfg.sensors.wakeWord;
+  if (!isWakeWordSetUp(settings)) {
+    console.log(`[wake word] off: ${settings.python} not found; set up sensors/wake as its README says.`);
+    return;
+  }
+  wakeWord.connect(() => buildWakeWord(settings, cfg.voice.recordBin, mac));
 }
 
 async function openUi({ ui }: AppConfig, { ui: parts }: App): Promise<void> {
@@ -72,7 +107,7 @@ async function openUi({ ui }: AppConfig, { ui: parts }: App): Promise<void> {
 
 function shutDown(exitCode: number): void {
   gestures?.stop();
-  app.editor.server.stop();
+  wakeWord?.stop();
   app.workers.control.stopAll();
   app.ui.server.stop();
   setTimeout(() => process.exit(exitCode), WORKER_STOP_GRACE_MS);

@@ -40,7 +40,7 @@ export class UiAccess {
 
   /** The page with the token in it, for its API calls. */
   withToken(html: string): string {
-    return html.replace(TOKEN_PLACEHOLDER, this.token);
+    return html.replaceAll(TOKEN_PLACEHOLDER, this.token);
   }
 
   private linkTo(path: string): string {

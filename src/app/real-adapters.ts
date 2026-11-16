@@ -4,6 +4,8 @@ import { MacClipboard } from "../clipboard/mac-clipboard.js";
 import type { AppConfig } from "../config/app-config.js";
 import { CONFIG_PATH, NOTES_PATH, SKILLS_DIR } from "../config/paths.js";
 import { MacBrowserPage } from "../macos/mac-browser-page.js";
+import { MacChromeLinks } from "../macos/mac-chrome-links.js";
+import { MacChatPanels } from "../macos/mac-chat-panels.js";
 import { MacConfirmPanels } from "../macos/mac-confirm-panels.js";
 import { MacNoticePanel } from "../macos/mac-notice-panel.js";
 import { MacPopups } from "../macos/mac-popups.js";
@@ -26,11 +28,14 @@ import { Transcriber } from "../voice/transcriber.js";
 import type { Adapters } from "./build-app.js";
 
 /**
- * The real world: what main.ts made first (your voice, the page's mic, the assistant's checked agent), the screen, the
- * clipboard, the camera (through the gesture sensor's `snapshots`), pop-ups, your files and the Agent SDK.
+ * The real world: what main.ts made first (your voice, the page's mic, the assistant's checked agent, the wake word
+ * switch and its training, Chrome), the screen, the clipboard, the camera (through the gesture sensor's `snapshots`), pop-ups, your files and the Agent SDK.
  */
 export async function realAdapters(
-  madeFirst: Pick<Adapters, "voice" | "dictation" | "assistantAgent">,
+  madeFirst: Pick<
+    Adapters,
+    "voice" | "dictation" | "assistantAgent" | "wakeWord" | "wakeTraining" | "browser" | "chromeLinks"
+  >,
   gestures: GestureControl,
   snapshots: SensorSnapshots,
 ): Promise<Adapters> {
@@ -42,39 +47,55 @@ export async function realAdapters(
     camera: SensorCamera.create(snapshots),
     gestures,
     notices: await MacNoticePanel.create(),
-    browser: new MacBrowserPage(),
   };
   return { ...devices, ...(await popupPanels()), ...filesAndModel() };
 }
 
-/** Permission, question and confirm pop-ups, all from one Swift helper. */
-async function popupPanels(): Promise<Pick<Adapters, "popups" | "questionPanels" | "confirmPanels">> {
+/** Chrome: project links opened in their profiles, and the web UI, brought up in its Chrome app `uiChromeApp` if set. */
+export function chromeAdapters(uiChromeApp?: string): Pick<Adapters, "browser" | "chromeLinks"> {
+  return { chromeLinks: new MacChromeLinks(), browser: new MacBrowserPage(uiChromeApp) };
+}
+
+/** Permission, question and confirm pop-ups, all from one Swift helper, and the chat pop-up from its own. */
+async function popupPanels(): Promise<Pick<Adapters, "popups" | "questionPanels" | "confirmPanels" | "chatPanels">> {
   const popups = await MacPopups.create();
   const questionPanels = await MacQuestionPanels.create(); // after MacPopups: the helper is built by then
   const confirmPanels = await MacConfirmPanels.create();
-  return { popups, questionPanels, confirmPanels };
+  const chatPanels = await MacChatPanels.create();
+  return { popups, questionPanels, confirmPanels, chatPanels };
 }
 
 /** config/destructive.yaml (hot-reloaded), config/config.yaml, config/notes.md, skills/ and the Agent SDK. */
 function filesAndModel(): Pick<
   Adapters,
-  "destructive" | "configFile" | "notes" | "skills" | "query" | "explainCommands"
+  "destructive" | "configFile" | "notes" | "skills" | "query" | "explainCommands" | "nameSessions"
 > {
   const destructive = new DestructiveList();
   destructive.watchForChanges();
   const notes = new AssistantNotes(NOTES_PATH);
   const skills = loadSkillLibrary(SKILLS_DIR);
-  return { destructive, configFile: CONFIG_PATH, notes, skills, query: sdkQuery, explainCommands: true };
+  return {
+    destructive,
+    configFile: CONFIG_PATH,
+    notes,
+    skills,
+    query: sdkQuery,
+    explainCommands: true,
+    nameSessions: true,
+  };
 }
 
-/** Your voice on macOS, the mic switch that lets gestures talk as well as the hotkey, and the page's mic button. */
+/**
+ * Your voice on macOS, the mic switch that lets gestures and the wake word talk as well as the hotkey, the page's mic
+ * button.
+ */
 export interface MacVoiceParts {
   voice: MacVoice;
   talk: TalkSwitch;
   dictation: Dictation;
 }
 
-/** Hold the hotkey to talk; replies are spoken with Kokoro or `say`, as `voice.engine` says. */
+/** Press the hotkey to start talking and again to send; replies are spoken with Kokoro or `say`, as `voice.engine` says. */
 export function macVoice(settings: AppConfig["voice"]): MacVoiceParts {
   const transcriber = new Transcriber(settings);
   const pushToTalk = new PushToTalk(settings, transcriber);

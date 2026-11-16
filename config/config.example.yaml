@@ -23,6 +23,7 @@ profiles:
     configDir: ~/.claude # the dir your personal `claude` login lives in
   work:
     configDir: ~/.claude-work # e.g. a `claude-work` alias: CLAUDE_CONFIG_DIR=~/.claude-work claude
+    chromeProfile: Work # optional: links in this account's projects open in this Chrome profile (its name in Chrome)
 
 # Claude Code binary used for workers + login check. "auto" = `claude` on PATH, else the SDK's bundled one.
 # Or an absolute path, e.g. /opt/homebrew/bin/claude
@@ -44,13 +45,14 @@ projects:
     path: ~/code/acme/acme-api
     profile: work
     model: opus # optional per-project worker model, under any project
+    chromeProfile: Acme # optional: this project's links open in its own Chrome profile instead of its account's
   billing:
     path: ~/code/acme/billing
     profile: work
     model: sonnet
 
 voice:
-  hotkey: RIGHT ALT # hold to talk: e.g. "RIGHT ALT" (= right Option), "RIGHT CMD", "RIGHT CTRL", "F13"
+  hotkey: RIGHT ALT # press to start talking, again to send: e.g. "RIGHT ALT" (= right Option), "RIGHT CMD", "RIGHT CTRL", "F13"
   recordBin: rec # from `brew install sox`
   whisperBin: whisper-cli # from `brew install whisper-cpp`
   whisperModel: ~/.whisper/ggml-small.en.bin # for several languages: ~/.whisper/ggml-small.bin with language: auto
@@ -65,6 +67,7 @@ voice:
 ui:
   port: 4777 # the web UI at http://127.0.0.1:4777 (link with access token is printed on start)
   open: true # open it in the browser on start
+  chromeApp: Orchestrator # optional: the Chrome app you installed the UI as; pop-ups bring its window up, no new tab
 
 permissions:
   mode: auto # auto: workers run everything except destructive commands without asking | ask: every request goes to you. Switch by voice: "ask mode" / "auto mode"
@@ -95,6 +98,12 @@ sensors:
     python: sensors/gestures/.venv/bin/python # relative to this app's folder, or absolute
     args: [-m, gestures, run] # add e.g. --min-hold-ms, 400 to tune it, or --recognizer, both for trained gestures
     mapping: config/gestures.yaml # which gesture does what: cp config/gestures.example.yaml config/gestures.yaml
+  # Wake word: say "Hey Oracle" to start talking, "Hey Oracle" again or a 1.5 s pause to send (sensors/wake; set it up as its README says,
+  # then train it on your voice in the web UI: ⚙ › Wake word › Train…).
+  # On until you switch it off in the web UI (⚙ › Wake word, its own switch, saved in state/wake-word.json); needs the python below.
+  wakeWord:
+    python: sensors/wake/.venv/bin/python # relative to this app's folder, or absolute
+    args: [-m, wake, run] # add e.g. --threshold, "0.9" for fewer false wakes (a trained model wakes at 0.8), or --model, hey_jarvis to try a built-in word
 
 # Who looks at camera frames for look_at_camera (camera frames exist only while Gestures are on).
 camera:

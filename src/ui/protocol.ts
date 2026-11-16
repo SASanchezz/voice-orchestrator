@@ -3,43 +3,19 @@
 
 import type { NoticeView } from "./notice-protocol.js";
 import type { PageTarget, ProjectTarget } from "./page-target.js";
+import type { SessionView } from "./session-protocol.js";
 
-export type SessionStatus = "idle" | "running" | "waiting_permission" | "done" | "failed" | "stopped";
+export type { SessionStatus, SessionView, TaskRecordView } from "./session-protocol.js";
 export type PermissionModeName = "auto" | "ask";
 export type SpeechModeName = "all" | "questions" | "muted";
 /** unavailable: text mode, which has no mic for gestures to talk into. */
 export type GestureStateName = "on" | "off" | "unavailable";
+/** unavailable: text mode, which has no mic to listen on. */
+export type WakeWordStateName = "on" | "off" | "unavailable";
 /** queued: your spoken message waits for the assistant to finish its current reply. */
 export type VoiceInputName = "idle" | "recording" | "held" | "queued";
 /** VS Code for the Code view. off: not turned on in config; starting: its first run downloads it first. */
 export type EditorStateName = "off" | "starting" | "ready" | "failed";
-
-export interface TaskRecordView {
-  task: string;
-  outcome: "done" | "failed" | "stopped";
-  result: string;
-  finishedAt: string;
-}
-
-export interface SessionView {
-  id: string;
-  number: number;
-  status: SessionStatus;
-  task?: string;
-  queued: string[];
-  /** ISO times of the latest task start, task end and queued instruction. */
-  startedAt?: string;
-  finishedAt?: string;
-  queuedAt?: string;
-  lastActivity?: string;
-  lastError?: string;
-  costUsd: number;
-  /** Tokens the worker's latest call read: how full its context is. */
-  contextTokens?: number;
-  /** Its model's context window, once a result reported it. */
-  contextWindow?: number;
-  history: TaskRecordView[];
-}
 
 /** The limits from config.yaml's budget, and what all sessions spent today. */
 export interface BudgetView {
@@ -57,6 +33,12 @@ export interface ProjectView {
   folder: string;
   /** The same folder with your home folder written as ~. */
   folderFromHome: string;
+  /** The worker model config.yaml sets for the project; unset, Claude Code's default. */
+  model?: string;
+  /** The model Claude Code's own settings pick when config.yaml names none; unset, Claude Code's built-in one. */
+  claudeModel?: string;
+  /** The Chrome profile its links open in; unset, they open beside the web UI. */
+  chromeProfile?: string;
   activeSession: string;
   sessions: SessionView[];
 }
@@ -65,6 +47,8 @@ export interface PendingRequestView {
   id: string;
   label: string;
   description: string;
+  /** The whole tool call; `description` is cut at a few hundred characters. */
+  command: string;
   destructiveVerb?: string;
   explanation?: string;
   explaining: boolean;
@@ -110,6 +94,8 @@ export interface UiState {
   speechMode: SpeechModeName;
   /** Camera gestures; off means the camera isn't used at all. */
   gestures: GestureStateName;
+  /** The wake word, switched apart from gestures; off means the mic is open only while you talk. */
+  wakeWord: WakeWordStateName;
   voiceInput: VoiceInputName;
   voiceOffer?: VoiceOfferView;
   /** The confirm phrases the assistant asked you to say, e.g. ["push"]; Confirm buttons answer them. */
@@ -199,7 +185,7 @@ export interface ServerEvents {
   chat: SessionChatLine;
   chat_cleared: string;
   dictation: string; // your words so far, while the mic button records
-  voice_draft: string; // your words so far, while you hold the talk key or gesture
+  voice_draft: string; // your words so far, while you talk with the talk key or gesture
   /** A notice's button or a spoken "show me the code": open pages switch to this view. */
   navigate: PageTarget | ProjectTarget;
 }

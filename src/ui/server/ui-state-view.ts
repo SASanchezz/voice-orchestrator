@@ -20,6 +20,7 @@ export class UiStateView {
       permissionMode: this.waiting.permissionMode,
       speechMode: this.voice.speechMode,
       gestures: this.voice.gestures,
+      wakeWord: this.voice.wakeWord,
       voiceInput: this.voice.voiceInput,
       voiceOffer: this.voice.offer(),
       confirmVerbs: this.voice.confirmVerbs,

@@ -7,6 +7,7 @@ import { APP_DIR } from "../../config/paths.js";
 import { HTTP_STATUS, HttpError } from "./http-error.js";
 import type { UiAccess } from "./ui-access.js";
 import { APP_ENTRY, bundleWebPage, NOTICE_ENTRY } from "./web-bundle.js";
+import type { WebManifest } from "./web-manifest.js";
 
 const PUBLIC_DIR = resolve(APP_DIR, "src/ui/public");
 export const SCRIPT_PATH = "/app.js";
@@ -24,6 +25,8 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/approvals.css": "text/css",
   "/styles/questions.css": "text/css",
   "/styles/chat.css": "text/css",
+  "/styles/session-tabs.css": "text/css",
+  "/styles/session-picker.css": "text/css",
   "/styles/permission-lines.css": "text/css",
   "/styles/detail.css": "text/css",
   "/styles/dialogs.css": "text/css",
@@ -37,14 +40,15 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/code-roles.css": "text/css",
   "/styles/resize.css": "text/css",
   "/styles/messengers.css": "text/css",
+  "/styles/wake-training.css": "text/css",
   "/styles/notice.css": "text/css",
   "/styles/notice-glass.css": "text/css",
   "/styles/buttons.css": "text/css",
 };
 
 /**
- * The page and the notice panel's page, their scripts (compiled from src/ui/web/ at start), their stylesheets and the
- * attached images the page shows.
+ * The page and the notice panel's page, their scripts (compiled from src/ui/web/ at start), their stylesheets, the
+ * page's app manifest and the attached images the page shows.
  */
 export class PageFiles {
   private script = "";
@@ -53,6 +57,7 @@ export class PageFiles {
   constructor(
     private access: UiAccess,
     private attachments: AttachmentFiles,
+    private webManifest: WebManifest,
   ) {}
 
   async prepare(): Promise<void> {
@@ -73,6 +78,10 @@ export class PageFiles {
 
   serveNoticeScript(res: ServerResponse): void {
     sendScript(this.noticeScript, res);
+  }
+
+  manifest(url: URL, res: ServerResponse): void {
+    this.webManifest.serve(url, res);
   }
 
   staticFile(pathname: string, res: ServerResponse): void {

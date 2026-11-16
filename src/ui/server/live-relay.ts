@@ -19,7 +19,7 @@ export function relayDictation(clients: LiveClients, dictation: DictationControl
   dictation.on("words", (words) => clients.broadcast("dictation", words));
 }
 
-/** Your words so far, while you hold the talk key or gesture, go to the listening strip of every open page. */
+/** Your words so far, while you talk with the talk key or gesture, go to the listening strip of every open page. */
 export function relayVoiceDraft(clients: LiveClients, voice: Pick<VoiceIO, "onDraft">): void {
   voice.onDraft((words) => clients.broadcast("voice_draft", words));
 }
