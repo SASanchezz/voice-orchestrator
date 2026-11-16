@@ -5,8 +5,11 @@ config/config.yaml
 config/notes.md
 config/gestures.yaml
 sensors/gestures/.venv/
+sensors/wake/.venv/
 sensors/gestures/models/
 __pycache__/
 .pytest_cache/
 *.egg-info/
 sensors/gestures/data/
+sensors/wake/data/
+sensors/wake/models/

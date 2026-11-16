@@ -1,0 +1,23 @@
+[project]
+name = "wake"
+version = "0.1.0"
+description = "Wake word listener for the voice orchestrator"
+requires-python = ">=3.11"
+dependencies = [
+    "openwakeword>=0.6",
+    "numpy>=1.26",
+    "scikit-learn>=1.4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["wake*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
