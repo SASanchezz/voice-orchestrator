@@ -1,28 +1,57 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { EventEmitter } from "node:events";
-import { PassThrough } from "node:stream";
-import { editorCommand, EditorServer, type EditorCommand } from "./editor-server.js";
+import type { EditorProcess, ExitListener } from "./editor-process.js";
+import { editorCommand, EditorServer, type EditorCommand, type EditorProcesses } from "./editor-server.js";
 
 const SETTINGS = { enabled: true, codePath: "/vscode/code-tunnel", port: 4778 };
-const COMMAND: EditorCommand = { bin: "code-tunnel", args: ["serve-web"] };
+const COMMAND: EditorCommand = { bin: "code-tunnel", args: ["serve-web"], port: 4778 };
 
-/** Stands in for the editor's process: whatever the test writes is what it prints. */
-class FakeChild extends EventEmitter {
-  readonly stdout = new PassThrough();
+/** Stands in for the editor's process: the test says when it listens and when it exits. */
+class FakeEditorProcess implements EditorProcess {
+  readonly pid = 123;
+  stopped = false;
+  private listen: () => void = () => {};
+  private exitListener: ExitListener = () => {};
+  readonly ready = new Promise<void>((settle) => (this.listen = settle));
+
+  onExit(listener: ExitListener): void {
+    this.exitListener = listener;
+  }
+
+  release(): void {}
+
+  stop(): void {
+    this.stopped = true;
+  }
+
+  async becomeReady(): Promise<void> {
+    this.listen();
+    await this.ready;
+  }
+
+  exit(code: number): void {
+    this.exitListener(code);
+  }
 }
 
-function startedServer(): { server: EditorServer; child: FakeChild } {
-  const child = new FakeChild();
-  const server = new EditorServer(COMMAND, () => child);
+class FakeProcesses implements EditorProcesses {
+  readonly editor = new FakeEditorProcess();
+  kept?: EditorProcess;
+
+  start(): EditorProcess {
+    return this.editor;
+  }
+
+  keep(editor: EditorProcess): void {
+    this.kept = editor;
+  }
+}
+
+function startedServer(): { server: EditorServer; processes: FakeProcesses } {
+  const processes = new FakeProcesses();
+  const server = new EditorServer(COMMAND, processes);
   server.start();
-  return { server, child };
-}
-
-/** The line, once the server has read it. */
-async function print(child: FakeChild, line: string): Promise<void> {
-  child.stdout.write(`${line}\n`);
-  await new Promise((settle) => setImmediate(settle));
+  return { server, processes };
 }
 
 test("editor command: serve-web listens on 127.0.0.1 at the configured port", () => {
@@ -44,21 +73,42 @@ test("editor command: the configured CLI is run", () => {
   assert.equal(editorCommand(SETTINGS, "/t").bin, "/vscode/code-tunnel");
 });
 
-test("editor server: it is starting until the ready line", async () => {
-  const { server, child } = startedServer();
-  await print(child, "* Visual Studio Code Server");
+test("editor command: it carries the configured port", () => {
+  assert.equal(editorCommand(SETTINGS, "/t").port, 4778);
+});
+
+test("editor server: it is starting until its port listens", () => {
+  const { server } = startedServer();
   assert.equal(server.status, "starting");
 });
 
-test("editor server: the ready line makes it ready", async () => {
-  const { server, child } = startedServer();
-  await print(child, "Web UI available at http://127.0.0.1:4778/editor?tkn=t");
+test("editor server: its port listening makes it ready", async () => {
+  const { server, processes } = startedServer();
+  await processes.editor.becomeReady();
   assert.equal(server.status, "ready");
 });
 
 test("editor server: it has failed once its process exits by itself", () => {
-  const { server, child } = startedServer();
-  child.emit("exit", 1);
+  const { server, processes } = startedServer();
+  processes.editor.exit(1);
   server.stop(); // no restart left waiting
   assert.equal(server.status, "failed");
+});
+
+test("editor server: stopping stops its process", () => {
+  const { server, processes } = startedServer();
+  server.stop();
+  assert.equal(processes.editor.stopped, true);
+});
+
+test("editor server: keeping it running over a restart hands its process on", () => {
+  const { server, processes } = startedServer();
+  server.keepRunning();
+  assert.equal(processes.kept, processes.editor);
+});
+
+test("editor server: keeping it running over a restart doesn't stop its process", () => {
+  const { server, processes } = startedServer();
+  server.keepRunning();
+  assert.equal(processes.editor.stopped, false);
 });

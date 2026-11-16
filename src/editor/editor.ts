@@ -5,6 +5,8 @@ export interface Editor {
   readonly status: EditorStateName;
   start(): void;
   stop(): void;
+  /** For a restart: left running, so its terminals and the servers in them carry on, for the next start to take over. */
+  keepRunning(): void;
 }
 
 /** `editor.enabled` is off: there is no Code view. */
@@ -14,4 +16,6 @@ export class OffEditor implements Editor {
   start(): void {}
 
   stop(): void {}
+
+  keepRunning(): void {}
 }
