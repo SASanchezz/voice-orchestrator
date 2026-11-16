@@ -23,6 +23,13 @@ export class MacVoice implements VoiceIO {
     this.hotkey.onPress(cb);
   }
 
+  /** A recording whose words so far are a whole message, such as "allow commit", ends at once, without "finish". */
+  endRecordingWhen(isWholeMessage: (words: string) => boolean): void {
+    this.ptt.on("draft", (words) => {
+      if (isWholeMessage(words)) this.ptt.release();
+    });
+  }
+
   isListening(): boolean {
     return this.inputState() !== "idle";
   }

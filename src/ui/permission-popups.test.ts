@@ -6,7 +6,8 @@ import { join } from "node:path";
 import type { PermissionResult } from "@anthropic-ai/claude-agent-sdk";
 import { DEFAULT_PROTECTED_BRANCHES } from "../config/app-config.js";
 import { DESTRUCTIVE_PATH, setStateDir } from "../config/paths.js";
-import { AppEvents } from "../events/app-events.js";
+import { AppEvents, type AppEvent } from "../events/app-events.js";
+import { EditScope } from "../permissions/edit-scope.js";
 import { PermissionAnnouncer } from "../permissions/permission-announcer.js";
 import { PermissionAnswers } from "../permissions/permission-answers.js";
 import { PermissionBroker } from "../permissions/permission-broker.js";
@@ -14,6 +15,7 @@ import { PermissionExplanations } from "../permissions/permission-explanations.j
 import { PermissionPolicy } from "../permissions/permission-policy.js";
 import { WaitingRequests } from "../permissions/waiting-requests.js";
 import { openRegistry } from "../registry/open-registry.js";
+import type { Sessions } from "../registry/sessions.js";
 import { DestructiveList } from "../safety/destructive-list.js";
 import { TestPopups } from "../testing/test-popups.js";
 import { workerRules } from "../testing/test-worker-rules.js";
@@ -36,20 +38,28 @@ const EXPLANATION = "Pushes your commits to GitHub. Risk: medium.";
 function permissionsWithPopups(t: TestContext) {
   const events = new AppEvents();
   const { sessions, registry } = openRegistry({ webshop: "personal" }, events);
-  const announcer = new PermissionAnnouncer(sessions, events, settings);
-  const waiting = new WaitingRequests(sessions, announcer);
-  const explanations = new PermissionExplanations(waiting, async () => EXPLANATION, announcer);
-  const broker = new PermissionBroker(new PermissionPolicy("ask", workerRules(rules)), waiting, explanations);
-  const answers = new PermissionAnswers(waiting, sessions, settings);
+  const { broker, waiting, answers } = askingPermissions(sessions, events);
   const popups = new TestPopups();
-  const popupsFollowing = new PermissionPopups(popups, answers);
+  const silenced: AppEvent[] = [];
+  const popupsFollowing = new PermissionPopups(popups, answers, { silence: (e) => void silenced.push(e) });
   popupsFollowing.follow(events);
   const stop = new AbortController();
   t.after(() => stop.abort());
   const { id: session } = registry.activeSession("webshop");
   const ask = (command: string): Promise<PermissionResult> =>
     broker.request(session, { toolName: "Bash", input: { command } }, { signal: stop.signal });
-  return { ask, answers, popups, popupsFollowing, waiting, events };
+  return { ask, answers, popups, popupsFollowing, waiting, events, silenced };
+}
+
+/** Permissions in ask mode, explained at once, as the app wires them. */
+function askingPermissions(sessions: Sessions, events: AppEvents) {
+  const announcer = new PermissionAnnouncer(sessions, events, settings);
+  const waiting = new WaitingRequests(sessions, announcer);
+  const explanations = new PermissionExplanations(waiting, async () => EXPLANATION, announcer);
+  const policy = new PermissionPolicy("ask", workerRules(rules), new EditScope(() => tmpdir()));
+  const broker = new PermissionBroker(policy, waiting, explanations);
+  const answers = new PermissionAnswers(waiting, sessions, settings);
+  return { broker, waiting, answers };
 }
 
 const settle = () => new Promise((r) => setImmediate(r));
@@ -61,8 +71,33 @@ test("popups: a waiting request opens a pop-up naming the asker and the command"
     title: "webshop asks permission",
     warning: "",
     command: "Bash: npm test",
+    wholeCommand: "",
     allowLabel: "Allow once",
   });
+});
+
+test("popups: a click anywhere in a pop-up stops what is said about its request", (t) => {
+  const { ask, popups, silenced } = permissionsWithPopups(t);
+  void ask("npm test");
+  popups.latest().clickInside();
+  assert.deepEqual(
+    silenced.map((e) => e.label),
+    ["webshop"],
+  );
+});
+
+const LONG_SCRIPT = `cd /repo; set -e\n${"git ls-remote --exit-code origin refs/heads/feature\n".repeat(10)}`;
+
+test("popups: a long command's pop-up shows it at a glance", (t) => {
+  const { ask, popups } = permissionsWithPopups(t);
+  void ask(LONG_SCRIPT);
+  assert.match(popups.latest().content.command, /^Bash: cd \/repo; set -e git ls-remote .*…$/);
+});
+
+test("popups: a long command's pop-up has the whole command, uncut", (t) => {
+  const { ask, popups } = permissionsWithPopups(t);
+  void ask(LONG_SCRIPT);
+  assert.equal(popups.latest().content.wholeCommand, `Bash: ${LONG_SCRIPT}`);
 });
 
 test("popups: a destructive request's pop-up says Allow is the confirmation", (t) => {
@@ -102,8 +137,8 @@ test("popups: answering elsewhere closes the pop-up", (t) => {
 test("popups: a reminder doesn't open a second pop-up", (t) => {
   const { ask, popups, waiting, events } = permissionsWithPopups(t);
   void ask("npm test");
-  const { id, project, session, description } = waiting.all()[0];
-  events.emitEvent({ kind: "permission", id, project, session, label: project, description, reminder: true });
+  const { id, project, session, description, command } = waiting.all()[0];
+  events.emitEvent({ kind: "permission", id, project, session, label: project, description, command, reminder: true });
   assert.equal(popups.shown.length, 1);
 });
 

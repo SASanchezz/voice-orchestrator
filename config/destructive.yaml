@@ -1,14 +1,14 @@
 # Destructive actions. Hot-reloaded on save; also editable by voice ("add terraform apply to destructive").
 #
 # Anything matching here can never be auto-approved or "always allowed".
-# To approve, you must SAY the confirm phrase: "confirm <verb>" (e.g. "confirm push").
+# To approve, you must SAY the confirm phrase: "confirm <verb>" or "allow <verb>" (e.g. "confirm push").
 #
 #   pattern: case-insensitive regex, tested against the command text
 #            (Bash: each part of the whole command that could change something, between &&, ;, | and line breaks,
 #            with paths, file names and quoted text left out unless the part runs text as code: sh, ssh, psql,
 #            python, ...; read-only parts such as "ls deploy/" or "grep -rn push" are never tested;
 #            other tools: "<Tool> <file path or input>")
-#   verb:    the word you have to say after "confirm"
+#   verb:    the word you have to say after "confirm" or "allow"
 #   tools:   optional, which tools the rule applies to (default: Bash); workers' tools or the operator's own
 #   scope:   optional; protectedBranch: a worker's command needs the phrase only when its git calls run on a protected
 #            branch (permissions.protectedBranches in config.yaml, or the branch of the repo's main checkout), or

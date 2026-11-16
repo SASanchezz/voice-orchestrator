@@ -36,6 +36,7 @@ export class PermissionViews {
       sessionNumber: this.sessions.session(p.session).number,
       label: this.sessions.labelOf(p.session),
       description: p.description,
+      command: p.command,
       destructiveVerb: p.destructive?.verb,
       explanation: p.explanation,
       explaining: p.explaining,

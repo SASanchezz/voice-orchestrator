@@ -3,7 +3,14 @@ import type { VoiceCancel } from "../../orchestrator/conversation/voice-cancel.j
 import type { VoiceHold } from "../../orchestrator/conversation/voice-hold.js";
 import type { Orchestrator } from "../../orchestrator/orchestrator.js";
 import type { GestureControl } from "../../sensors/gesture-switch.js";
-import type { GestureStateName, SpeechModeName, VoiceInputName, VoiceOfferView } from "../protocol.js";
+import type { WakeWordControl } from "../../wake/wake-switch.js";
+import type {
+  GestureStateName,
+  SpeechModeName,
+  VoiceInputName,
+  VoiceOfferView,
+  WakeWordStateName,
+} from "../protocol.js";
 
 /** The operator's parts that know about your voice message. */
 export interface VoiceParts {
@@ -14,7 +21,8 @@ export interface VoiceParts {
 }
 
 /**
- * The voice side of the page: how replies are spoken, whether you're talking, whether gestures can talk for you,
+ * The voice side of the page: how replies are spoken, whether you're talking, whether gestures and the wake word can
+ * talk for you,
  * a voice message waiting for you, and the confirm phrases or go-ahead the assistant asked you for.
  */
 export class VoiceViews {
@@ -26,6 +34,7 @@ export class VoiceViews {
   constructor(
     { orchestrator, voiceHold, voiceCancel, confirmAsk }: VoiceParts,
     private gestureControl: GestureControl,
+    private wakeWordControl: WakeWordControl,
   ) {
     this.orchestrator = orchestrator;
     this.hold = voiceHold;
@@ -39,6 +48,10 @@ export class VoiceViews {
 
   get gestures(): GestureStateName {
     return this.gestureControl.state;
+  }
+
+  get wakeWord(): WakeWordStateName {
+    return this.wakeWordControl.state;
   }
 
   /** A spoken message queued behind a reply in progress shows too, since it can still be discarded. */

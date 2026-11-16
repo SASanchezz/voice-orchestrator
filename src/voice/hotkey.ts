@@ -71,7 +71,7 @@ export function macKeycode(name: string): number {
 export class MacHotkey {
   constructor(readonly keyName: string) {}
 
-  /** `onCancel`: Escape was pressed while the key is held. */
+  /** `onCancel`: Escape was pressed, with or without the key held. */
   async start(onDown: () => void, onUp: () => void, onCancel: () => void): Promise<void> {
     const helper = await buildNativeHelper("hotkey");
     const child = spawn(helper, [String(macKeycode(this.keyName))], { stdio: ["pipe", "pipe", "inherit"] });

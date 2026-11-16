@@ -34,9 +34,21 @@ export class PermissionAnswers {
 
   /** The UI puts destructive requests behind a dialog naming the exact command, so that click is the confirmation. */
   answerByClick(id: string, decision: Decision): string {
+    return this.answerDirectly(id, decision, "The user denied this in the UI.");
+  }
+
+  /**
+   * A message that was nothing but "allow" or "deny", matched in code to this one request: like a click, it is the
+   * confirmation, so a destructive request needs no verb said.
+   */
+  answerBySpokenApproval(id: string, decision: Decision): string {
+    return this.answerDirectly(id, decision, "The user denied this by voice.");
+  }
+
+  private answerDirectly(id: string, decision: Decision, deniedMessage: string): string {
     const pending = this.waiting.find(id);
     if (!pending) return `No pending request ${id}.`;
-    if (decision === "deny") return this.deny(pending, "The user denied this in the UI.");
+    if (decision === "deny") return this.deny(pending, deniedMessage);
     if (pending.destructive && decision === "always") return `Refused: destructive actions can't be always-allowed.`;
     return this.allow(pending, decision);
   }
@@ -60,7 +72,7 @@ function spokenRefusal(pending: Pending, decision: Allowance, utterance: string 
   if (decision === "always")
     return `Refused: destructive actions can't be always-allowed. Ask the user to say "confirm ${verb}" to allow it once.`;
   if (!utteranceConfirms(utterance, verb))
-    return `Not approved: destructive. The user's last words did not contain "confirm ${verb}". Ask them to say exactly that.`;
+    return `Not approved: destructive. The user's last words did not contain "confirm ${verb}" or "allow ${verb}". Ask them to say one.`;
   return undefined;
 }
 

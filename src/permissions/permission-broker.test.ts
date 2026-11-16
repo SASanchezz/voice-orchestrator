@@ -10,6 +10,7 @@ import { AppEvents, type AppEvent } from "../events/app-events.js";
 import { openRegistry } from "../registry/open-registry.js";
 import { DestructiveList } from "../safety/destructive-list.js";
 import { workerRules } from "../testing/test-worker-rules.js";
+import { EditScope } from "./edit-scope.js";
 import { PermissionAnnouncer } from "./permission-announcer.js";
 import { PermissionAnswers } from "./permission-answers.js";
 import { PermissionBroker } from "./permission-broker.js";
@@ -41,7 +42,7 @@ const ALWAYS_SUGGESTION = {
 function permissions(t: TestContext, explain?: ExplainCommand) {
   const events = new AppEvents();
   const { sessions, registry } = openRegistry({ webshop: "personal" }, events);
-  const policy = new PermissionPolicy("ask", workerRules(rules));
+  const policy = new PermissionPolicy("ask", workerRules(rules), new EditScope(() => tmp));
   const announcer = new PermissionAnnouncer(sessions, events, settings);
   const waiting = new WaitingRequests(sessions, announcer);
   const explanations = explain && new PermissionExplanations(waiting, explain, announcer);

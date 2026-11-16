@@ -2,6 +2,7 @@ import { rmSync } from "node:fs";
 import { stopRecorder, type Recording } from "./recorder.js";
 import { END_SOUND, playSound } from "./sounds.js";
 import type { Transcriber } from "./transcriber.js";
+import { spokenRequest } from "./spoken-request.js";
 import type { UtteranceMerger } from "./utterance-merger.js";
 
 const SECOND_MS = 1000;
@@ -39,5 +40,5 @@ export async function discardRecording(recording: Recording): Promise<void> {
 
 function complete(recording: Recording, transcript: string, merger: UtteranceMerger): void {
   rmSync(recording.wav, { force: true });
-  merger.finish(recording.slot, transcript);
+  merger.finish(recording.slot, spokenRequest(transcript));
 }

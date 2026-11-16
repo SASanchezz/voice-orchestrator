@@ -35,7 +35,10 @@ export interface NewRequest {
 /** A request waiting for your answer; its worker is blocked until then. */
 export interface Pending extends Omit<NewRequest, "call"> {
   project: string;
+  toolName: string;
   description: string;
+  /** The whole tool call, uncut, for showing on request. */
+  command: string;
   explanation?: string;
   createdAt: number;
   reminder: NodeJS.Timeout;
@@ -50,6 +53,7 @@ export interface PendingRequest {
   /** How the UI names the asker: the project, plus the session number when it has several. */
   label: string;
   description: string;
+  command: string;
   destructiveVerb?: string;
   /** What the command will do and how risky it is, in plain words; once it has been written. */
   explanation?: string;

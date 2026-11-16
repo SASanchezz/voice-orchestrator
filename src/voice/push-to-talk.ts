@@ -5,6 +5,7 @@ import { discardRecording, finishAtLimit, MAX_RECORDING_MS, transcribeRecording 
 import { RecordingFiles } from "./recording-files.js";
 import { prepareRecording } from "./recording-tools.js";
 import { DISCARD_SOUND, playSound, START_SOUND } from "./sounds.js";
+import { endsWithStopPhrase } from "./spoken-request.js";
 import type { Transcriber } from "./transcriber.js";
 import { TalkDraft } from "./talk-draft.js";
 import { UtteranceMerger } from "./utterance-merger.js";
@@ -26,7 +27,7 @@ export class PushToTalk extends EventEmitter<{ message: [string]; draft: [string
     private maxRecordingMs = MAX_RECORDING_MS,
   ) {
     super();
-    this.draft = new TalkDraft(transcriber, (words) => this.emit("draft", words));
+    this.draft = new TalkDraft(transcriber, (words) => this.showDraft(words));
   }
 
   prepare(): Promise<void> {
@@ -60,6 +61,12 @@ export class PushToTalk extends EventEmitter<{ message: [string]; draft: [string
     this.merger.discard();
     if (recording) void discardRecording(recording);
     playSound(DISCARD_SOUND);
+  }
+
+  /** Saying "finish" at the end ends the recording as releasing the key does. */
+  private showDraft(words: string): void {
+    this.emit("draft", words);
+    if (endsWithStopPhrase(words)) this.release();
   }
 
   private stopAtLimit(): void {

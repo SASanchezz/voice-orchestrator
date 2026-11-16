@@ -1,5 +1,5 @@
 // Watches one key system-wide and prints "ready", then "down" / "up" lines, to stdout,
-// and "cancel" when Escape is pressed while that key is held.
+// and "cancel" whenever Escape is pressed: it discards a recording, however it was started.
 // Usage: hotkey <mac virtual keycode>. Exits when stdin closes (the parent process is gone).
 // The event tap runs on this process's own main run loop, which is what macOS requires.
 import CoreGraphics
@@ -52,7 +52,6 @@ enum WatchedKey {
   }
 
   static func reportCancel() {
-    guard isDown else { return }
     print("cancel")
     fflush(stdout)
   }

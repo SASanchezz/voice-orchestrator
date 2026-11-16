@@ -22,9 +22,12 @@ export interface OpenPanel {
   close(): void;
 }
 
-/** Shows native question pop-ups; `chosen` gets a button's answer, or "text:<your words>". */
+/**
+ * Shows native question pop-ups; `chosen` gets a button's answer, or "text:<your words>", and `seen` your first click
+ * anywhere in one.
+ */
 export interface QuestionPanelDevice {
-  ask(panel: QuestionPanel, chosen: (answer: string) => void): OpenPanel;
+  ask(panel: QuestionPanel, chosen: (answer: string) => void, seen: () => void): OpenPanel;
 }
 
 /** Answers questions as a click in the web UI's dialog does. */
@@ -39,7 +42,7 @@ const TEXT_ANSWER = /^text:(.+)$/;
 /**
  * A native pop-up for each worker's questions, so you see them from any app; it closes once they're answered anywhere.
  * One question with a single pick is answered right there; anything more opens the web UI's dialog.
- * Any click on it stops the spoken "… has a question", and drops it if it is still queued.
+ * Any click on it, even off its buttons, stops the spoken "… has a question", and drops it if it is still queued.
  */
 export class QuestionPopups {
   private open = new Map<string, OpenPanel>();
@@ -58,9 +61,10 @@ export class QuestionPopups {
   }
 
   private show(asked: QuestionEvent): void {
+    const chosen = (answer: string) => this.chosen(asked, answer);
     this.open.set(
       asked.id,
-      this.device.ask(panelFor(asked), (answer) => this.chosen(asked, answer)),
+      this.device.ask(panelFor(asked), chosen, () => this.actions.silence(asked)),
     );
   }
 

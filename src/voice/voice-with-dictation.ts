@@ -2,7 +2,7 @@ import type { DictationControl } from "./dictation.js";
 import type { VoiceInputState, VoiceIO } from "./voice-io.js";
 
 /**
- * Your voice, where recording with a page's mic button counts as talking too, as holding the talk key does: nothing is
+ * Your voice, where recording with a page's mic button counts as talking too, as the talk key does: nothing is
  * said or put to you until you stop. Everything else is the talk key's voice as it is.
  */
 export class VoiceWithDictation implements VoiceIO {

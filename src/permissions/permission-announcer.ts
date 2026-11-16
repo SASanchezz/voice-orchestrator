@@ -43,6 +43,7 @@ export class PermissionAnnouncer {
       session: pending.session,
       label: this.sessions.labelOf(pending.session),
       description: pending.description,
+      command: pending.command,
       destructiveVerb: pending.destructive?.verb,
     };
   }

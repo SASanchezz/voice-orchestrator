@@ -1,7 +1,7 @@
-/* ---------------------------------------------------------------- approvals */
+/* ---------------------------------------------------------------- questions */
 
-/* Above the bottom strip in every view, so a request can't be hidden with the chat. */
-.approvals {
+/* Above the bottom strip in every view, so a question can't be hidden with the chat. */
+.questions {
   flex: none;
   padding: 10px 16px 0;
   border-top: 1px solid var(--border);
@@ -51,14 +51,4 @@
 }
 .explanation:empty {
   display: none;
-}
-
-.command {
-  margin: 0;
-  font: 12px/1.5 var(--mono);
-  background: var(--surface-2);
-  border-radius: 6px;
-  padding: 6px 8px;
-  white-space: pre-wrap;
-  word-break: break-word;
 }

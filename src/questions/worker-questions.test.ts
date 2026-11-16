@@ -7,6 +7,7 @@ import type { PermissionResult } from "@anthropic-ai/claude-agent-sdk";
 import { DEFAULT_PROTECTED_BRANCHES } from "../config/app-config.js";
 import { DESTRUCTIVE_PATH, setStateDir } from "../config/paths.js";
 import { AppEvents } from "../events/app-events.js";
+import { EditScope } from "../permissions/edit-scope.js";
 import { PermissionAnnouncer } from "../permissions/permission-announcer.js";
 import { PermissionBroker } from "../permissions/permission-broker.js";
 import { PermissionPolicy } from "../permissions/permission-policy.js";
@@ -46,12 +47,13 @@ const INPUT = {
 };
 
 const settle = () => new Promise((r) => setImmediate(r));
+const editScope = new EditScope(() => tmpdir());
 
 /** One project's worker asking through the gate, in auto mode. Questions still waiting when the test ends are stopped. */
 function questions(t: TestContext) {
   const events = new AppEvents();
   const { sessions, registry } = openRegistry({ webshop: "personal" }, events);
-  const policy = new PermissionPolicy("auto", workerRules(new DestructiveList(rulesFile)));
+  const policy = new PermissionPolicy("auto", workerRules(new DestructiveList(rulesFile)), editScope);
   const permissions = new PermissionBroker(
     policy,
     new WaitingRequests(sessions, new PermissionAnnouncer(sessions, events, settings)),

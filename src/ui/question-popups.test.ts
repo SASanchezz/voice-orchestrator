@@ -108,3 +108,10 @@ for (const answer of ["option:0", "text:MySQL", "open"]) {
     assert.deepEqual(silenced, [ONE_QUESTION]);
   });
 }
+
+test("question popups: a click anywhere in the pop-up silences the spoken question", () => {
+  const { events, panels, silenced } = popups();
+  events.emitEvent(ONE_QUESTION);
+  panels.latest().clickInside();
+  assert.deepEqual(silenced, [ONE_QUESTION]);
+});
