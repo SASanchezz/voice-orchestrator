@@ -3,8 +3,8 @@ import type { VoiceIO } from "../../voice/voice-io.js";
 import { SingleVoice } from "./single-voice.js";
 
 /**
- * The one voice of each event with a pop-up (a task's end, a worker's questions), so clicking the pop-up
- * silences it wherever it is: queued, or being said. It stops speech the way the talk key does.
+ * The one voice of each event with a pop-up (a task's end, a worker's questions, a permission request), so clicking
+ * the pop-up silences it wherever it is: queued, or being said. It stops speech the way the talk key does.
  */
 export class EventVoices {
   private voices = new WeakMap<AppEvent, SingleVoice>();

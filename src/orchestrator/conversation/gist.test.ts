@@ -46,6 +46,18 @@ test("a finished task's headline names the session and the gist", () => {
   assert.equal(taskHeadline(e), "wicked-fe session 1 done: add a resend countdown");
 });
 
+test("a finished task's headline names its written topic instead of the task's words", () => {
+  const e = {
+    kind: "task_done",
+    ...WICKED_TASK,
+    task: "I wish to add a resend countdown.",
+    topic: "Sign-up: resend countdown added",
+    result: "ok",
+    note: "ok",
+  } as const;
+  assert.equal(taskHeadline(e), "wicked-fe session 1 done: Sign-up: resend countdown added");
+});
+
 test("a failed task's headline says it failed", () => {
   const e = { kind: "task_failed", ...WICKED_TASK, task: "run the tests", error: "boom" } as const;
   assert.equal(taskHeadline(e), "wicked-fe session 1 failed: run the tests");

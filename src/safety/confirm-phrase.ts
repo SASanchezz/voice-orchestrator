@@ -8,7 +8,7 @@ export function normalizeSpeech(text: string): string {
 }
 
 /**
- * True when the user said "confirm <verb>" in this utterance. A pause word may sit between the two
+ * True when the user said "confirm <verb>" or "allow <verb>" in this utterance. A pause word may sit between the two
  * ("confirm, and push"); a negation before it ("don't confirm push") never counts.
  */
 export function utteranceConfirms(utterance: string | undefined, verb: string): boolean {
@@ -18,5 +18,7 @@ export function utteranceConfirms(utterance: string | undefined, verb: string): 
 
 /** Normalized words are only letters, digits and single spaces, so the verb is safe inside the pattern. */
 function confirmPhrase(verb: string): RegExp {
-  return new RegExp(`(?<!\\b(?:not|never|dont|don t|do not) )\\bconfirm (?:and )?${normalizeSpeech(verb)}\\b`);
+  return new RegExp(
+    `(?<!\\b(?:not|never|dont|don t|do not) )\\b(?:confirm|allow) (?:and )?${normalizeSpeech(verb)}\\b`,
+  );
 }

@@ -34,8 +34,13 @@ export function inputFor(e: AppEvent, voices: Pick<EventVoices, "voiceOf">): Inp
     session: e.kind === "permission" ? undefined : sessionLinkOf(e),
     urgent: true,
     announcement: failed && taskHeadline(failed),
-    voice: failed && voices.voiceOf(failed),
+    voice: poppedUpOf(e) && voices.voiceOf(e),
   };
+}
+
+/** A permission request or a failed task: either has a pop-up, so clicking it can silence the reply about it. */
+function poppedUpOf(e: AppEvent): AppEvent | undefined {
+  return e.kind === "permission" || e.kind === "task_failed" ? e : undefined;
 }
 
 export function describeEvent(e: AppEvent): string {
@@ -51,7 +56,9 @@ export function describeEvent(e: AppEvent): string {
 
 function describePermission(e: PermissionEvent): string {
   const reminder = e.reminder ? "(reminder, still waiting) " : "";
-  const destructive = e.destructiveVerb ? ` -- DESTRUCTIVE: user must say "confirm ${e.destructiveVerb}".` : "";
+  const destructive = e.destructiveVerb
+    ? ` -- DESTRUCTIVE: user must say "confirm ${e.destructiveVerb}" or "allow ${e.destructiveVerb}".`
+    : "";
   return `[PERMISSION ${e.id}] ${reminder}${e.label} wants approval for ${e.description}${destructive}`;
 }
 

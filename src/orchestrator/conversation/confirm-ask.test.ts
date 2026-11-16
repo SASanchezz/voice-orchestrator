@@ -101,3 +101,61 @@ test("a go-ahead question announces that the replaced confirm request closed", (
   ask.askGoAhead();
   assert.equal(closings, 1);
 });
+
+test("a go-ahead question is announced", () => {
+  const ask = new ConfirmAsk();
+  let announcements = 0;
+  ask.on("goAheadAsked", () => announcements++);
+  ask.askGoAhead();
+  assert.equal(announcements, 1);
+});
+
+test("your words announce that an open go-ahead question closed", () => {
+  const { ask, lines } = followingAsk();
+  let closings = 0;
+  ask.on("closed", () => closings++);
+  ask.askGoAhead();
+  lines.say({ role: "user", text: "yes" });
+  assert.equal(closings, 1);
+});
+
+test("a confirm request announces that the replaced go-ahead question closed", () => {
+  const ask = new ConfirmAsk();
+  let closings = 0;
+  ask.on("closed", () => closings++);
+  ask.askGoAhead();
+  ask.ask(["push"]);
+  assert.equal(closings, 1);
+});
+
+test("withdrawing one of several verbs leaves the rest asked", () => {
+  const ask = new ConfirmAsk();
+  ask.ask(["push", "delete"]);
+  ask.withdraw("delete");
+  assert.deepEqual(ask.verbs, ["push"]);
+});
+
+test("withdrawing one of several verbs announces the rest", () => {
+  const ask = new ConfirmAsk();
+  const announced: string[][] = [];
+  ask.ask(["push", "delete"]);
+  ask.on("asked", (verbs: string[]) => announced.push(verbs));
+  ask.withdraw("delete");
+  assert.deepEqual(announced, [["push"]]);
+});
+
+test("withdrawing the last verb closes the request", () => {
+  const ask = new ConfirmAsk();
+  let closed = false;
+  ask.ask(["delete"]);
+  ask.on("closed", () => (closed = true));
+  ask.withdraw("delete");
+  assert.equal(closed, true);
+});
+
+test("withdrawing a verb that wasn't asked changes nothing", () => {
+  const ask = new ConfirmAsk();
+  ask.ask(["push"]);
+  ask.withdraw("delete");
+  assert.deepEqual(ask.verbs, ["push"]);
+});

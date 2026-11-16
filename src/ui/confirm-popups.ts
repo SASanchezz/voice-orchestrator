@@ -1,12 +1,17 @@
 import type { ConfirmAsk } from "../orchestrator/conversation/confirm-ask.js";
-import type { ConversationLine, ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import { cancelWords, confirmWords } from "./confirm-request.js";
 import { confirmSummary } from "./confirm-summary.js";
+import type { LatestReply } from "./latest-reply.js";
 import type { OpenPanel, PanelButton } from "./question-popups.js";
 
 /** Takes words as if you had typed them in the assistant's chat. */
 export interface TypedWords {
   receiveTyped(text: string): void;
+}
+
+/** Typed words that can also cut off the assistant's reply being said, without typing anything. */
+export interface ReplyWords extends TypedWords {
+  silenceReply(): void;
 }
 
 /** What a confirm pop-up shows, laid out like a permission pop-up: buttons side by side, Cancel first. */
@@ -17,9 +22,9 @@ export interface ConfirmPanel {
   buttons: PanelButton[];
 }
 
-/** Shows native confirm pop-ups; `chosen` gets the clicked button's answer. */
+/** Shows native confirm pop-ups; `chosen` gets the clicked button's answer, and `seen` your first click anywhere in one. */
 export interface ConfirmPanelDevice {
-  ask(panel: ConfirmPanel, chosen: (answer: string) => void): OpenPanel;
+  ask(panel: ConfirmPanel, chosen: (answer: string) => void, seen: () => void): OpenPanel;
 }
 
 /** The open permission pop-ups, whose Allow may already stand for the phrase asked. */
@@ -35,35 +40,29 @@ const CONFIRM_ANSWER_PREFIX = "confirm:";
  * A native pop-up for the assistant's request to say a confirm phrase, so a skipped spoken reply still shows it
  * from any app. Its buttons say the same words the web UI's Confirm and Cancel do; it closes on your next words.
  * None opens when a permission pop-up's Allow already stands for every phrase asked: one decision, one pop-up.
+ * Your first click on it, even off its buttons, cuts off the reply being said: you are already reading it.
  */
 export class ConfirmPopups {
   private open: OpenPanel | undefined;
-  private latestReply = "";
 
   constructor(
     private device: ConfirmPanelDevice,
-    private typed: TypedWords,
+    private typed: ReplyWords,
     private permissionPopups: OpenPermissionPopups,
   ) {}
 
-  follow(confirmAsk: ConfirmAsk, lines: ConversationLines): void {
-    lines.on("line", (line: ConversationLine) => this.remember(line));
-    confirmAsk.on("asked", (verbs: string[]) => this.show(verbs));
+  follow(confirmAsk: ConfirmAsk, latestReply: LatestReply): void {
+    confirmAsk.on("asked", (verbs: string[]) => this.show(verbs, latestReply.text));
     confirmAsk.on("closed", () => this.close());
   }
 
-  /** The assistant's reply since your last words, which a reply streamed in pieces adds to. */
-  private remember({ role, text }: ConversationLine): void {
-    if (role === "user") this.latestReply = "";
-    else this.latestReply = [this.latestReply, text].filter(Boolean).join("\n\n");
-  }
-
-  private show(verbs: string[]): void {
+  private show(verbs: string[], reply: string): void {
     this.close();
     const isCovered = verbs.every((verb) => this.permissionPopups.isAsking(verb));
     if (isCovered) return;
-    const panel = panelFor(verbs, confirmSummary(this.latestReply, verbs));
-    this.open = this.device.ask(panel, (answer) => this.chosen(verbs, answer));
+    const panel = panelFor(verbs, confirmSummary(reply, verbs));
+    const chosen = (answer: string) => this.chosen(verbs, answer);
+    this.open = this.device.ask(panel, chosen, () => this.typed.silenceReply());
   }
 
   private chosen(verbs: string[], answer: string): void {

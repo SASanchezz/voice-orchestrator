@@ -6,6 +6,14 @@ test("the confirm phrase may sit inside a longer sentence", () => {
   assert.ok(utteranceConfirms("Okay, confirm push.", "push"));
 });
 
+test("allow followed by the verb confirms as well", () => {
+  assert.ok(utteranceConfirms("Allow commit.", "commit"));
+});
+
+test("don't allow is a refusal", () => {
+  assert.ok(!utteranceConfirms("don't allow push", "push"));
+});
+
 test("the confirm phrase ignores case", () => {
   assert.ok(utteranceConfirms("CONFIRM PUSH please", "push"));
 });

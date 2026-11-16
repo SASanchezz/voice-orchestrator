@@ -19,10 +19,18 @@ export function spokenGist(task: string): string {
   return words.join(" ").replace(TRAILING_PUNCTUATION, "") || FALLBACK_GIST;
 }
 
-/** How an ended task is announced, aloud and in the page's pop-up: "acme-web session 3 done: add a countdown". */
+/**
+ * How an ended task is announced, aloud and in the page's pop-up: "acme-web session 3 done: Sign-up: resend
+ * countdown added". A finished task names its written topic; without one, or when it failed, the task's own words.
+ */
 export function taskHeadline(e: TaskEndEvent): string {
   const outcome = e.kind === "task_done" ? "done" : "failed";
-  return `${e.project} session ${e.sessionNumber} ${outcome}: ${spokenGist(e.task)}`;
+  return `${e.project} session ${e.sessionNumber} ${outcome}: ${aboutOf(e)}`;
+}
+
+function aboutOf(e: TaskEndEvent): string {
+  if (e.kind === "task_done" && e.topic) return e.topic;
+  return spokenGist(e.task);
 }
 
 function withoutFiller(text: string): string {

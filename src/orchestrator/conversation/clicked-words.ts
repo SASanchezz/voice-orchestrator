@@ -19,4 +19,9 @@ export class ClickedWords {
     this.replies.silenceLatestReply();
     this.input.receiveTyped(text);
   }
+
+  /** A click into a pop-up that answers nothing yet: the reply stops, as it does for a Confirm or Cancel click. */
+  silenceReply(): void {
+    this.replies.silenceLatestReply();
+  }
 }

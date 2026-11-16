@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ConfirmAsk } from "../conversation/confirm-ask.js";
+import type { SettledVerbs } from "../conversation/settled-verbs.js";
 import { defineTool, text, type OperatorTool } from "./tool-kit.js";
 
 const verbArg = z
@@ -11,8 +12,15 @@ const verbArg = z
 const BUTTONS_SHOWN =
   "Confirm buttons shown under your reply. You have already asked; end your turn without more text.";
 
-/** Shows Confirm and Cancel buttons under your reply; it approves nothing by itself. */
-export function askToConfirm(confirmAsk: ConfirmAsk): OperatorTool {
+/** For a reply begun before you answered the request it asks about, e.g. by a click on its pop-up. */
+const ALREADY_ANSWERED =
+  "No buttons shown: the request this phrase was for has already been answered. End your turn without more text.";
+
+/**
+ * Shows Confirm and Cancel buttons under your reply; it approves nothing by itself.
+ * Leaves out verbs whose request was answered while the reply was being written.
+ */
+export function askToConfirm(confirmAsk: ConfirmAsk, settled: Pick<SettledVerbs, "isSettled">): OperatorTool {
   return defineTool({
     name: "ask_to_confirm",
     description:
@@ -21,7 +29,9 @@ export function askToConfirm(confirmAsk: ConfirmAsk): OperatorTool {
       "only the user's own words do. Don't call it when you only mention or explain a phrase.",
     args: { verbs: z.array(verbArg).min(1).describe("Each verb you ask for, e.g. ['update', 'delete']") },
     run: ({ verbs }) => {
-      confirmAsk.ask(verbs);
+      const open = verbs.filter((verb) => !settled.isSettled(verb.toLowerCase()));
+      if (!open.length) return text(ALREADY_ANSWERED);
+      confirmAsk.ask(open);
       return text(BUTTONS_SHOWN);
     },
   });

@@ -35,6 +35,7 @@ function toolServices(core: Core, neighbors: OperatorNeighbors, kit: Conversatio
     requests: kit.requests,
     context: kit.context,
     confirmAsk: kit.confirmAsk,
+    settledVerbs: kit.settledVerbs,
   };
 }
 

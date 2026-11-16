@@ -4,6 +4,7 @@ import { ConfirmAsk } from "../orchestrator/conversation/confirm-ask.js";
 import { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
 import { TestConfirmPanels } from "../testing/test-panels.js";
 import { ConfirmPopups } from "./confirm-popups.js";
+import { LatestReply } from "./latest-reply.js";
 
 const REPLY = 'Pushing is destructive, say "confirm push".';
 
@@ -17,10 +18,16 @@ function popups(permissionVerbs: string[] = []) {
   ask.follow(lines);
   const panels = new TestConfirmPanels();
   const typed: string[] = [];
-  const typedWords = { receiveTyped: (text: string) => void typed.push(text) };
+  const silences: string[] = [];
+  const typedWords = {
+    receiveTyped: (text: string) => void typed.push(text),
+    silenceReply: () => void silences.push("reply"),
+  };
   const permissionPopups = { isAsking: (verb: string) => permissionVerbs.includes(verb) };
-  new ConfirmPopups(panels, typedWords, permissionPopups).follow(ask, lines);
-  return { lines, ask, panels, typed };
+  const latestReply = new LatestReply();
+  latestReply.follow(lines);
+  new ConfirmPopups(panels, typedWords, permissionPopups).follow(ask, latestReply);
+  return { lines, ask, panels, typed, silences };
 }
 
 test("confirm popups: a request shows a warning, the reply, then Cancel and a Confirm per verb", () => {
@@ -93,4 +100,18 @@ test("confirm popups: a new request replaces the open pop-up", () => {
   ask.ask(["push"]);
   ask.ask(["delete"]);
   assert.equal(panels.shown[0].closed, true);
+});
+
+test("confirm popups: a click anywhere in the pop-up cuts off the reply being said", () => {
+  const { ask, panels, silences } = popups();
+  ask.ask(["push"]);
+  panels.latest().clickInside();
+  assert.deepEqual(silences, ["reply"]);
+});
+
+test("confirm popups: a click off the buttons types nothing", () => {
+  const { ask, panels, typed } = popups();
+  ask.ask(["push"]);
+  panels.latest().clickInside();
+  assert.deepEqual(typed, []);
 });

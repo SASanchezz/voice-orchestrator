@@ -3,6 +3,7 @@ import type { AppEvent } from "../events/app-events.js";
 import { ClickedWords } from "../orchestrator/conversation/clicked-words.js";
 import { ConfirmAsk } from "../orchestrator/conversation/confirm-ask.js";
 import { ConversationLines } from "../orchestrator/conversation/conversation-lines.js";
+import { SettledVerbs } from "../orchestrator/conversation/settled-verbs.js";
 import { inputFor } from "../orchestrator/conversation/event-inputs.js";
 import { isWorthNoting, quietInputFor } from "../orchestrator/conversation/quiet-inputs.js";
 import { EventTurns } from "../orchestrator/conversation/event-turns.js";
@@ -68,13 +69,20 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   const pointing = new PointingCue();
   listen(neighbors.devices, pointing, (text) => voiceHold.receive(pointing.annotate(text)));
   releaseShotsAfterTurns(neighbors.devices, kit.context);
-  kit.confirmAsk.follow(kit.lines);
+  followConfirmAsk(core, kit);
   followEvents(core, loop, kit);
   core.events.on("permission_closed", (requestId: string) => kit.replies.answered(requestId));
   const orchestrator = new Orchestrator(loop, kit.context, kit.speech);
   const clickedWords = new ClickedWords(kit.replies, orchestrator);
   const parts = { orchestrator, session, lifecycle, tools, voiceHold, voiceCancel, pointing, clickedWords };
   return { ...parts, ...kitParts(kit) };
+}
+
+/** The assistant's confirm buttons close on your words, and drop a phrase once its request is answered elsewhere. */
+function followConfirmAsk({ events }: Core, { confirmAsk, settledVerbs, lines }: ConversationKit): void {
+  confirmAsk.follow(lines);
+  settledVerbs.follow(events, lines);
+  settledVerbs.on("settled", (verb: string) => confirmAsk.withdraw(verb));
 }
 
 /** Every app event reaches the model; a quiet session's only as a note, without a sound. */
@@ -109,8 +117,12 @@ function conversationKit({ cfg }: Core, { permissions, devices }: OperatorNeighb
     lines: new ConversationLines(),
     memory,
     requests: new ResetRequests(),
-    confirmAsk: new ConfirmAsk(),
+    ...confirmParts(),
   };
+}
+
+function confirmParts(): Pick<ConversationKit, "confirmAsk" | "settledVerbs"> {
+  return { confirmAsk: new ConfirmAsk(), settledVerbs: new SettledVerbs() };
 }
 
 function operatorLoop(

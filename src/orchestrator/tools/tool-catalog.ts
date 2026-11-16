@@ -26,6 +26,7 @@ import type { GitCommands } from "../actions/git-commands.js";
 import type { ProjectOpener } from "../actions/project-opener.js";
 import type { ProjectRemover } from "../actions/project-remover.js";
 import type { ConfirmAsk } from "../conversation/confirm-ask.js";
+import type { SettledVerbs } from "../conversation/settled-verbs.js";
 import type { TurnContext } from "../conversation/turn-context.js";
 import type { ResetRequests } from "../lifecycle/reset-requests.js";
 import type { AssistantNotes } from "../memory/assistant-notes.js";
@@ -83,6 +84,7 @@ export interface ToolServices {
   views: PermissionViews;
   context: TurnContext;
   confirmAsk: ConfirmAsk;
+  settledVerbs: SettledVerbs;
   screen: ScreenSource;
   clipboard: ClipboardSource;
   cameraView: CameraView;
@@ -140,7 +142,7 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => readClipboard(s.clipboard, s.attachments),
   (s) => catchUpMessages(s.messages),
   (s) => listMessageSources(s.messages),
-  (s) => askToConfirm(s.confirmAsk),
+  (s) => askToConfirm(s.confirmAsk, s.settledVerbs),
   (s) => askGoAhead(s.confirmAsk),
   (s) => destructiveRules(s.destructive),
   (s) => destructiveAdd(s.destructive, s.context),

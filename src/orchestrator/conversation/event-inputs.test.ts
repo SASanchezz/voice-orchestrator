@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { ContextFullEvent, QuestionEvent, TaskEndEvent } from "../../events/app-events.js";
+import type { ContextFullEvent, PermissionEvent, QuestionEvent, TaskEndEvent } from "../../events/app-events.js";
 import { inputFor } from "./event-inputs.js";
 import { EventVoices } from "./event-voices.js";
 
@@ -82,4 +82,20 @@ test("event inputs: the model reads only the end of a finished task's closing no
   const input = inputFor(DONE, voices);
   const note = input.kind === "notice" ? input.text.split("closing note: ")[1].split("\n")[0] : "";
   assert.equal(note.length, 400);
+});
+
+const PERMISSION: PermissionEvent = {
+  kind: "permission",
+  id: "p1",
+  project: "webshop",
+  session: "s1",
+  label: "webshop session 2",
+  description: "Bash: git push",
+  command: "git push",
+};
+
+test("event inputs: a permission request has a voice its pop-up can silence", () => {
+  const input = inputFor(PERMISSION, voices);
+  voices.silence(PERMISSION);
+  assert.equal(input.kind === "event" && input.voice?.isSilenced(), true);
 });
