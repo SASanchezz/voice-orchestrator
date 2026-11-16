@@ -31,7 +31,13 @@ const DEFAULT_PERMISSIONS = { mode: "ask", reminderMinutes: 5, alwaysDestination
 // A key left empty in YAML reads as null; like a missing key, it gets the default.
 const optionalString = z.preprocess((value) => value ?? undefined, z.string().optional());
 
-export const projectSchema = z.object({ path: z.string(), profile: z.string(), model: optionalString });
+/** chromeProfile: the Chrome profile (as Chrome names it) the project's links open in, over its account's. */
+export const projectSchema = z.object({
+  path: z.string(),
+  profile: z.string(),
+  model: optionalString,
+  chromeProfile: optionalString,
+});
 export type ProjectConfig = z.infer<typeof projectSchema>;
 
 const orchestratorSchema = z.object({
@@ -72,6 +78,8 @@ const uiSchema = z
       .boolean()
       .nullish()
       .transform((open) => open ?? DEFAULT_UI.open),
+    /** The Chrome app (Install page as app) the web UI runs in; a notice's buttons bring its window up. */
+    chromeApp: optionalString,
   })
   .nullish()
   .transform((ui) => ui ?? { ...DEFAULT_UI });
@@ -97,7 +105,11 @@ const permissionsSchema = z
 /** config/config.yaml, with defaults filled in and ~ expanded. */
 export const configFileSchema = z.object({
   orchestrator: orchestratorSchema,
-  profiles: z.record(z.string(), z.object({ configDir: z.string().transform(expandHome) })),
+  /** chromeProfile: the Chrome profile the account's projects open links in, unless a project names its own. */
+  profiles: z.record(
+    z.string(),
+    z.object({ configDir: z.string().transform(expandHome), chromeProfile: optionalString }),
+  ),
   projects: z
     .record(
       z.string(),

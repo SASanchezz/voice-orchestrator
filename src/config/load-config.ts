@@ -4,6 +4,7 @@ import YAML from "yaml";
 import { configFileSchema, type AppConfig } from "./app-config.js";
 import { messageProfiles } from "./messages-config.js";
 import { CONFIG_PATH, expandHome } from "./paths.js";
+import { moveToOrchestratorAccount, projectsOnUnknownAccounts } from "./project-accounts.js";
 import { readProjectOverlay } from "./project-overlay.js";
 
 export function loadConfig(path = CONFIG_PATH): AppConfig {
@@ -11,6 +12,7 @@ export function loadConfig(path = CONFIG_PATH): AppConfig {
   const cfg: AppConfig = { ...parsed, claudeBin: resolveClaudeBin(parsed.claudeBin) };
   Object.assign(cfg.projects, readProjectOverlay()); // projects added by voice
   checkProfiles(cfg);
+  for (const name of projectsOnUnknownAccounts(cfg)) moveToOrchestratorAccount(cfg, name);
   return cfg;
 }
 
@@ -30,11 +32,10 @@ function claudeOnLoginShellPath(): string | undefined {
   return found.trim().split("\n").pop() || undefined;
 }
 
+/** Message sources stay strict: falling back could hand work messages to the personal account. */
 function checkProfiles(cfg: AppConfig): void {
   if (!cfg.profiles[cfg.orchestrator.profile])
     throw new Error(`orchestrator.profile "${cfg.orchestrator.profile}" is not in profiles`);
-  for (const [name, project] of Object.entries(cfg.projects))
-    if (!cfg.profiles[project.profile]) throw new Error(`project ${name}: unknown profile "${project.profile}"`);
   for (const [source, profile] of messageProfiles(cfg.messages))
     if (!cfg.profiles[profile]) throw new Error(`messages, ${source}: unknown profile "${profile}"`);
 }

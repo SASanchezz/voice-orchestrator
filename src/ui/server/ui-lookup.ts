@@ -1,4 +1,5 @@
-import type { AppConfig } from "../../config/app-config.js";
+import { chromeProfileOf, type ChromeProfileSettings } from "../../config/chrome-profile.js";
+import { claudeDefaultModel } from "../../config/claude-default-model.js";
 import { tildeHome } from "../../config/paths.js";
 import type { Projects } from "../../registry/projects.js";
 import type { SessionState } from "../../registry/registry-schema.js";
@@ -11,7 +12,7 @@ export class UiLookup {
   constructor(
     private projects: Projects,
     private sessions: Sessions,
-    private projectConfigs: AppConfig["projects"],
+    private settings: ChromeProfileSettings,
   ) {}
 
   requireProject(name: string): void {
@@ -25,7 +26,15 @@ export class UiLookup {
   /** The folder of a known project. */
   folderOf(name: string): string {
     this.requireProject(name);
-    return this.projectConfigs[name]?.path ?? "";
+    return this.settings.projects[name]?.path ?? "";
+  }
+
+  /** The Chrome profile a known project's links open in; one without is a 400. */
+  chromeProfileOf(name: string): string {
+    this.requireProject(name);
+    const chromeProfile = chromeProfileOf(this.settings, name);
+    if (!chromeProfile) throw new HttpError(HTTP_STATUS.badRequest, `${name} has no Chrome profile set`);
+    return chromeProfile;
   }
 
   session(id: string): SessionState {
@@ -42,8 +51,18 @@ export class UiLookup {
 
   projectViews(): ProjectView[] {
     return this.projects.all().map((p) => {
-      const folder = this.projectConfigs[p.name]?.path ?? "";
-      return { ...p, folder, folderFromHome: tildeHome(folder), sessions: this.sessions.sessionsOf(p.name) };
+      const config = this.settings.projects[p.name];
+      const folder = config?.path ?? "";
+      const sessions = this.sessions.sessionsOf(p.name);
+      const chromeProfile = chromeProfileOf(this.settings, p.name);
+      const claudeModel = this.claudeModelOf(folder, p.profile);
+      const model = config?.model;
+      return { ...p, folder, folderFromHome: tildeHome(folder), model, claudeModel, chromeProfile, sessions };
     });
+  }
+
+  private claudeModelOf(folder: string, profile: string): string | undefined {
+    const configDir = this.settings.profiles[profile]?.configDir;
+    return configDir ? claudeDefaultModel(folder, configDir) : undefined;
   }
 }
