@@ -10,6 +10,12 @@ const DEFAULT_GESTURES = {
   mapping: "config/gestures.yaml",
 };
 
+/** The wake word listener in sensors/wake; always on once it is set up. */
+const DEFAULT_WAKE_WORD = {
+  python: "sensors/wake/.venv/bin/python",
+  args: ["-m", "wake", "run"],
+};
+
 // A key left empty in YAML reads as null; like a missing key, it gets the default.
 const missingAsUndefined = (value: unknown): unknown => value ?? undefined;
 const missingAsEmpty = (value: unknown): unknown => value ?? {};
@@ -31,7 +37,20 @@ const gesturesSchema = z.preprocess(
 );
 export type GestureSettings = z.infer<typeof gesturesSchema>;
 
-export const sensorsSchema = z.preprocess(missingAsEmpty, z.object({ gestures: gesturesSchema }));
+const wakeWordSchema = z.preprocess(
+  missingAsEmpty,
+  z.object({
+    python: appPathOr(DEFAULT_WAKE_WORD.python),
+    /** What follows the interpreter, e.g. extra `--model`, `--threshold 0.6` or `--end-silence-ms 1200`. */
+    args: z.preprocess(missingAsUndefined, z.array(z.string()).default(DEFAULT_WAKE_WORD.args)),
+  }),
+);
+export type WakeWordSettings = z.infer<typeof wakeWordSchema>;
+
+export const sensorsSchema = z.preprocess(
+  missingAsEmpty,
+  z.object({ gestures: gesturesSchema, wakeWord: wakeWordSchema }),
+);
 export type SensorsConfig = z.infer<typeof sensorsSchema>;
 
 /** What a config file without a `sensors` section gets. */

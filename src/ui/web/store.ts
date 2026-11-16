@@ -27,6 +27,7 @@ const INITIAL_STATE: UiState = {
   permissionMode: "ask",
   speechMode: "questions",
   gestures: "unavailable", // hidden until the server says whether there is a mic
+  wakeWord: "unavailable",
   voiceInput: "idle",
   confirmVerbs: [],
   goAheadAsked: false,

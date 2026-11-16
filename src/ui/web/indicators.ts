@@ -14,11 +14,13 @@ const VOICE_INPUT_NOTICE: Record<VoiceInputName, string> = {
 };
 
 export function renderIndicators(): void {
-  const { permissionMode, speechMode, gestures, voiceInput, pending } = store.state;
+  const { permissionMode, speechMode, gestures, wakeWord, voiceInput, pending } = store.state;
   markSegment("permission-mode", permissionMode);
   markSegment("speech-mode", speechMode);
   markSegment("gesture-mode", gestures);
   byId("gestures-control", HTMLElement).hidden = gestures === "unavailable";
+  markSegment("wake-word-mode", wakeWord);
+  byId("wake-word-control", HTMLElement).hidden = wakeWord === "unavailable";
   byId("voice-status", HTMLElement).hidden = voiceInput === "idle";
   byId("voice-status-text", HTMLElement).textContent = VOICE_INPUT_NOTICE[voiceInput];
   document.title = pending.length ? `(${pending.length}) ${BASE_TITLE}` : BASE_TITLE;

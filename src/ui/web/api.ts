@@ -10,6 +10,7 @@ import type {
 import type { MessengerStatusView } from "../messenger-status-views.js";
 import type { AccountUsageView } from "../plan-usage-views.js";
 import type { ActionReply, ChatMessageView, ServerEvents } from "../protocol.js";
+import type { WakeRecordingView } from "../wake-recording-views.js";
 
 export interface HiddenLinesRequest {
   from: number;
@@ -65,6 +66,16 @@ export async function fetchMessengerStatus(): Promise<MessengerStatusView[]> {
   const res = await fetch(`/api/messengers?token=${encodeURIComponent(token)}`);
   if (!res.ok) throw new Error(res.statusText);
   return fromServer<MessengerStatusView[]>(await res.json());
+}
+
+/** Your wake word training recordings, oldest first. */
+export async function fetchWakeRecordings(): Promise<WakeRecordingView[]> {
+  return await replyOf<WakeRecordingView[]>(await fetch(urlOf("/api/wake-training/recordings", {})));
+}
+
+/** Where a training recording's audio is played from. */
+export function wakeRecordingUrl({ label, name }: WakeRecordingView): string {
+  return urlOf(`/api/wake-training/recordings/${label}/${encodeURIComponent(name)}`, {});
 }
 
 /** Where one kind of diff is read: a project's uncommitted changes, or what one of its branches adds to another. */

@@ -71,17 +71,30 @@ test("talk switch: once released, the other source can talk", () => {
   assert.equal(done.filter((step) => step === "begin").length, 2);
 });
 
-test("talk switch: cancelling drops the holder's recording", () => {
+test("talk switch: Escape drops the hotkey's recording", () => {
   const { talk, done } = talkSwitch();
   talk.press("hotkey");
-  talk.cancel("hotkey");
+  talk.cancel();
   assert.equal(done.at(-1), "discard");
+});
+
+test("talk switch: Escape drops the wake word's recording", () => {
+  const { talk, done } = talkSwitch();
+  talk.press("wake");
+  talk.cancel();
+  assert.equal(done.at(-1), "discard");
+});
+
+test("talk switch: Escape with nothing recording drops nothing", () => {
+  const { talk, done } = talkSwitch();
+  talk.cancel();
+  assert.deepEqual(done, []);
 });
 
 test("talk switch: after a discarded recording, a new press records again", () => {
   const { talk, done } = talkSwitch();
   talk.press("gesture");
-  talk.cancel("gesture");
+  talk.cancel();
   talk.press("gesture");
   assert.equal(done.filter((step) => step === "begin").length, 2);
 });

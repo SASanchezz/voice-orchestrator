@@ -1,13 +1,13 @@
 import type { PushToTalk } from "./push-to-talk.js";
 
 /** What starts and ends a push-to-talk recording. */
-export type TalkSource = "hotkey" | "gesture";
+export type TalkSource = "hotkey" | "gesture" | "wake";
 
 type Recorder = Pick<PushToTalk, "begin" | "release" | "discard" | "state">;
 
 /**
- * The mic, shared by the hotkey and the talk gestures. While one of them records, the other can't start
- * a recording, and only the one that started it can end it.
+ * The mic, shared by the hotkey, the talk gestures and the wake word. While one of them records, the others can't
+ * start a recording, and only the one that started it can end it.
  */
 export class TalkSwitch {
   private holder?: TalkSource;
@@ -32,13 +32,20 @@ export class TalkSwitch {
   }
 
   release(source: TalkSource): void {
-    if (this.holder !== source || this.ptt.state() !== "recording") return;
+    if (!this.isRecordingFor(source)) return;
     this.holder = undefined;
     this.ptt.release();
   }
 
-  /** Drops the recording while `source` still holds it; afterwards there is nothing left to drop. */
-  cancel(source: TalkSource): void {
-    if (this.holder === source && this.ptt.state() === "recording") this.ptt.discard();
+  /** Escape: drops the recording, whatever started it; with none going, there is nothing to drop. */
+  cancel(): void {
+    if (this.ptt.state() !== "recording") return;
+    this.holder = undefined;
+    this.ptt.discard();
+  }
+
+  /** `source` started the recording going now; one discarded or stopped at its limit no longer counts. */
+  isRecordingFor(source: TalkSource): boolean {
+    return this.holder === source && this.ptt.state() === "recording";
   }
 }

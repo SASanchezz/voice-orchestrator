@@ -1,0 +1,198 @@
+/* ---------------------------------------------------------------- ⚙ › Wake word › Train… */
+
+.wake-training-dialog {
+  width: min(560px, calc(100vw - 32px));
+}
+.wake-steps {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 12px;
+}
+.wake-steps li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.wake-steps button {
+  white-space: nowrap;
+}
+.wake-training-status {
+  min-height: 2.6em;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.wake-training-status:empty {
+  visibility: hidden;
+}
+.wake-training-status.is-working,
+.wake-review-status.is-working {
+  color: var(--accent-text);
+}
+.wake-training-status.is-refused,
+.wake-review-status.is-refused {
+  color: var(--danger);
+}
+.wake-review-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* ---------------------------------------------------------------- ⚙ › Wake word › Train… › Review recordings */
+
+.wake-review-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-height: calc(100vh - 48px);
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 12px;
+}
+.wake-review-dialog:not([open]) {
+  display: none;
+}
+.wake-review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.wake-review-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.wake-review-tab {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.wake-review-tab[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--text);
+}
+.wake-review-tools {
+  display: grid;
+  gap: 8px;
+}
+.wake-review-row-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-left: 12px;
+}
+.wake-review-row-tools .wake-review-keys {
+  margin-left: auto;
+  font-size: 12px;
+}
+.wake-review-list {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow-y: auto;
+  min-height: 160px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  outline: none;
+}
+.wake-review-list:empty::after {
+  content: "No recordings of this kind yet.";
+  display: block;
+  padding: 16px;
+  color: var(--muted);
+}
+.wake-review-row {
+  display: grid;
+  grid-template-columns: auto 3ch minmax(120px, 1fr) minmax(0, auto) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.wake-review-row:hover {
+  background: var(--glass-frost);
+}
+.wake-review-row.is-selected {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.wake-review-number {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.wake-review-wave {
+  position: relative;
+  height: 32px;
+  color: var(--accent-text);
+}
+.wake-review-wave canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.wake-review-playhead {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-right: 2px solid var(--text);
+  background: rgb(255 255 255 / 8%);
+  visibility: hidden;
+}
+.is-playing .wake-review-playhead {
+  visibility: visible;
+  animation: wake-review-play var(--play-seconds, 2.5s) linear forwards;
+}
+@keyframes wake-review-play {
+  to {
+    width: 100%;
+  }
+}
+.wake-review-flags {
+  display: flex;
+  gap: 4px;
+}
+.wake-review-flag {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn) 22%, transparent);
+  color: var(--warn);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.wake-review-when {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.wake-review-row.is-marked {
+  background: var(--danger-soft);
+}
+.wake-review-check {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--danger);
+  cursor: pointer;
+}
+.wake-review-select-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.wake-review-foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.wake-review-status {
+  margin-right: auto;
+  color: var(--muted);
+}

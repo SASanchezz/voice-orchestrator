@@ -20,3 +20,17 @@ test("sensor config: a relative interpreter path is under the app's folder", () 
 test("sensor config: a wrong type is rejected", () => {
   assert.throws(() => sensorsSchema.parse({ gestures: { enabled: "yes" } }));
 });
+
+test("sensor config: without a sensors section the wake listener runs from its own venv", () => {
+  const { wakeWord } = sensorsSchema.parse(undefined);
+  assert.equal(wakeWord.python, resolve(APP_DIR, "sensors/wake/.venv/bin/python"));
+});
+
+test("sensor config: an empty wakeWord key runs the wake listener", () => {
+  assert.deepEqual(sensorsSchema.parse({ wakeWord: null }).wakeWord.args, ["-m", "wake", "run"]);
+});
+
+test("sensor config: the wake listener's interpreter is under the app's folder", () => {
+  const { wakeWord } = sensorsSchema.parse({ wakeWord: { python: "venv/bin/python" } });
+  assert.equal(wakeWord.python, resolve(APP_DIR, "venv/bin/python"));
+});
