@@ -22,12 +22,15 @@ export interface OpenPanel {
   close(): void;
 }
 
-/**
- * Shows native question pop-ups; `chosen` gets a button's answer, or "text:<your words>", and `seen` your first click
- * anywhere in one.
- */
+/** What happens in a question pop-up: a button's answer or "text:<your words>", and your first click anywhere in it. */
+export interface QuestionPanelEvents {
+  chosen(answer: string): void;
+  seen(): void;
+}
+
+/** Shows native question pop-ups. */
 export interface QuestionPanelDevice {
-  ask(panel: QuestionPanel, chosen: (answer: string) => void, seen: () => void): OpenPanel;
+  ask(panel: QuestionPanel, events: QuestionPanelEvents): OpenPanel;
 }
 
 /** Answers questions as a click in the web UI's dialog does. */
@@ -62,10 +65,7 @@ export class QuestionPopups {
 
   private show(asked: QuestionEvent): void {
     const chosen = (answer: string) => this.chosen(asked, answer);
-    this.open.set(
-      asked.id,
-      this.device.ask(panelFor(asked), chosen, () => this.actions.silence(asked)),
-    );
+    this.open.set(asked.id, this.device.ask(panelFor(asked), { chosen, seen: () => this.actions.silence(asked) }));
   }
 
   private chosen(asked: QuestionEvent, answer: string): void {

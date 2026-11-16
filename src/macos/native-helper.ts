@@ -10,9 +10,9 @@ const run = promisify(execFile);
 
 /** Code from native/shared/ that a helper is compiled together with, by helper name. */
 const SHARED_SOURCES: Record<string, string[]> = {
-  "popup-panel": ["glass"],
+  "popup-panel": ["glass", "voice-panel"],
   "notice-panel": ["glass", "edit-menu", "panel-sizing"],
-  "chat-panel": ["glass", "edit-menu", "chat-messages"],
+  "chat-panel": ["glass", "edit-menu", "chat-messages", "voice-panel"],
 };
 
 /** Compile native/<name>.swift (and its shared code) into state/bin/<name> once, and again whenever a source changes. */

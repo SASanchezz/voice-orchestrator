@@ -15,7 +15,7 @@ export class ReadRoutes {
 
   events(url: URL, res: ServerResponse): void {
     this.access.requireToken(url.searchParams.get("token"), "Bad token");
-    this.publisher.welcome(res);
+    this.publisher.welcome(res, url.searchParams.get("page") ?? "");
   }
 
   sessionMessages(url: URL, sessionId: string, res: ServerResponse): void {

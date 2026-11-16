@@ -3,43 +3,51 @@ import { resolve } from "node:path";
 import { STATE_DIR } from "../config/paths.js";
 import { DictationTake, type DictationTranscriber } from "./dictation-take.js";
 import { LiveRecording } from "./live-recording.js";
+import { prepareRecording, type RecordingTools } from "./recording-tools.js";
 
 const NOT_LISTENING = "The mic isn't recording; click it to start.";
-const NOTHING_HEARD = "Nothing was heard.";
 const NO_MIC = "There is no mic in text mode.";
 
-/** The web UI's mic button: start, then finish with your words, or cancel. Your words so far come as "words". */
+/**
+ * One recording at a time from the Mac's mic: start, then finish with your words, or cancel. Your words so far come
+ * as "words"; "limit" says a recording went on so long that it should be ended now.
+ */
 export interface DictationControl {
+  /** sox and whisper.cpp are there to record with. */
+  prepare(): Promise<void>;
   start(): string;
-  /** Your words; throws when nothing was said. */
+  /** Your words, or "" when nothing was said. */
   finish(): Promise<string>;
   cancel(): Promise<string>;
-  /** From start until finished or cancelled; transcribing the end no longer counts. */
-  isRecording(): boolean;
   on(event: "words", listener: (words: string) => void): this;
+  on(event: "limit", listener: () => void): this;
 }
 
 /**
- * Records from the Mac's mic with sox while the mic button is on, and turns it into text with whisper.cpp, the same
- * way the hotkey does, while you speak and once more at the end. Its words go into the page's message box.
+ * Records from the Mac's mic with sox, and turns it into text with whisper.cpp while you speak and once more at the
+ * end. The talk key, gestures, the wake word and the pages' mic buttons all record through it.
  */
 export class Dictation extends EventEmitter implements DictationControl {
   private current?: DictationTake;
   private count = 0;
 
   constructor(
-    private recordBin: string,
+    private tools: RecordingTools,
     private transcriber: DictationTranscriber,
     private folder = STATE_DIR,
   ) {
     super();
   }
 
-  /** A recording left running by a page that was closed meanwhile is dropped; each recording gets its own file. */
+  prepare(): Promise<void> {
+    return prepareRecording(this.tools);
+  }
+
+  /** A recording still running is dropped; each recording gets its own file. */
   start(): string {
     if (this.current) void this.cancel();
     const wav = resolve(this.folder, `dictation-${++this.count}.wav`);
-    const recording = new LiveRecording(this.recordBin, () => void this.cancel());
+    const recording = new LiveRecording(this.tools.recordBin, () => this.emit("limit"));
     const take = new DictationTake(recording, wav, this.transcriber);
     take.preview((words) => this.emit("words", words));
     this.current = take;
@@ -47,9 +55,7 @@ export class Dictation extends EventEmitter implements DictationControl {
   }
 
   async finish(): Promise<string> {
-    const words = await this.takeCurrent().finish();
-    if (!words) throw new Error(NOTHING_HEARD);
-    return words;
+    return await this.takeCurrent().finish();
   }
 
   async cancel(): Promise<string> {
@@ -58,10 +64,6 @@ export class Dictation extends EventEmitter implements DictationControl {
     if (!take) return NOT_LISTENING;
     await take.discard();
     return "Recording discarded.";
-  }
-
-  isRecording(): boolean {
-    return this.current !== undefined;
   }
 
   private takeCurrent(): DictationTake {
@@ -74,6 +76,10 @@ export class Dictation extends EventEmitter implements DictationControl {
 
 /** Text mode: no mic to record from, so no words ever come. */
 export class UnavailableDictation extends EventEmitter implements DictationControl {
+  prepare(): Promise<void> {
+    return Promise.resolve();
+  }
+
   start(): string {
     throw new Error(NO_MIC);
   }
@@ -84,9 +90,5 @@ export class UnavailableDictation extends EventEmitter implements DictationContr
 
   cancel(): Promise<string> {
     return Promise.resolve(NOT_LISTENING);
-  }
-
-  isRecording(): boolean {
-    return false;
   }
 }

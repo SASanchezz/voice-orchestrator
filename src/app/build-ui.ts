@@ -3,6 +3,7 @@ import { STATE_DIR } from "../config/paths.js";
 import { BranchCompare } from "../review/branch-compare.js";
 import { GitChanges } from "../review/git-changes.js";
 import { GitDefinitions } from "../review/git-definitions.js";
+import { ProjectRepositories } from "../review/project-repositories.js";
 import { ChatFiles } from "../ui/chat-files.js";
 import { Feed } from "../ui/feed.js";
 import type { FrontSession } from "../ui/front-session.js";
@@ -21,7 +22,7 @@ import { HandoffActions } from "../ui/server/handoff-actions.js";
 import { LinkActions, type ProfileBrowser } from "../ui/server/link-actions.js";
 import { GetRoutes } from "../ui/server/get-routes.js";
 import type { LiveClients } from "../ui/server/live-clients.js";
-import { relayDictation, relayToClients, relayVoiceDraft } from "../ui/server/live-relay.js";
+import { relayToClients } from "../ui/server/live-relay.js";
 import { NoticeStateView } from "../ui/server/notice-state-view.js";
 import { WebManifest } from "../ui/server/web-manifest.js";
 import { PageFiles } from "../ui/server/page-files.js";
@@ -30,6 +31,7 @@ import { PermissionActions } from "../ui/server/permission-actions.js";
 import { QueueActions } from "../ui/server/queue-actions.js";
 import { QuestionActions } from "../ui/server/question-actions.js";
 import { ReadRoutes, SessionChatReader } from "../ui/server/read-routes.js";
+import { RepositoryLookup } from "../ui/server/repository-lookup.js";
 import { ReviewRoutes } from "../ui/server/review-routes.js";
 import { RouteTable, type RouteHandlers } from "../ui/server/route-table.js";
 import { SessionActions } from "../ui/server/session-actions.js";
@@ -52,7 +54,7 @@ import { todoItemHandlers, todoItemViews } from "./build-todo.js";
 import { askedReads } from "./build-asked-reads.js";
 import type { Core } from "./core.js";
 import type { NoticeParts } from "./build-notices.js";
-import { voiceHandlers, voiceViews } from "./build-ui-voice.js";
+import { voiceBoxes, voiceHandlers, voiceViews, type VoiceBoxes } from "./build-ui-voice.js";
 import type { OperatorNeighbors } from "./operator-types.js";
 
 export interface UiParts {
@@ -67,6 +69,8 @@ export interface UiParts {
   clients: LiveClients;
   /** Tasks sent straight to a session, typed in its message box or spoken while its project tab is in front. */
   tasks: TaskActions;
+  /** The pages' message boxes, which your words go into while you talk. */
+  boxes: VoiceBoxes;
 }
 
 /**
@@ -91,8 +95,9 @@ export function buildUi(core: Core, neighbors: UiNeighbors, operator: OperatorPa
   const changes = new GitChanges();
   const clicks = { permissionClicks, questionClicks };
   const tasks = new TaskActions(neighbors.workers.intake, lookup, reporter);
-  const sources = { operator, feed, chats, reporter, ...clicks, waiting, lookup, clients, changes, tasks };
-  return { server: uiServer(core, neighbors, sources), feed, chats, ...clicks, clients, tasks };
+  const boxes = voiceBoxes(clients, neighbors.front, neighbors.devices.mic);
+  const sources = { operator, feed, chats, reporter, ...clicks, waiting, lookup, clients, changes, tasks, boxes };
+  return { server: uiServer(core, neighbors, sources), feed, chats, ...clicks, clients, tasks, boxes };
 }
 
 interface UiSources {
@@ -107,14 +112,13 @@ interface UiSources {
   clients: LiveClients;
   changes: GitChanges;
   tasks: TaskActions;
+  boxes: VoiceBoxes;
 }
 
 function uiServer(core: Core, neighbors: UiNeighbors, sources: UiSources): UiServer {
   const access = new UiAccess();
   const { clients, lookup } = sources;
   relayToClients(clients, sources.feed, sources.chats);
-  relayDictation(clients, neighbors.devices.dictation);
-  relayVoiceDraft(clients, neighbors.devices.voice);
   const live = new UiStateView(lookup, sources.waiting, voiceViews(sources.operator, neighbors.devices));
   const budget = new TodayBudget(core.cfg.budget, neighbors.workers.spend);
   const page = new PageStateView(live, budget, todoItemViews(neighbors.todo));
@@ -133,7 +137,8 @@ function uiServer(core: Core, neighbors: UiNeighbors, sources: UiSources): UiSer
 function reviewRoutes(access: UiAccess, lookup: UiLookup, changes: GitChanges): ReviewRoutes {
   const changesRoutes = new ChangesRoutes(access, lookup, changes);
   const definitions = new DefinitionRoutes(access, lookup, new GitDefinitions());
-  return new ReviewRoutes(changesRoutes, definitions, new CompareRoutes(access, lookup, new BranchCompare()));
+  const repositories = new RepositoryLookup(lookup, new ProjectRepositories());
+  return new ReviewRoutes(changesRoutes, definitions, new CompareRoutes(access, repositories, new BranchCompare()));
 }
 
 /** What each of the page's actions acts on. */
@@ -154,7 +159,7 @@ function routeTable(core: Core, neighbors: UiNeighbors, sources: UiSources): Rou
     ...taskHandlers(neighbors, sources),
     todoItems: todoItemHandlers(todo, lookup, reporter),
     ...sessionHandlers(core, neighbors, sources),
-    ...voiceHandlers(sources.operator, devices),
+    ...voiceHandlers(sources.operator, devices, sources.boxes),
   });
 }
 

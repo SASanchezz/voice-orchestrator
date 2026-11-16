@@ -102,3 +102,13 @@
 .composer-model[hidden] {
   display: none;
 }
+
+/* where the words being recorded go: the session in front when you started, or the assistant */
+.mic-target {
+  color: var(--muted);
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+.mic-target[hidden] {
+  display: none;
+}

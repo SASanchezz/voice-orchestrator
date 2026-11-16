@@ -8,10 +8,6 @@ export abstract class ForwardingVoice implements VoiceIO {
     this.voice.onUtterance(cb);
   }
 
-  onDraft(cb: (words: string) => void): void {
-    this.voice.onDraft(cb);
-  }
-
   onPress(cb: () => void): void {
     this.voice.onPress(cb);
   }

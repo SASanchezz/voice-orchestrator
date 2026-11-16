@@ -36,10 +36,6 @@ export class WorkerVoice implements VoiceIO {
     this.voice.onUtterance((text) => this.deliver(text, toAssistant));
   }
 
-  onDraft(cb: (words: string) => void): void {
-    this.voice.onDraft(cb);
-  }
-
   isListening(): boolean {
     return this.voice.isListening();
   }

@@ -58,6 +58,12 @@ export class SessionFeed {
     markPendingApprovals(this.list.findAll(".step-approval"), pending);
   }
 
+  /** Whether you wrote to the worker after this ISO time. */
+  hasTaskSince(time: string): boolean {
+    const since = Date.parse(time);
+    return this.messages.some((message) => message.kind === "task" && Date.parse(message.at) > since);
+  }
+
   private rowItem(row: SessionRow): HTMLLIElement {
     return row.kind === "line" ? sessionItem(row.message) : this.stepsItem(row);
   }

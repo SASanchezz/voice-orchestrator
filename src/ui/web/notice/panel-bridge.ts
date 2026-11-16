@@ -10,6 +10,9 @@ declare global {
     webkit?: { messageHandlers?: { panel?: PanelMessages } };
     /** Called by the panel with the pointer's place in the page, or with nothing once it left. */
     panelPointer?: (x?: number, y?: number) => void;
+    /** Called by the panel when it is shown, and when it is hidden. */
+    panelShown?: () => void;
+    panelHidden?: () => void;
   }
 }
 
@@ -23,6 +26,12 @@ export function followPointer(listener: PointerListener): void {
   window.panelPointer = (x, y) => (x === undefined || y === undefined ? listener.left() : listener.moved(x, y));
   document.addEventListener("mousemove", (e) => listener.moved(e.clientX, e.clientY));
   document.documentElement.addEventListener("mouseleave", () => listener.left());
+}
+
+/** Told when the panel is shown and hidden. */
+export function followPanelShowing(shown: () => void, hidden: () => void): void {
+  window.panelShown = shown;
+  window.panelHidden = hidden;
 }
 
 /**

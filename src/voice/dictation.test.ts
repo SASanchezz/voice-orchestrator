@@ -36,7 +36,8 @@ function dictation(words = WORDS): { mic: Dictation; transcriber: FakeTranscribe
   writeFileSync(recordBin, FAKE_RECORDER);
   chmodSync(recordBin, 0o755);
   const transcriber = new FakeTranscriber(words);
-  return { mic: new Dictation(recordBin, transcriber, dir), transcriber, dir };
+  const tools = { recordBin, whisperBin: "whisper-cli", whisperModel: join(dir, "model.bin") };
+  return { mic: new Dictation(tools, transcriber, dir), transcriber, dir };
 }
 
 test("dictation: finishing gives the words that were said", async () => {
@@ -75,10 +76,10 @@ test("dictation: the recording is deleted once transcribed", async () => {
   assert.equal(existsSync(transcriber.heard[0]), false);
 });
 
-test("dictation: silence is an error, so nothing empty is written", async () => {
+test("dictation: silence gives no words", async () => {
   const { mic } = dictation("");
   mic.start();
-  await assert.rejects(mic.finish(), /Nothing was heard/);
+  assert.equal(await mic.finish(), "");
 });
 
 test("dictation: finishing without recording is an error", async () => {
@@ -103,19 +104,4 @@ test("dictation: starting again drops the recording a closed page left running, 
 
 test("dictation: text mode has no mic to start", () => {
   assert.throws(() => new UnavailableDictation().start(), /no mic/);
-});
-
-test("dictation: it is recording once started", async () => {
-  const { mic } = dictation();
-  mic.start();
-  const recording = mic.isRecording();
-  await mic.cancel();
-  assert.equal(recording, true);
-});
-
-test("dictation: it stops recording once finished", async () => {
-  const { mic } = dictation();
-  mic.start();
-  await mic.finish();
-  assert.equal(mic.isRecording(), false);
 });

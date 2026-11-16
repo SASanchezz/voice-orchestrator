@@ -17,8 +17,8 @@ export class StatePublisher {
   ) {}
 
   /** A page connected: it gets the current state and the assistant's chat so far, then live updates. */
-  welcome(res: ServerResponse): void {
-    this.clients.open(res);
+  welcome(res: ServerResponse, page: string): void {
+    this.clients.open(res, page);
     this.clients.send(res, "state", this.view.state());
     this.clients.send(res, "backlog", this.feed.recent());
   }

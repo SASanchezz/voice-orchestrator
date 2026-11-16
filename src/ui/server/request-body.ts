@@ -59,6 +59,8 @@ export const draftBody = z.object({
 export const linkOpenBody = z.object({ url: z.url({ protocol: /^https?$/ }), project: z.string().min(1) });
 /** No session: the page has the assistant, a project's To-do or Review on screen, or none at all. */
 export const shownSessionBody = z.object({ page: pageField, session: z.string().min(1).optional() });
+/** A page saying something about itself, such as that you came to it. */
+export const pageBody = z.object({ page: pageField });
 /** No session: another app or the assistant's tab is in front, or the page is closing. */
 export const frontSessionBody = shownSessionBody;
 

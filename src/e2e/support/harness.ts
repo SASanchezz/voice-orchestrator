@@ -18,6 +18,7 @@ import { UnavailableWakeWord } from "../../wake/wake-switch.js";
 import { UnavailableWakeTraining } from "../../wake/wake-training.js";
 import { loadSkillLibrary } from "../../skills/skill-library.js";
 import { UnavailableDictation } from "../../voice/dictation.js";
+import { SharedMic } from "../../voice/shared-mic.js";
 import { fakeQuery } from "../../testing/fake-query.js";
 import { TestClipboard } from "../../testing/test-clipboard.js";
 import { TestBrowserPage, TestNoticePanel } from "../../testing/test-notices.js";
@@ -58,7 +59,7 @@ export const app = buildApp(cfg, {
   gestures: new UnavailableGestures(),
   wakeWord: new UnavailableWakeWord(),
   wakeTraining: new UnavailableWakeTraining("There is no mic in tests."),
-  dictation: new UnavailableDictation(),
+  mic: new SharedMic(new UnavailableDictation(), { stopSpeaking: () => {}, play: () => {} }),
   explainCommands: false,
   nameSessions: false,
   popups,

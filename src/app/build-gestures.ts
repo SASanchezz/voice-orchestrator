@@ -51,13 +51,13 @@ export function gestureSetting(settings: GestureSettings): GestureSetting {
  * switch Spaces like the trackpad, and tell the operator you are pointing.
  */
 export function gestureActions(
-  { voice, talk }: MacVoiceParts,
+  { voice, mic }: MacVoiceParts,
   { voiceCancel, pointing }: Pick<OperatorParts, "voiceCancel" | "pointing">,
   spaces: MacSpaces,
 ): GestureActions {
   return {
-    beginTalk: () => talk.press("gesture"),
-    endTalk: () => talk.release("gesture"),
+    beginTalk: () => mic.start("gesture"),
+    endTalk: () => mic.release("gesture"),
     discard: () => discardLatest(voiceCancel),
     stopSpeaking: () => voice.stopSpeaking(),
     repeatLast: () => void voice.repeatLast(),

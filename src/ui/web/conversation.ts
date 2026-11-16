@@ -6,7 +6,8 @@ import { act } from "./api.js";
 import { wireAttachmentInput } from "./attachment-input.js";
 import { type AttachmentTray, encodeForSending } from "./attachments.js";
 import type { ChatView } from "./chat.js";
-import { pickedModel, renderComposerModel, resetComposerModel } from "./composer-model.js";
+import { renderComposerModel, resetComposerModel } from "./composer-model.js";
+import { type MessageRoute, spokenRoute, typedRoute } from "./message-routes.js";
 import { autoGrow, button, byId } from "./dom.js";
 import { markProject } from "./project-links.js";
 import { openTodoCountOf } from "./project-todo.js";
@@ -52,7 +53,7 @@ export function wireComposer(tray: AttachmentTray): void {
   wireAttachmentInput(tray);
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    void sendMessage(input, tray);
+    void sendMessage(input, tray, typedRoute());
   });
   input.addEventListener("input", () => autoGrow(input));
   input.addEventListener("keydown", (e) => {
@@ -62,25 +63,27 @@ export function wireComposer(tray: AttachmentTray): void {
   });
 }
 
-/** What you typed and attached goes to the selected project's session, or else to the assistant; kept if sending fails. */
-async function sendMessage(input: HTMLTextAreaElement, tray: AttachmentTray): Promise<void> {
+/** What the box holds, with your spoken words in it, goes where you were when you started talking. */
+export function sendSpokenMessage(tray: AttachmentTray, session: string | undefined): void {
+  void sendMessage(byId("composer-input", HTMLTextAreaElement), tray, spokenRoute(session));
+}
+
+/** What the box holds and the files attached go along `route`; kept if sending fails. */
+async function sendMessage(input: HTMLTextAreaElement, tray: AttachmentTray, route: MessageRoute): Promise<void> {
   const text = input.value.trim();
   const files = tray.attached;
   if (!text && !files.length) return;
   input.value = "";
   autoGrow(input);
   tray.clear();
-  if ((await send(text, files)) !== undefined) return resetComposerModel();
+  if ((await send(route, text, files)) !== undefined) return resetComposerModel();
   input.value = text;
   autoGrow(input);
   tray.add(files);
 }
 
-async function send(text: string, files: File[]): Promise<string | undefined> {
+async function send(route: MessageRoute, text: string, files: File[]): Promise<string | undefined> {
   const attachments = await encodeForSending(files);
   if (!attachments) return undefined;
-  const project = store.selectedProject();
-  const model = pickedModel();
-  if (project) return act(`/api/sessions/${project.activeSession}/tasks`, { instruction: text, attachments, model });
-  return act("/api/message", { text, attachments });
+  return act(route.path, route.body(text, attachments));
 }

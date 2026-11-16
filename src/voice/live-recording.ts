@@ -1,9 +1,9 @@
 import type { ChildProcess } from "node:child_process";
 import { BYTES_PER_SECOND } from "./pcm-wav.js";
 import { startRawRecorder, stopRecorder } from "./recorder.js";
-import { MAX_RECORDING_MS } from "./recording-end.js";
-
 const MS_PER_SECOND = 1000;
+/** Longer than anyone talks in one go; past this, whatever should have ended the recording was probably missed. */
+const MAX_RECORDING_MS = 600_000; // ten minutes
 
 /** sox recording into memory, so what was said so far can be transcribed while it goes on. */
 export class LiveRecording {

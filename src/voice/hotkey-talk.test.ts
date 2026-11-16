@@ -2,28 +2,29 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { HotkeyTalk } from "./hotkey-talk.js";
 import { MacHotkey } from "./hotkey.js";
-import { TalkSwitch } from "./talk-switch.js";
+import type { TalkSource } from "./shared-mic.js";
 import type { VoiceInputState } from "./voice-io.js";
 
-/** Stands in for push-to-talk; it writes down what it's asked to do. */
-class FakeRecorder {
+/** Stands in for the shared mic; it writes down what it's asked to do. */
+class FakeMic {
+  done: string[] = [];
   private current: VoiceInputState = "idle";
 
-  constructor(private done: string[]) {}
-
-  begin(): void {
-    this.done.push("begin");
+  start(source: TalkSource): void {
+    this.done.push(`start ${source}`);
     this.current = "recording";
   }
 
-  release(): void {
-    this.done.push("release");
+  send(): Promise<void> {
+    this.done.push("send");
     this.current = "idle";
+    return Promise.resolve();
   }
 
-  discard(): void {
-    this.done.push("discard");
+  cancel(): Promise<void> {
+    this.done.push("cancel");
     this.current = "idle";
+    return Promise.resolve();
   }
 
   state(): VoiceInputState {
@@ -31,44 +32,42 @@ class FakeRecorder {
   }
 }
 
-function hotkeyTalk(): { hotkey: HotkeyTalk; talk: TalkSwitch; done: string[] } {
-  const done: string[] = [];
-  const talk = new TalkSwitch(new FakeRecorder(done), () => {});
-  return { hotkey: new HotkeyTalk(new MacHotkey("RIGHT ALT"), talk), talk, done };
+function hotkeyTalk(): { hotkey: HotkeyTalk; mic: FakeMic } {
+  const mic = new FakeMic();
+  return { hotkey: new HotkeyTalk(new MacHotkey("RIGHT ALT"), mic), mic };
 }
 
 test("hotkey talk: the first press starts recording", () => {
-  const { hotkey, done } = hotkeyTalk();
+  const { hotkey, mic } = hotkeyTalk();
   hotkey.toggle();
-  assert.deepEqual(done, ["begin"]);
+  assert.deepEqual(mic.done, ["start hotkey"]);
 });
 
 test("hotkey talk: the second press sends the recording", () => {
-  const { hotkey, done } = hotkeyTalk();
+  const { hotkey, mic } = hotkeyTalk();
   hotkey.toggle();
   hotkey.toggle();
-  assert.deepEqual(done, ["begin", "release"]);
+  assert.deepEqual(mic.done, ["start hotkey", "send"]);
 });
 
 test("hotkey talk: a third press starts a new recording", () => {
-  const { hotkey, done } = hotkeyTalk();
+  const { hotkey, mic } = hotkeyTalk();
   hotkey.toggle();
   hotkey.toggle();
   hotkey.toggle();
-  assert.equal(done.at(-1), "begin");
+  assert.equal(mic.done.at(-1), "start hotkey");
 });
 
-test("hotkey talk: after Escape discards it, the next press starts recording again", () => {
-  const { hotkey, talk, done } = hotkeyTalk();
+test("hotkey talk: a press during the wake word's recording sends it", () => {
+  const { hotkey, mic } = hotkeyTalk();
+  mic.start("wake");
   hotkey.toggle();
-  talk.cancel();
-  hotkey.toggle();
-  assert.equal(done.at(-1), "begin");
+  assert.equal(mic.done.at(-1), "send");
 });
 
-test("hotkey talk: a press during the wake word's recording doesn't end it", () => {
-  const { hotkey, talk, done } = hotkeyTalk();
-  talk.press("wake");
+test("hotkey talk: a press during the mic button's recording sends it", () => {
+  const { hotkey, mic } = hotkeyTalk();
+  mic.start("button");
   hotkey.toggle();
-  assert.deepEqual(done, ["begin"]);
+  assert.equal(mic.done.at(-1), "send");
 });

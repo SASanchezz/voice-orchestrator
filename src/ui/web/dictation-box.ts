@@ -1,10 +1,12 @@
-// A message box you can speak into: its mic button records on this Mac, and your words appear in the box as you speak,
-// after what it already held; click again, press Enter or start editing to stop, and they stay there to edit and
-// send. Send while recording stops, waits for the final words and sends them in one go. ✕ or Esc discards the
-// recording and puts back what the box held before. The composer and the notice panel's reply use it.
+// A message box you can speak into, whatever starts the recording: its mic button, the talk key, the wake word or a
+// talk gesture. Your words appear after what the box held as you speak. ■, Enter or starting to edit stops the
+// recording and leaves them there to edit and send; Send while recording stops it and sends the final words. ✕ or Esc
+// during a recording cancels it: its words go, and the box keeps what it held before. The composer and the notice
+// panel's reply use it.
 
 import { act } from "./api.js";
-import { autoGrow } from "./dom.js";
+import { BoxText } from "./box-text.js";
+import { PAGE_ID } from "./page-id.js";
 import { wireStopOnEdit } from "./stop-on-edit.js";
 
 type MicState = "idle" | "recording" | "transcribing";
@@ -16,22 +18,24 @@ const TITLES: Record<MicState, string> = {
   transcribing: "Finishing your words…",
 };
 
-/** The box, its mic and ✕ buttons, and the button that sends what it holds. */
+/** The box, its mic and ✕ buttons, the button that sends what it holds, and where it says your words go. */
 export interface DictationParts {
   input: HTMLTextAreaElement;
   mic: HTMLButtonElement;
   cancel: HTMLButtonElement;
   send: HTMLButtonElement;
+  target?: HTMLElement;
 }
 
 export class DictationBox {
   private state: MicState = "idle";
-  /** What the box held when recording started; your words go after it. */
-  private typedBefore = "";
+  private text: BoxText;
 
-  constructor(private parts: DictationParts) {}
+  constructor(private parts: DictationParts) {
+    this.text = new BoxText(parts.input);
+  }
 
-  /** Esc discards a recording before anything else on the page sees it; Enter in `form` stops it instead of sending. */
+  /** Esc cancels a recording before anything else on the page sees it; Enter in `form` stops it instead of sending. */
   wire(form: HTMLFormElement): void {
     this.parts.mic.addEventListener("click", () => void this.toggle());
     this.parts.cancel.addEventListener("click", () => void this.discard());
@@ -49,35 +53,42 @@ export class DictationBox {
     return this.state === "recording";
   }
 
-  /** Your words so far, from the server while this page records; another page's recording isn't shown here. */
-  showWords(words: string): void {
-    if (this.isRecording()) writeAfter(this.parts.input, this.typedBefore, words);
+  /** The server started a recording for this box, by its mic button or any other way; `destination` is where it goes. */
+  follow(destination: string): void {
+    this.text.holdTyped();
+    if (this.parts.target) this.parts.target.textContent = destination;
+    this.show("recording");
   }
 
-  async toggle(): Promise<void> {
-    if (this.state === "idle") return this.start();
-    if (this.isRecording()) await this.finish();
+  showWords(words: string): void {
+    if (this.isRecording()) this.text.showWords(words);
+  }
+
+  /** The recording ended elsewhere: your final words stay after what the box held, "" for none. */
+  endWith(words: string): void {
+    this.text.showWords(words);
+    this.show("idle");
   }
 
   /** Nothing heard leaves the box as it was. False when the server couldn't finish, so nothing should be sent. */
   async finish(): Promise<boolean> {
     this.show("transcribing");
     const words = await act("/api/dictation/finish");
-    writeAfter(this.parts.input, this.typedBefore, words ?? "");
-    this.show("idle");
+    this.endWith(words ?? "");
     this.parts.input.focus();
     return words !== undefined;
   }
 
+  /** Cancelling a recording drops only its words: the box keeps what it held before. */
   async discard(): Promise<void> {
-    writeAfter(this.parts.input, this.typedBefore, "");
-    this.show("idle");
+    this.endWith("");
     await act("/api/dictation/cancel");
   }
 
-  private async start(): Promise<void> {
-    this.typedBefore = this.parts.input.value;
-    if ((await act("/api/dictation/start")) !== undefined) this.show("recording");
+  /** The mic button: start a recording into this box, or stop the one going to edit it. */
+  async toggle(): Promise<void> {
+    if (this.state === "idle") await act("/api/dictation/start", { page: PAGE_ID });
+    else if (this.isRecording()) await this.finish();
   }
 
   private show(next: MicState): void {
@@ -117,18 +128,8 @@ function stopOnEnter(box: DictationBox, e: KeyboardEvent): void {
   if (box.isRecording()) void box.finish();
 }
 
-function writeAfter(input: HTMLTextAreaElement, typedBefore: string, words: string): void {
-  input.value = afterTyped(typedBefore, words);
-  autoGrow(input);
-  input.scrollTop = input.scrollHeight;
-}
-
-function afterTyped(typedBefore: string, words: string): string {
-  const needsSpace = words !== "" && typedBefore !== "" && !/\s$/.test(typedBefore);
-  return needsSpace ? `${typedBefore} ${words}` : typedBefore + words;
-}
-
-function showMicState({ input, mic, cancel, send }: DictationParts, state: MicState): void {
+function showMicState({ input, mic, cancel, send, target }: DictationParts, state: MicState): void {
+  if (target) target.hidden = state !== "recording" || !target.textContent;
   mic.textContent = LABELS[state];
   mic.title = TITLES[state];
   mic.className = `ghost mic-button ${state}`;

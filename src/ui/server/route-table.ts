@@ -4,11 +4,12 @@ import type { GestureControl } from "../../sensors/gesture-switch.js";
 import type { WakeWordControl } from "../../wake/wake-switch.js";
 import type { WakeTrainingControl } from "../../wake/wake-training.js";
 import { wakeTrainingRoutes } from "./wake-training-routes.js";
-import type { DictationControl } from "../../voice/dictation.js";
 import type { AppActions } from "./app-actions.js";
 import type { AssistantActions } from "./assistant-actions.js";
 import type { AttachedText } from "./attached-text.js";
 import type { ChangeActions } from "./change-actions.js";
+import type { MicActions } from "./mic-actions.js";
+import type { SpokenMessages } from "../../orchestrator/conversation/spoken-messages.js";
 import type { FrontSessionActions } from "./front-session-actions.js";
 import type { HandoffActions } from "./handoff-actions.js";
 import type { LinkActions } from "./link-actions.js";
@@ -50,8 +51,10 @@ export interface RouteHandlers {
   /** Saves the files attached to a message or task and lists them after its text. */
   attached: AttachedText;
   changes: ChangeActions;
-  /** The mic button: your words, recorded and transcribed on this Mac. */
-  dictation: DictationControl;
+  /** The mic buttons, and the page your words go into while you talk. */
+  mic: MicActions;
+  /** Your spoken words, sent to the assistant from a page's message box. */
+  spoken: SpokenMessages;
   gestures: GestureControl;
   wakeWord: WakeWordControl;
   /** The Train wake word dialog: your recordings, the model trained on them, and trying it out. */
@@ -87,11 +90,13 @@ export class RouteTable {
 
   constructor(h: RouteHandlers) {
     const sendMessage: Route = (b) => h.assistant.sendMessage(h.attached.message(b));
+    const sendSpoken: Route = (b) => h.spoken.receive(h.attached.message(b));
     const runTask: Route = (b, m) => h.tasks.runTask(m[1], h.attached.task(b));
     const attachToVoice: Route = (b, m) => h.voiceOffers.sendWithFiles(m[1], h.attached.savedFiles(b));
-    this.attachedRoutes = [sendMessage, runTask, attachToVoice];
+    this.attachedRoutes = [sendMessage, sendSpoken, runTask, attachToVoice];
     this.routes = [
       [/^\/api\/message$/, sendMessage],
+      [/^\/api\/message\/spoken$/, sendSpoken],
       [/^\/api\/sessions\/([\w-]+)\/tasks$/, runTask],
       [/^\/api\/voice-offers\/(\w+)\/attach$/, attachToVoice],
       ...fileFreeRoutes(h),
@@ -173,14 +178,16 @@ function noteShownSession(shownSessions: ShownSessions, body: unknown): string {
 }
 
 /**
- * Discarding your voice message, whether one waiting goes with the draft's files, and the project tab it goes to. The
- * mic button's words go back to the page, into its message box.
+ * The mic buttons and the page you are using, discarding your voice message, whether one waiting goes with the draft's
+ * files, and the project tab it goes to. Stopping a recording to edit it brings your words back to the page.
  */
 function voiceRoutes(h: RouteHandlers): [RegExp, Route][] {
   return [
-    [/^\/api\/dictation\/start$/, () => h.dictation.start()],
-    [/^\/api\/dictation\/cancel$/, () => h.dictation.cancel()],
-    [/^\/api\/dictation\/finish$/, () => h.dictation.finish()],
+    [/^\/api\/dictation\/start$/, (b) => h.mic.start(b)],
+    [/^\/api\/dictation\/cancel$/, () => h.mic.cancel()],
+    [/^\/api\/dictation\/finish$/, () => h.mic.keep()],
+    [/^\/api\/page-used$/, (b) => h.mic.pageUsed(b)],
+    [/^\/api\/page-hidden$/, (b) => h.mic.pageHidden(b)],
     [/^\/api\/voice\/discard$/, () => h.voice.discardLatest()],
     [/^\/api\/front-session$/, (b) => h.frontSession.note(b)],
     [/^\/api\/draft$/, (b) => h.voiceOffers.draftChanged(b)],

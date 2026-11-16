@@ -9,7 +9,8 @@
 //   replaces what it shows; {"command":"show"} brings it to the front, scrolled to the latest. stdin closing exits.
 // Prints "cancel", "yes" or "text:<your words>" on a line of its own for each click or message, and exits once closed.
 // It also prints "seen" on your first click anywhere in it since it last came to the front, so the reply being said
-// can stop while you read.
+// can stop while you read. Your spoken words can fill its field too (see shared/voice-panel.swift); sent, they come
+// back as "spoken:<words>".
 // Usage: chat-panel
 import AppKit
 
@@ -22,7 +23,6 @@ let followSlack: CGFloat = 24
 let screenMargin: CGFloat = 12
 /** Between the see-through title bar and the title, which sits under it instead of below a solid bar. */
 let titlebarGap: CGFloat = 4
-let newline = UInt8(ascii: "\n")
 let dialogueWidth = width - 2 * padding
 
 struct Command: Decodable {
@@ -32,24 +32,10 @@ struct Command: Decodable {
   let lines: [ChatLine]?
 }
 
-/** Esc closes it, as it does a sheet or a popover. Says "seen" on the first click since it last came to the front. */
-final class ChatWindow: NSPanel {
-  private var seen = false
-
-  override func cancelOperation(_ sender: Any?) { close() }
-
-  override func sendEvent(_ event: NSEvent) {
-    if event.type == .leftMouseDown && !seen {
-      seen = true
-      print("seen")
-      fflush(stdout)
-    }
-    super.sendEvent(event)
-  }
-
-  /** Brought up again with a new reply, so the next click silences that one. */
-  func cameToFront() {
-    seen = false
+/** Esc closes it, as it does a sheet or a popover; not while your words fill its field, where Esc cancels them. */
+final class ChatWindow: VoicePanel {
+  override func cancelOperation(_ sender: Any?) {
+    if voice?.isFollowing != true { close() }
   }
 }
 
@@ -61,10 +47,19 @@ final class Answers: NSObject, NSWindowDelegate {
 
   /** Return in the field, or its Send button; an empty message sends nothing. */
   @objc func sent(_ sender: Any) {
+    sendField(as: "text:")
+  }
+
+  /** Your spoken words, sent: the assistant answers them aloud. */
+  func sentSpoken() {
+    sendField(as: "spoken:")
+  }
+
+  private func sendField(as prefix: String) {
     let words = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !words.isEmpty else { return }
     field.stringValue = ""
-    send("text:" + words)
+    send(prefix + words)
   }
 
   func windowWillClose(_ notification: Notification) {
@@ -72,8 +67,7 @@ final class Answers: NSObject, NSWindowDelegate {
   }
 
   private func send(_ answer: String) {
-    print(answer)
-    fflush(stdout)
+    report(answer)
   }
 }
 
@@ -119,6 +113,7 @@ field.controlSize = .large
 field.cell?.sendsActionOnEndEditing = false
 field.target = answers
 field.action = #selector(Answers.sent(_:))
+let voiceField = VoiceField(field)
 let sendButton = NSButton(title: "Send", target: answers, action: #selector(Answers.sent(_:)))
 dress(sendButton, as: sendLook)
 let fieldRow = NSStackView(views: [field, sendButton])
@@ -136,6 +131,7 @@ let panel = ChatWindow(
   styleMask: [.titled, .closable, .nonactivatingPanel, .utilityWindow],
   backing: .buffered, defer: false)
 panel.title = "Voice Orchestrator"
+panel.voice = voiceField
 panel.delegate = answers
 glaze(panel, around: content)
 [.closeButton, .miniaturizeButton, .zoomButton].forEach { panel.standardWindowButton($0)?.isHidden = true }
@@ -191,6 +187,7 @@ func showDialogue(title: String, offersApproval: Bool, lines: [ChatLine]) {
 }
 
 func run(_ line: Data) {
+  if voiceField.run(line, send: answers.sentSpoken) { return }
   guard let command = try? JSONDecoder().decode(Command.self, from: line) else { return }
   if command.command == "dialogue" {
     showDialogue(title: command.title ?? "", offersApproval: command.offersApproval ?? false, lines: command.lines ?? [])
@@ -198,21 +195,6 @@ func run(_ line: Data) {
   if command.command == "show" { show() }
 }
 
-/** stdin arrives in chunks that may end mid-line; whole lines are run, the rest waits for the next chunk. */
-var unread = Data()
-func receive(_ chunk: Data) {
-  unread.append(chunk)
-  while let end = unread.firstIndex(of: newline) {
-    let line = unread[unread.startIndex..<end]
-    unread = Data(unread[unread.index(after: end)...])
-    run(Data(line))
-  }
-}
-
-FileHandle.standardInput.readabilityHandler = { input in
-  let chunk = input.availableData
-  if chunk.isEmpty { exit(0) }
-  DispatchQueue.main.async { receive(chunk) }
-}
+readStdinLines(run)
 
 app.run()

@@ -6,6 +6,7 @@
 // Prints "seen" on your first click anywhere in it (so what is said about it can stop while you read), then the
 // clicked button's answer ("deny" / "allow" by default), or "text:<your answer>", and exits.
 // Each line on stdin replaces the plain-language explanation; stdin closing (the orchestrator quit) closes the panel.
+// Your spoken words can fill the answer field too (see shared/voice-panel.swift); sent, they answer as typing does.
 // Usage: popup-panel <title> <warning or ""> <detail or ""> <allow label>
 //          [--button <answer> <label>]... [--stacked] [--text <placeholder>] [--explanation <text>]
 //          [--whole-detail <text>]
@@ -173,6 +174,7 @@ ownAnswer.action = #selector(Clicks.sent(_:))
 let sendButton = NSButton(title: "Send", target: clicks, action: #selector(Clicks.sent(_:)))
 dress(sendButton, as: sendLook)
 ownAnswer.controlSize = .large
+let voiceField = VoiceField(ownAnswer)
 let ownAnswerRow = NSStackView(views: [ownAnswer, sendButton])
 ownAnswerRow.orientation = .horizontal
 ownAnswerRow.isHidden = ownAnswerPlaceholder == nil
@@ -190,24 +192,12 @@ buttons.widthAnchor.constraint(equalTo: content.widthAnchor, constant: -2 * padd
 ownAnswerRow.widthAnchor.constraint(equalTo: content.widthAnchor, constant: -2 * padding).isActive = true
 
 /** Says "seen" once, on your first click anywhere in it, buttons included, before any answer. */
-final class SeenPanel: NSPanel {
-  private var seen = false
-
-  override func sendEvent(_ event: NSEvent) {
-    if event.type == .leftMouseDown && !seen {
-      seen = true
-      print("seen")
-      fflush(stdout)
-    }
-    super.sendEvent(event)
-  }
-}
-
-let panel = SeenPanel(
+let panel = VoicePanel(
   contentRect: NSRect(x: 0, y: 0, width: width, height: 100),
   styleMask: [.titled, .nonactivatingPanel, .utilityWindow],
   backing: .buffered, defer: false)
 panel.title = "Voice Orchestrator"
+if ownAnswerPlaceholder != nil { panel.voice = voiceField }
 glaze(panel, around: content)
 content.edgeInsets.top = titlebarHeight(of: panel) + titlebarGap
 panel.level = .floating
@@ -225,18 +215,14 @@ func placeInCorner() {
   panel.setFrame(NSRect(origin: origin, size: size), display: true)
 }
 
-FileHandle.standardInput.readabilityHandler = { input in
-  let chunk = input.availableData
-  if chunk.isEmpty { exit(0) }
-  let lines = String(decoding: chunk, as: UTF8.self).split(separator: "\n")
-  guard let latest = lines.last else { return }
-  DispatchQueue.main.async {
-    explanation.stringValue = String(latest)
-    explanation.isHidden = false
-    placeInCorner()
-  }
+readStdinLines { line in
+  if voiceField.run(line, send: { clicks.sent(sendButton) }) { return }
+  explanation.stringValue = String(decoding: line, as: UTF8.self)
+  explanation.isHidden = false
+  placeInCorner()
 }
 
 placeInCorner()
 panel.orderFrontRegardless()
+panel.cameToFront()
 app.run()

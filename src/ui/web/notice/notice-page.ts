@@ -2,7 +2,7 @@
 
 import type { NoticeView } from "../../notice-protocol.js";
 import { NoticeSelection } from "../../notice-selection.js";
-import type { SessionView } from "../../protocol.js";
+import type { SessionChatLine, SessionView } from "../../protocol.js";
 import { ChatList } from "../chat-list.js";
 import { DictationBox } from "../dictation-box.js";
 import { byId } from "../dom.js";
@@ -56,10 +56,22 @@ export function render(): void {
   byId("notice", HTMLElement).hidden = !notice;
   if (!notice) return;
   content.render(notice, selection.positionIn(notices), notices.length);
-  void chat.show(notice.sessionId);
+  void chat.show(notice.sessionId).then(renderSummary);
   chat.showPendingApprovals(store.state.pending);
   reply.render(notice, sessionOf(notice.sessionId));
   byId("reply-mic", HTMLButtonElement).hidden = store.state.gestures === "unavailable"; // text mode has no mic
+}
+
+/** A live chat line; one you wrote to the shown notice's worker can retire its summary. */
+export function addChatLine(line: SessionChatLine): void {
+  chat.add(line);
+  renderSummary();
+}
+
+/** Once you wrote to the worker after the task ended, the chat carries on below and the summary would stay stuck under it. */
+function renderSummary(): void {
+  const notice = shownNotice();
+  if (notice) byId("notice-summary", HTMLElement).hidden = chat.hasTaskSince(notice.endedAt);
 }
 
 function sessionOf(id: string): SessionView | undefined {

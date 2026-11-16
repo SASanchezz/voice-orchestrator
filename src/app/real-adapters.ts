@@ -19,10 +19,10 @@ import { MacScreen } from "../screen/mac-screen.js";
 import { MacHotkey } from "../voice/hotkey.js";
 import { HotkeyTalk } from "../voice/hotkey-talk.js";
 import { MacVoice } from "../voice/mac-voice.js";
-import { PushToTalk } from "../voice/push-to-talk.js";
 import { RepeatingSpeaker } from "../voice/repeating-speaker.js";
 import { createSpeaker } from "../voice/speaker-factory.js";
-import { TalkSwitch } from "../voice/talk-switch.js";
+import { SharedMic } from "../voice/shared-mic.js";
+import { playSound } from "../voice/sounds.js";
 import { Dictation } from "../voice/dictation.js";
 import { Transcriber } from "../voice/transcriber.js";
 import type { Adapters } from "./build-app.js";
@@ -34,7 +34,7 @@ import type { Adapters } from "./build-app.js";
 export async function realAdapters(
   madeFirst: Pick<
     Adapters,
-    "voice" | "dictation" | "assistantAgent" | "wakeWord" | "wakeTraining" | "browser" | "chromeLinks"
+    "voice" | "mic" | "assistantAgent" | "wakeWord" | "wakeTraining" | "browser" | "chromeLinks"
   >,
   gestures: GestureControl,
   snapshots: SensorSnapshots,
@@ -85,23 +85,17 @@ function filesAndModel(): Pick<
   };
 }
 
-/**
- * Your voice on macOS, the mic switch that lets gestures and the wake word talk as well as the hotkey, the page's mic
- * button.
- */
+/** Your voice on macOS, and the one mic the hotkey, gestures, the wake word and the pages' mic buttons share. */
 export interface MacVoiceParts {
   voice: MacVoice;
-  talk: TalkSwitch;
-  dictation: Dictation;
+  mic: SharedMic;
 }
 
 /** Press the hotkey to start talking and again to send; replies are spoken with Kokoro or `say`, as `voice.engine` says. */
 export function macVoice(settings: AppConfig["voice"]): MacVoiceParts {
-  const transcriber = new Transcriber(settings);
-  const pushToTalk = new PushToTalk(settings, transcriber);
   const speaker = new RepeatingSpeaker(createSpeaker(settings));
-  const talk = new TalkSwitch(pushToTalk, () => speaker.stop());
-  const hotkey = new HotkeyTalk(new MacHotkey(settings.hotkey), talk);
-  const dictation = new Dictation(settings.recordBin, transcriber);
-  return { voice: new MacVoice(pushToTalk, speaker, hotkey), talk, dictation };
+  const dictation = new Dictation(settings, new Transcriber(settings));
+  const mic = new SharedMic(dictation, { stopSpeaking: () => speaker.stop(), play: playSound });
+  const hotkey = new HotkeyTalk(new MacHotkey(settings.hotkey), mic);
+  return { voice: new MacVoice(mic, speaker, hotkey), mic };
 }

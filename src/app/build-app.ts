@@ -4,11 +4,12 @@ import type { DestructiveList } from "../safety/destructive-list.js";
 import type { ExplainCommand } from "../permissions/permission-types.js";
 import type { PopupActions } from "../ui/popup-actions.js";
 import { AssistantChatPopup } from "../ui/assistant-chat/assistant-chat-popup.js";
-import type { ChatPanelDevice } from "../ui/assistant-chat/chat-panel.js";
+import { VoicedChatPanels, type VoicedChatPanelDevice } from "../ui/voice-box/voiced-chat-panels.js";
+import { VoicedQuestionPanels, type VoicedQuestionPanelDevice } from "../ui/voice-box/voiced-question-panels.js";
 import { ConfirmPopups, type ConfirmPanelDevice } from "../ui/confirm-popups.js";
 import { LatestReply } from "../ui/latest-reply.js";
 import { PermissionPopups, type PopupDevice } from "../ui/permission-popups.js";
-import { QuestionPopups, type QuestionPanelDevice } from "../ui/question-popups.js";
+import { QuestionPopups } from "../ui/question-popups.js";
 import { LiveClients } from "../ui/server/live-clients.js";
 import type { ProfileBrowser } from "../ui/server/link-actions.js";
 import { PageOpener, type BrowserPage } from "../ui/server/page-opener.js";
@@ -16,7 +17,6 @@ import { LinkedNoticePanel } from "../ui/notices/linked-notice-panel.js";
 import { TaskNotices, type NoticePanelDevice } from "../ui/notices/task-notices.js";
 import { AfterTalking } from "../voice/after-talking.js";
 import { ApprovalVoice, type VoiceApprovals } from "../voice/approval-voice.js";
-import { VoiceWithDictation } from "../voice/voice-with-dictation.js";
 import { WorkerVoice } from "../voice/worker-voice.js";
 import { FrontSession } from "../ui/front-session.js";
 import type { TaskActions } from "../ui/server/task-actions.js";
@@ -50,11 +50,11 @@ export interface Adapters extends OperatorDevices {
   /** Native pop-ups for permission requests. */
   popups: PopupDevice;
   /** Native pop-ups for a worker's questions. */
-  questionPanels: QuestionPanelDevice;
+  questionPanels: VoicedQuestionPanelDevice;
   /** Native pop-ups for the assistant's confirm phrases. */
   confirmPanels: ConfirmPanelDevice;
   /** The native chat pop-up with your dialogue with the assistant, brought up by each finished reply. */
-  chatPanels: ChatPanelDevice;
+  chatPanels: VoicedChatPanelDevice;
   /** The native notice panel, where ended tasks wait to be read and replied to. */
   notices: NoticePanelDevice;
   /** The web UI's page in your browser, brought to the front from a notice. */
@@ -104,12 +104,11 @@ interface VoiceRoutes {
 }
 
 /**
- * Your voice, where recording with a page's mic button counts as talking too, a message that only says "allow" or
- * "deny" answers a waiting request, and a message started while a project tab is in front goes to its worker as a
- * task. The tasks come from the web UI, built after the operator.
+ * Your voice, where a message that only says "allow" or "deny" answers a waiting request, and a message started while
+ * a project tab is in front goes to its worker as a task. The tasks come from the web UI, built after the operator.
  */
 function routedVoice(adapters: Adapters, { front, approvals }: VoiceRoutes, tasks: () => TaskActions): WorkerVoice {
-  const voice = new ApprovalVoice(new VoiceWithDictation(adapters.voice, adapters.dictation), front, approvals);
+  const voice = new ApprovalVoice(adapters.voice, front, approvals);
   return new WorkerVoice(voice, front, (session, text) => tasks().runTask(session, { instruction: text }));
 }
 
@@ -162,12 +161,14 @@ function showNatively({ core, ui, notices, operator }: App, adapters: Adapters, 
   const noticePanel = new LinkedNoticePanel(adapters.notices, () => ui.server.noticeLink());
   const afterTalking = new AfterTalking(adapters.voice);
   new TaskNotices(noticePanel, notices.inbox, notices.shownSessions).follow(core.audibleEvents, afterTalking);
-  new QuestionPopups(adapters.questionPanels, ui.questionClicks, actions).follow(core.audibleEvents);
+  const questionPanels = new VoicedQuestionPanels(adapters.questionPanels, ui.boxes.panels);
+  new QuestionPopups(questionPanels, ui.questionClicks, actions).follow(core.audibleEvents);
   const latestReply = new LatestReply();
   latestReply.follow(operator.lines);
   const confirmPopups = new ConfirmPopups(adapters.confirmPanels, operator.clickedWords, permissionPopups);
   confirmPopups.follow(operator.confirmAsk, latestReply);
-  const chatPopup = new AssistantChatPopup(adapters.chatPanels, operator.clickedWords, operator.confirmAsk);
+  const chatPanels = new VoicedChatPanels(adapters.chatPanels, ui.boxes.panels, operator.spokenMessages);
+  const chatPopup = new AssistantChatPopup(chatPanels, operator.clickedWords, operator.confirmAsk);
   chatPopup.follow(operator.lines, operator.context);
 }
 

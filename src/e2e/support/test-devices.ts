@@ -18,8 +18,6 @@ export class TestVoice implements VoiceIO {
     this.heardCallback = cb;
   }
 
-  onDraft(): void {}
-
   onPress(cb: () => void): void {
     this.pressCallback = cb;
   }

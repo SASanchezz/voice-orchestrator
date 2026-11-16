@@ -19,7 +19,7 @@ import type { SkillLibrary } from "../skills/skill-library.js";
 import type { GestureControl } from "../sensors/gesture-switch.js";
 import type { WakeWordControl } from "../wake/wake-switch.js";
 import type { WakeTrainingControl } from "../wake/wake-training.js";
-import type { DictationControl } from "../voice/dictation.js";
+import type { SharedMic } from "../voice/shared-mic.js";
 import type { LiveClients } from "../ui/server/live-clients.js";
 import type { VoiceIO } from "../voice/voice-io.js";
 import type { EditorParts } from "./build-editor.js";
@@ -48,8 +48,8 @@ export interface OperatorDevices {
   wakeWord: WakeWordControl;
   /** Training your own wake word model from the web UI. */
   wakeTraining: WakeTrainingControl;
-  /** The web UI's mic button, recording and transcribing on this Mac. */
-  dictation: DictationControl;
+  /** The one mic the talk key, gestures, the wake word and the pages' mic buttons share. */
+  mic: SharedMic;
   /** config/config.yaml, which a removed project is taken out of. */
   configFile: string;
 }

@@ -1,16 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import type { TalkSource } from "../voice/talk-switch.js";
+import type { TalkSource } from "../voice/shared-mic.js";
 import { WakeTalk } from "./wake-talk.js";
 
 const SCORE = 0.9;
 
-/** Stands in for the mic switch; it writes down what it was asked to do, and by whom. */
-class FakeTalk {
+/** Stands in for the shared mic; it writes down what it was asked to do, and by whom. */
+class FakeMic {
   done: string[] = [];
 
-  press(source: TalkSource): void {
-    this.done.push(`press ${source}`);
+  start(source: TalkSource): void {
+    this.done.push(`start ${source}`);
   }
 
   release(source: TalkSource): void {
@@ -18,25 +18,25 @@ class FakeTalk {
   }
 }
 
-function wakeTalk(busy: boolean): { wake: WakeTalk; talk: FakeTalk } {
-  const talk = new FakeTalk();
-  return { wake: new WakeTalk(talk, () => busy), talk };
+function wakeTalk(busy: boolean): { wake: WakeTalk; mic: FakeMic } {
+  const mic = new FakeMic();
+  return { wake: new WakeTalk(mic, () => busy), mic };
 }
 
 test("wake talk: hearing the wake word starts a recording as the wake word", () => {
-  const { wake, talk } = wakeTalk(false);
+  const { wake, mic } = wakeTalk(false);
   wake.heard(SCORE);
-  assert.deepEqual(talk.done, ["press wake"]);
+  assert.deepEqual(mic.done, ["start wake"]);
 });
 
 test("wake talk: the wake word is ignored while busy", () => {
-  const { wake, talk } = wakeTalk(true);
+  const { wake, mic } = wakeTalk(true);
   wake.heard(SCORE);
-  assert.deepEqual(talk.done, []);
+  assert.deepEqual(mic.done, []);
 });
 
 test("wake talk: a listener that stops mid-message ends the recording", () => {
-  const { wake, talk } = wakeTalk(false);
+  const { wake, mic } = wakeTalk(false);
   wake.sensorStopped();
-  assert.deepEqual(talk.done, ["release wake"]);
+  assert.deepEqual(mic.done, ["release wake"]);
 });

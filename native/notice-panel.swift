@@ -141,6 +141,7 @@ func placeInCorner() {
 func show() {
   if !panel.isVisible { placeInCorner() }
   panel.orderFrontRegardless()
+  webView.evaluateJavaScript("window.panelShown?.()")  // your spoken words go to its reply box while it's shown
 }
 
 func run(_ command: Substring) {
@@ -151,6 +152,7 @@ func run(_ command: Substring) {
     show()
   } else if command == "hide" {
     panel.orderOut(nil)
+    webView.evaluateJavaScript("window.panelHidden?.()")
   }
 }
 

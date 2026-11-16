@@ -5,15 +5,23 @@ import { HTTP_STATUS } from "./http-error.js";
 /** The open pages, each listening on a server-sent event stream. */
 export class LiveClients {
   private clients = new Set<ServerResponse>();
+  /** The page each stream belongs to, when it said. */
+  private pages = new Map<ServerResponse, string>();
 
-  open(res: ServerResponse): void {
+  open(res: ServerResponse, page = ""): void {
     res.writeHead(HTTP_STATUS.ok, {
       "content-type": "text/event-stream",
       "cache-control": "no-store",
       connection: "keep-alive",
     });
     this.clients.add(res);
-    res.on("close", () => this.clients.delete(res));
+    if (page) this.pages.set(res, page);
+    res.on("close", () => this.forget(res));
+  }
+
+  /** The page's event stream is open: it is still there to be told things. */
+  isOpen(page: string): boolean {
+    return [...this.pages.values()].includes(page);
   }
 
   send<K extends keyof ServerEvents>(res: ServerResponse, event: K, payload: ServerEvents[K]): void {
@@ -36,5 +44,10 @@ export class LiveClients {
 
   endAll(): void {
     this.clients.forEach((client) => client.end());
+  }
+
+  private forget(res: ServerResponse): void {
+    this.clients.delete(res);
+    this.pages.delete(res);
   }
 }

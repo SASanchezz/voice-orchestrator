@@ -14,6 +14,7 @@ import { GestureSwitch, UnavailableGestures } from "./sensors/gesture-switch.js"
 import { SensorSnapshots } from "./sensors/sensor-snapshots.js";
 import { errorMessage } from "./shared/errors.js";
 import { UnavailableDictation } from "./voice/dictation.js";
+import { SharedMic } from "./voice/shared-mic.js";
 import { TextVoice } from "./voice/text-voice.js";
 import { UnavailableWakeWord, WakeSwitch } from "./wake/wake-switch.js";
 import { TrainingNews } from "./wake/training-news.js";
@@ -30,7 +31,7 @@ if (!process.argv.includes("--skip-auth-check")) await checkLogins(cfg);
 
 const mac = textMode ? undefined : macVoice(cfg.voice);
 const voice = mac?.voice ?? new TextVoice();
-const dictation = mac?.dictation ?? new UnavailableDictation();
+const mic = mac?.mic ?? new SharedMic(new UnavailableDictation(), { stopSpeaking: () => {}, play: () => {} }); // text mode has no mic
 const gestures = mac ? new GestureSwitch(gestureSetting(cfg.sensors.gestures)) : undefined; // text mode has no mic
 const wakeWord = mac ? new WakeSwitch(wakeWordSetting()) : undefined;
 const trainingNews = new TrainingNews();
@@ -43,7 +44,7 @@ const app = buildApp(
   await realAdapters(
     {
       voice,
-      dictation,
+      mic,
       assistantAgent,
       wakeWord: wakeWord ?? new UnavailableWakeWord(),
       wakeTraining,
@@ -56,6 +57,7 @@ const app = buildApp(
 
 trainingNews.connect(app.operator.orchestrator);
 mac?.voice.endRecordingWhen((words) => app.permissions.spoken.canAnswer(words)); // "allow commit" needs no "finish"
+mac?.voice.handOffTo(app.ui.boxes.relay);
 await openUi(cfg, app);
 app.editor.server.start(); // once the UI has made the token file it reads
 if (cfg.limits.autoResume) app.workers.resumer.start();

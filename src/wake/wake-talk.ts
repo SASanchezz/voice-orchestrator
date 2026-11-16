@@ -1,4 +1,4 @@
-import type { TalkSwitch } from "../voice/talk-switch.js";
+import type { SharedMic } from "../voice/shared-mic.js";
 
 const LOG = "[wake word]";
 /** A trained model's file may carry a version, e.g. hey_jarvis_v0.1. */
@@ -12,7 +12,7 @@ export interface WakeListener {
   sensorStopped(): void;
 }
 
-type Talk = Pick<TalkSwitch, "press" | "release">;
+type Mic = Pick<SharedMic, "start" | "release">;
 
 /**
  * The wake word on the shared mic: hearing it starts a recording as pressing the talk key does. Pauses don't end it,
@@ -21,7 +21,7 @@ type Talk = Pick<TalkSwitch, "press" | "release">;
  */
 export class WakeTalk implements WakeListener {
   constructor(
-    private talk: Talk,
+    private mic: Mic,
     private isBusy: () => boolean,
   ) {}
 
@@ -35,12 +35,12 @@ export class WakeTalk implements WakeListener {
       return;
     }
     console.log(`${LOG} heard (${score})`);
-    this.talk.press("wake");
+    this.mic.start("wake");
   }
 
   /** A listener that dies mid-message would otherwise leave the mic on; what was said is still sent. */
   sensorStopped(): void {
-    this.talk.release("wake");
+    this.mic.release("wake");
   }
 
   /** The words a model listens for, from its name: "hey_jarvis_v0.1" is "hey jarvis". */

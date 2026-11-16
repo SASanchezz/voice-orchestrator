@@ -4,6 +4,7 @@
 import type { NoticeView } from "./notice-protocol.js";
 import type { PageTarget, ProjectTarget } from "./page-target.js";
 import type { SessionView } from "./session-protocol.js";
+import type { VoiceBoxNews } from "./voice-box-protocol.js";
 
 export type { SessionStatus, SessionView, TaskRecordView } from "./session-protocol.js";
 export type PermissionModeName = "auto" | "ask";
@@ -194,8 +195,7 @@ export interface ServerEvents {
   feed: FeedEntryView;
   chat: SessionChatLine;
   chat_cleared: string;
-  dictation: string; // your words so far, while the mic button records
-  voice_draft: string; // your words so far, while you talk with the talk key or gesture
+  voice_box: VoiceBoxNews; // the recording a page's message box follows, however it was started
   /** A notice's button or a spoken "show me the code": open pages switch to this view. */
   navigate: PageTarget | ProjectTarget;
 }

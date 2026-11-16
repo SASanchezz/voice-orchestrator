@@ -9,10 +9,9 @@ import { renderQuestions } from "./questions.js";
 import { renderConversation, wireComposer } from "./conversation.js";
 import { renderCodeView } from "./code-view.js";
 import { renderDetail } from "./detail.js";
-import { renderMicButton, showDictatedWords, wireMicButton } from "./mic-button.js";
+import { followMicNews, renderMicButton, wireMicButton } from "./mic-button.js";
 import { renderProjectTodo } from "./project-todo.js";
 import { noteShownSession, wireSeenResults } from "./seen-results.js";
-import { renderVoiceDraft, showVoiceDraft } from "./voice-draft.js";
 import { navigate, navigateFromLink } from "./navigation.js";
 import { wirePageHistory } from "./page-history.js";
 import { reloadIfRestarted, wireRestart } from "./restart.js";
@@ -24,9 +23,9 @@ import { byId } from "./dom.js";
 import { reportDraft, reportDraftWhileShown } from "./draft-report.js";
 import { reportShownSession, reportShownSessionChange, wireShownSessionReport } from "./shown-session-report.js";
 import { reportFrontSession, reportFrontSessionChange, wireFrontSessionReport } from "./front-session-report.js";
+import { reportPageUse, wirePageUseReport } from "./page-use-report.js";
 import { wireImageViewer } from "./image-viewer.js";
 import { renderVoiceOffer } from "./voice-offer.js";
-import { wireVoiceDiscard } from "./voice-discard.js";
 import { wireFullScreenEscape } from "./full-screen-escape.js";
 import { wireCloseKey } from "./close-key.js";
 import { wireTodoDialog } from "./todo-dialog.js";
@@ -61,7 +60,6 @@ function renderPage(): void {
   renderDetail();
   renderVoiceOffer(tray);
   renderMicButton();
-  renderVoiceDraft();
   renderLatestReply();
 }
 
@@ -72,11 +70,11 @@ function connect(): void {
   events.addEventListener("open", () => reportDraft(tray.count)); // a restarted server knows of no draft
   events.addEventListener("open", reportShownSession);
   events.addEventListener("open", reportFrontSession);
+  events.addEventListener("open", reportPageUse); // a restarted server knows of no page
   events.addEventListener("error", () => setConnected(false)); // EventSource reconnects by itself
   followState(events);
   followChats(events);
-  onServerEvent(events, "dictation", showDictatedWords);
-  onServerEvent(events, "voice_draft", showVoiceDraft);
+  followMicNews(events);
   onServerEvent(events, "navigate", (target) => void navigate(target, chat));
 }
 
@@ -112,8 +110,8 @@ wireShownSessionReport();
 wireFrontSessionReport();
 wireImageViewer();
 wireSeenResults(renderPage);
-wireMicButton(); // before wireVoiceDiscard: Esc discards the recording first
-wireVoiceDiscard();
+wireMicButton(tray);
+wirePageUseReport();
 wireTodoDialog();
 wireRestart();
 wireMessengerSetup();

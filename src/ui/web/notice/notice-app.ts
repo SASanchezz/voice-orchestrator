@@ -7,21 +7,25 @@ import { wireImageViewer } from "../image-viewer.js";
 import { store } from "../store.js";
 import { AutoClose } from "./auto-close.js";
 import { closeUntouched, markShownSeen, runCommand } from "./notice-commands.js";
-import { box, chat, isBusy, pointer, render } from "./notice-page.js";
+import { BoxNews } from "../box-news.js";
+import { addChatLine, box, chat, isBusy, pointer, render, reply } from "./notice-page.js";
 import { commandOfKey, isNoticeCommand } from "./notice-shortcuts.js";
-import { followPointer, reportHeight } from "./panel-bridge.js";
+import { followPanelShowing, followPointer, reportHeight } from "./panel-bridge.js";
+import { reportPageHidden, reportPageUse } from "../page-use-report.js";
 import { wireProjectLinks } from "../project-links.js";
 import { showShortcutChips } from "./shortcut-chips.js";
 
 const autoClose = new AutoClose(isBusy, closeUntouched);
+/** Saying "finish" sends the reply to the notice's session, wherever you were when you started. */
+const news = new BoxNews(box, { describe: () => "", send: () => void reply.send() });
 const replyInput = byId("reply-input", HTMLTextAreaElement);
 const imageViewer = byId("image-viewer", HTMLDialogElement);
 
 function connect(): void {
   const events = openEvents();
   onServerEvent(events, "state", (state) => store.receive(state));
-  onServerEvent(events, "dictation", (words) => box.showWords(words));
-  onServerEvent(events, "chat", (line) => chat.add(line));
+  news.follow(events);
+  onServerEvent(events, "chat", addChatLine);
   onServerEvent(events, "chat_cleared", (sessionId) => chat.clear(sessionId));
 }
 
@@ -81,5 +85,7 @@ wireImageViewer();
 wireReply(); // before wireKeys: Esc discards a recording before it closes anything
 wireKeys();
 followPointer(pointer);
+followPanelShowing(reportPageUse, reportPageHidden); // shown, it takes your spoken words into its reply box
+document.addEventListener("pointerdown", reportPageUse, { capture: true });
 reportHeight(byId("notice-scroll", HTMLElement), byId("notice-body", HTMLElement));
 connect();

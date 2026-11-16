@@ -11,7 +11,6 @@ class PlayingVoice implements VoiceIO {
   private finishPlaying = (): void => {};
 
   onUtterance(): void {}
-  onDraft(): void {}
   onPress(): void {}
   isListening(): boolean {
     return false;

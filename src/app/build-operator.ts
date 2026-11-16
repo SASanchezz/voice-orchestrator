@@ -21,6 +21,7 @@ import { TurnTaker } from "../orchestrator/conversation/turn-taker.js";
 import { UserTurns } from "../orchestrator/conversation/user-turns.js";
 import { VoiceCancel } from "../orchestrator/conversation/voice-cancel.js";
 import { VoiceHold } from "../orchestrator/conversation/voice-hold.js";
+import { SpokenMessages } from "../orchestrator/conversation/spoken-messages.js";
 import { WakingUserTurns } from "../orchestrator/conversation/waking-user-turns.js";
 import { ContextReset } from "../orchestrator/lifecycle/context-reset.js";
 import { ResetRequests } from "../orchestrator/lifecycle/reset-requests.js";
@@ -52,6 +53,8 @@ export interface OperatorParts {
   voiceCancel: VoiceCancel;
   /** Whether you pointed while talking, told to the model with your words. */
   pointing: PointingCue;
+  /** Your spoken words, sent from a page's message box with what it held. */
+  spokenMessages: SpokenMessages;
   /** The confirm phrases the assistant asked you to say, which the web UI shows as buttons. */
   confirmAsk: ConfirmAsk;
   /** The words a Confirm or Cancel click says for you, which first silence the reply being said. */
@@ -64,18 +67,27 @@ export function buildOperator(core: Core, neighbors: OperatorNeighbors): Operato
   const tools = buildOperatorTools(core, neighbors, kit);
   const session = buildOperatorSession(core, neighbors, { kit, tools });
   const { loop, lifecycle } = operatorLoop(core, neighbors, { kit, session });
-  const voiceHold = new VoiceHold(loop, VOICE_MESSAGE_WAIT_MS);
-  const voiceCancel = new VoiceCancel(neighbors.devices.voice, voiceHold, kit.queue);
-  const pointing = new PointingCue();
-  listen(neighbors.devices, pointing, (text) => voiceHold.receive(pointing.annotate(text)));
+  const voice = voiceParts(neighbors, loop, kit);
   releaseShotsAfterTurns(neighbors.devices, kit.context);
   followConfirmAsk(core, kit);
   followEvents(core, loop, kit);
   core.events.on("permission_closed", (requestId: string) => kit.replies.answered(requestId));
   const orchestrator = new Orchestrator(loop, kit.context, kit.speech);
   const clickedWords = new ClickedWords(kit.replies, orchestrator);
-  const parts = { orchestrator, session, lifecycle, tools, voiceHold, voiceCancel, pointing, clickedWords };
-  return { ...parts, ...kitParts(kit) };
+  return { orchestrator, session, lifecycle, tools, clickedWords, ...voice, ...kitParts(kit) };
+}
+
+/** Your spoken messages: held while a page's files wait, taken back, noted when you point, or sent from a box. */
+function voiceParts(
+  neighbors: OperatorNeighbors,
+  loop: OperatorLoop,
+  { queue }: ConversationKit,
+): Pick<OperatorParts, "voiceHold" | "voiceCancel" | "pointing" | "spokenMessages"> {
+  const voiceHold = new VoiceHold(loop, VOICE_MESSAGE_WAIT_MS);
+  const voiceCancel = new VoiceCancel(neighbors.devices.voice, voiceHold, queue);
+  const pointing = new PointingCue();
+  listen(neighbors.devices, pointing, (text) => voiceHold.receive(pointing.annotate(text)));
+  return { voiceHold, voiceCancel, pointing, spokenMessages: new SpokenMessages(loop, pointing) };
 }
 
 /** The assistant's confirm buttons close on your words, and drop a phrase once its request is answered elsewhere. */

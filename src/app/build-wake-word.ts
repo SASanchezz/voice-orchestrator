@@ -16,15 +16,14 @@ import { WakeTalk } from "../wake/wake-talk.js";
 import type { MacVoiceParts } from "./real-adapters.js";
 
 /**
- * The wake word listener, talking into the same mic switch as the hotkey and gestures. It records with the same sox
- * as push-to-talk, and leaves the wake word alone while you talk or dictate. Said while a reply is spoken, it cuts the
- * reply off, as the talk key does.
+ * The wake word listener, talking into the same mic as the hotkey, gestures and the mic buttons. Its own listening
+ * uses the same sox, and it leaves the wake word alone while you talk. Said while a reply is spoken, it cuts the reply
+ * off, as the talk key does.
  */
 export function buildWakeWord(settings: WakeWordSettings, recordBin: string, parts: MacVoiceParts): WakeProcess {
-  const { voice, talk, dictation } = parts;
-  const isBusy = (): boolean => voice.isListening() || dictation.isRecording();
+  const { voice, mic } = parts;
   const command = { bin: settings.python, args: [...settings.args, "--record-bin", recordBin] };
-  return new WakeProcess(command, new WakeTalk(talk, isBusy));
+  return new WakeProcess(command, new WakeTalk(mic, () => voice.isListening()));
 }
 
 /** `python -m wake`, without the listener's `run` and its options: the training commands follow. */

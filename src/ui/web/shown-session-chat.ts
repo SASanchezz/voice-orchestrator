@@ -43,6 +43,11 @@ export class ShownSessionChat {
     if (this.shownSession) this.feed.showPendingApprovals(pending);
   }
 
+  /** Whether you wrote to the shown session's worker after this ISO time. */
+  hasTaskSince(time: string): boolean {
+    return this.shownSession !== undefined && this.feed.hasTaskSince(time);
+  }
+
   /** A live line from any session; shown only if that session is open. */
   add({ session, message }: SessionChatLine): void {
     if (session === this.shownSession) this.feed.add(message);

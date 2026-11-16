@@ -212,11 +212,12 @@
                   hidden
                 ></select>
                 <span class="composer-spacer"></span>
+                <span id="mic-target" class="mic-target" hidden></span>
                 <button
                   type="button"
                   id="mic-cancel"
                   class="ghost icon-button mic-cancel"
-                  title="Discard this recording (Esc)"
+                  title="Cancel this recording; the box keeps what it held before (Esc)"
                   hidden
                 >
                   ✕
@@ -265,13 +266,6 @@
     </section>
 
     <footer class="strip">
-      <div id="voice-status" class="voice-status" hidden>
-        <span id="voice-status-text" class="voice-status-text" aria-live="polite"></span>
-        <span id="voice-draft" class="voice-draft" hidden></span>
-        <button type="button" id="voice-discard" class="intent-dismiss" title="Discard this voice message (Esc)">
-          Cancel
-        </button>
-      </div>
       <p id="latest-reply" class="latest-reply"></p>
       <button type="button" id="chat-toggle" class="ghost chat-toggle" hidden>Chat</button>
     </footer>
