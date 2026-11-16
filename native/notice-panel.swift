@@ -1,9 +1,9 @@
 // The notice panel: one floating panel in the bottom-right corner showing the web UI's notice page (tasks that ended,
-// their notes, and a box to reply to the worker). Showing it never activates the app or takes focus; a click into it
-// makes it the key window, so you can type, without bringing anything else forward.
-// It is left out of screen sharing and recordings, since it shows the workers' notes.
+// their notes, and a box to reply to the worker). Showing it never activates the app or takes focus, and it can't become
+// the key window until you click into it; then you can type there without bringing anything else forward.
 // Commands on stdin, one per line: "load <url>" (once, first), "show", "hide"; stdin closing (the orchestrator quit)
-// exits. The page reports its natural height and the panel fits it, up to most of the screen.
+// exits. The page reports its natural height and the panel fits it, up to most of the screen, until you resize it by
+// hand; a button in the title bar then puts it back to that default size.
 // The panel only ever shows pages from the URL's own origin; links open in the default browser.
 // Usage: notice-panel
 import AppKit
@@ -11,13 +11,34 @@ import WebKit
 
 let width: CGFloat = 460
 let minHeight: CGFloat = 160
-let maxScreenShare: CGFloat = 0.7
+let heightLimits = HeightLimits(min: minHeight, maxScreenShare: 0.7)
 let screenMargin: CGFloat = 12
 let messageName = "panel"
 
-/** Takes typing once clicked, though it never activates the app. */
+/**
+ * Takes typing only after a click into it, never just by appearing, so a new notice doesn't pull the keyboard away from
+ * the app you're typing in. Clicking elsewhere gives the keyboard back and the next notice waits for a click again.
+ */
 final class NoticePanel: NSPanel {
-  override var canBecomeKey: Bool { true }
+  private var clickedInto = false
+  override var canBecomeKey: Bool { clickedInto }
+
+  override func sendEvent(_ event: NSEvent) {
+    if isClick(event) && !clickedInto {
+      clickedInto = true
+      makeKey()
+    }
+    super.sendEvent(event)
+  }
+
+  override func resignKey() {
+    super.resignKey()
+    clickedInto = false
+  }
+
+  private func isClick(_ event: NSEvent) -> Bool {
+    event.type == .leftMouseDown || event.type == .rightMouseDown || event.type == .otherMouseDown
+  }
 }
 
 /** The first click on the unfocused panel reaches the page instead of only focusing the panel. */
@@ -38,7 +59,7 @@ final class PointerRelay: NSResponder {
   }
 }
 
-/** Keeps the panel on the page's origin, sends links to the browser, and fits the panel to the page's height. */
+/** Keeps the panel on the page's origin, sends links to the browser, and passes the page's height on for sizing. */
 final class PageGuard: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
   var origin: URL?
 
@@ -62,7 +83,7 @@ final class PageGuard: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMes
 
   func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
     guard let body = message.body as? [String: Any], let height = body["height"] as? NSNumber else { return }
-    fit(height: CGFloat(truncating: height))
+    sizing.fit(pageHeight: CGFloat(truncating: height))
   }
 
   private func isOwn(_ url: URL) -> Bool {
@@ -92,13 +113,13 @@ panel.title = "Voice Orchestrator"
 let pageHolder = NSView(frame: NSRect(x: 0, y: 0, width: width, height: minHeight))
 pageHolder.addSubview(webView)
 glaze(panel, around: pageHolder)
+let sizing = PanelSizing(of: panel, width: width, heightLimits: heightLimits)
 let titlebarInset = titlebarHeight(of: panel)
 webView.frame = NSRect(x: 0, y: 0, width: width, height: pageHolder.bounds.height - titlebarInset)
 panel.level = .floating
 panel.isFloatingPanel = true
 panel.hidesOnDeactivate = false  // this app is never active, so it would never show
 panel.becomesKeyOnlyIfNeeded = false
-panel.sharingType = .none
 panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
 let pointerRelay = PointerRelay()
@@ -107,32 +128,7 @@ webView.addTrackingArea(
     rect: .zero, options: [.activeAlways, .mouseMoved, .mouseEnteredAndExited, .inVisibleRect],
     owner: pointerRelay, userInfo: nil))
 
-/** Copy, paste and the rest work by their usual keys only through a menu, even one never shown. */
-func editMenu() -> NSMenu {
-  let menu = NSMenu(title: "Edit")
-  menu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
-  menu.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
-  menu.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-  menu.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-  menu.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-  menu.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
-  return menu
-}
-let mainMenu = NSMenu()
-let editItem = NSMenuItem()
-editItem.submenu = editMenu()
-mainMenu.addItem(editItem)
-app.mainMenu = mainMenu
-
-/** Fits the panel to the page's height and the title bar above it, keeping its bottom-right corner where it is. */
-func fit(height: CGFloat) {
-  let screen = (panel.screen ?? NSScreen.main ?? NSScreen.screens[0]).visibleFrame
-  let contentHeight = min(max(height + titlebarInset, minHeight), screen.height * maxScreenShare)
-  let size = panel.frameRect(forContentRect: NSRect(x: 0, y: 0, width: width, height: contentHeight)).size
-  guard abs(size.height - panel.frame.height) >= 1 else { return }
-  let frame = panel.frame
-  panel.setFrame(NSRect(x: frame.maxX - size.width, y: frame.minY, width: size.width, height: size.height), display: true)
-}
+installEditMenu(in: app)
 
 /** In the bottom-right corner of the screen. */
 func placeInCorner() {

@@ -6,14 +6,16 @@ export interface TestPopup {
   explanation?: string;
   closed: boolean;
   click(allowed: boolean): void;
+  /** A click anywhere in it, off its buttons. */
+  clickInside(): void;
 }
 
 /** Fake pop-ups: tests read what is shown and click its buttons. */
 export class TestPopups implements PopupDevice {
   shown: TestPopup[] = [];
 
-  open(content: PopupContent, clicked: (allowed: boolean) => void): Popup {
-    const popup: TestPopup = { content, closed: false, click: clicked };
+  open(content: PopupContent, clicked: (allowed: boolean) => void, seen: () => void): Popup {
+    const popup: TestPopup = { content, closed: false, click: clicked, clickInside: seen };
     this.shown.push(popup);
     return {
       explain: (explanation) => (popup.explanation = explanation),

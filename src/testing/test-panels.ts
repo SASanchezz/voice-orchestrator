@@ -6,14 +6,16 @@ export interface TestPanel<Panel> {
   panel: Panel;
   closed: boolean;
   choose(answer: string): void;
+  /** A click anywhere in it, off its buttons. */
+  clickInside(): void;
 }
 
 /** Fake pop-ups with buttons: tests read what is shown and click a button or type an answer. */
 class TestPanels<Panel> {
   shown: TestPanel<Panel>[] = [];
 
-  ask(panel: Panel, chosen: (answer: string) => void): OpenPanel {
-    const shown: TestPanel<Panel> = { panel, closed: false, choose: chosen };
+  ask(panel: Panel, chosen: (answer: string) => void, seen: () => void): OpenPanel {
+    const shown: TestPanel<Panel> = { panel, closed: false, choose: chosen, clickInside: seen };
     this.shown.push(shown);
     return { close: () => (shown.closed = true) };
   }

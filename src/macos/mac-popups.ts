@@ -1,8 +1,8 @@
 import { spawn, type ChildProcessByStdio } from "node:child_process";
-import { createInterface } from "node:readline";
 import type { Readable, Writable } from "node:stream";
 import type { Popup, PopupContent, PopupDevice } from "../ui/permission-popups.js";
 import { buildNativeHelper } from "./native-helper.js";
+import { readPanelOutput } from "./panel-output.js";
 
 type Panel = ChildProcessByStdio<Writable, Readable, null>;
 
@@ -17,11 +17,12 @@ export class MacPopups implements PopupDevice {
     return new MacPopups(await buildNativeHelper("popup-panel"));
   }
 
-  open(content: PopupContent, clicked: (allowed: boolean) => void): Popup {
-    const { title, warning, command, allowLabel } = content;
-    const panel = this.show([title, warning, command, allowLabel]);
+  open(content: PopupContent, clicked: (allowed: boolean) => void, seen: () => void): Popup {
+    const { title, warning, command, wholeCommand, allowLabel } = content;
+    const whole = wholeCommand ? ["--whole-detail", wholeCommand] : [];
+    const panel = this.show([title, warning, command, allowLabel, ...whole]);
     panel.stdin.on("error", () => {}); // the pop-up was clicked or closed before an explanation reached it
-    createInterface({ input: panel.stdout }).once("line", (answer) => clicked(answer === "allow"));
+    readPanelOutput(panel.stdout, seen, (answer) => clicked(answer === "allow"));
     return {
       explain: (explanation) => panel.stdin.write(`${explanation.replace(/\s+/g, " ")}\n`),
       close: () => panel.kill(),

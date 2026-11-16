@@ -3,12 +3,15 @@
 // or a worker's question (its options, stacked, and a field for your own answer).
 // It never activates or takes focus: the app you're in (e.g. the browser) stays in front and keeps the keyboard,
 // until you click into the answer field, which then takes typing without bringing anything else forward.
-// Prints the clicked button's answer ("deny" / "allow" by default), or "text:<your answer>", and exits.
+// Prints "seen" on your first click anywhere in it (so what is said about it can stop while you read), then the
+// clicked button's answer ("deny" / "allow" by default), or "text:<your answer>", and exits.
 // Each line on stdin replaces the plain-language explanation; stdin closing (the orchestrator quit) closes the panel.
 // Usage: popup-panel <title> <warning or ""> <detail or ""> <allow label>
 //          [--button <answer> <label>]... [--stacked] [--text <placeholder>] [--explanation <text>]
+//          [--whole-detail <text>]
 // Buttons given with --button replace Deny and Allow, left to right, or top to bottom with --stacked.
 // --explanation shows plain-language text from the start, in the place stdin's explanations go.
+// --whole-detail is the detail uncut: a "Show whole command" link swaps the short detail for it, scrolling when long.
 import AppKit
 
 let usageExitCode: Int32 = 64
@@ -18,6 +21,10 @@ let screenMargin: CGFloat = 12
 /** Between the see-through title bar and the title, which sits under it instead of below a solid bar. */
 let titlebarGap: CGFloat = 4
 let positionalCount = 4
+/** How tall the whole command grows before it scrolls. */
+let wholeDetailMaxHeight: CGFloat = 320
+let showWholeTitle = "▸ Show whole command"
+let showShortTitle = "▾ Show less"
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 guard arguments.count >= positionalCount else {
@@ -54,6 +61,7 @@ func buttonOptions() -> [(answer: String, label: String)] {
 let stacked = options.contains("--stacked")
 let ownAnswerPlaceholder = option("--text")
 let firstExplanation = option("--explanation") ?? ""
+let wholeDetail = option("--whole-detail") ?? ""
 
 final class Clicks: NSObject {
   /** Each button carries its answer as its identifier. */
@@ -70,6 +78,15 @@ final class Clicks: NSObject {
     print("text:" + answer)
     fflush(stdout)
     exit(0)
+  }
+
+  /** Swaps the short detail for the whole one, or back, and refits the panel. */
+  @objc func toggledWholeDetail(_ toggle: NSButton) {
+    let showingWhole = wholeDetailView.isHidden
+    wholeDetailView.isHidden = !showingWhole
+    commandLabel.isHidden = showingWhole
+    toggle.title = showingWhole ? showShortTitle : showWholeTitle
+    placeInCorner()
   }
 }
 
@@ -92,6 +109,36 @@ let warningLabel = wrappingLabel(warning, font: .boldSystemFont(ofSize: 12), col
 warningLabel.isHidden = warning.isEmpty
 let commandLabel = wrappingLabel(command, font: .monospacedSystemFont(ofSize: 11, weight: .regular), color: .secondaryLabelColor)
 commandLabel.isHidden = command.isEmpty
+
+/** Selectable monospaced text, as tall as it needs up to `wholeDetailMaxHeight`, then scrolling. */
+func scrollingDetail(_ text: String) -> NSScrollView {
+  let scroll = NSTextView.scrollableTextView()
+  scroll.drawsBackground = false
+  guard let textView = scroll.documentView as? NSTextView else { return scroll }
+  textView.string = text
+  textView.font = .monospacedSystemFont(ofSize: 11, weight: .regular)
+  textView.textColor = .secondaryLabelColor
+  textView.drawsBackground = false
+  textView.isEditable = false
+  textView.textContainer?.lineFragmentPadding = 0
+  let textWidth = width - 2 * padding
+  textView.frame.size.width = textWidth
+  scroll.widthAnchor.constraint(equalToConstant: textWidth).isActive = true
+  scroll.heightAnchor.constraint(equalToConstant: min(textHeight(of: textView), wholeDetailMaxHeight)).isActive = true
+  return scroll
+}
+func textHeight(of textView: NSTextView) -> CGFloat {
+  guard let layout = textView.layoutManager, let container = textView.textContainer else { return 0 }
+  layout.ensureLayout(for: container)
+  return layout.usedRect(for: container).height + 2 * textView.textContainerInset.height
+}
+let wholeDetailView = scrollingDetail(wholeDetail)
+wholeDetailView.isHidden = true
+let wholeDetailToggle = NSButton(title: showWholeTitle, target: clicks, action: #selector(Clicks.toggledWholeDetail(_:)))
+wholeDetailToggle.isBordered = false
+wholeDetailToggle.font = .systemFont(ofSize: 11)
+wholeDetailToggle.contentTintColor = .linkColor
+wholeDetailToggle.isHidden = wholeDetail.isEmpty
 
 func approves(_ answer: String) -> Bool {
   answer == "allow" || answer.hasPrefix("confirm:")
@@ -131,7 +178,8 @@ ownAnswerRow.orientation = .horizontal
 ownAnswerRow.isHidden = ownAnswerPlaceholder == nil
 
 let content = NSStackView(views: [
-  wrappingLabel(title, font: .boldSystemFont(ofSize: 13)), warningLabel, explanation, commandLabel, buttons, ownAnswerRow,
+  wrappingLabel(title, font: .boldSystemFont(ofSize: 13)), warningLabel, explanation, commandLabel, wholeDetailView,
+  wholeDetailToggle, buttons, ownAnswerRow,
 ])
 content.orientation = .vertical
 content.alignment = .leading
@@ -141,7 +189,21 @@ content.widthAnchor.constraint(greaterThanOrEqualToConstant: width).isActive = t
 buttons.widthAnchor.constraint(equalTo: content.widthAnchor, constant: -2 * padding).isActive = true
 ownAnswerRow.widthAnchor.constraint(equalTo: content.widthAnchor, constant: -2 * padding).isActive = true
 
-let panel = NSPanel(
+/** Says "seen" once, on your first click anywhere in it, buttons included, before any answer. */
+final class SeenPanel: NSPanel {
+  private var seen = false
+
+  override func sendEvent(_ event: NSEvent) {
+    if event.type == .leftMouseDown && !seen {
+      seen = true
+      print("seen")
+      fflush(stdout)
+    }
+    super.sendEvent(event)
+  }
+}
+
+let panel = SeenPanel(
   contentRect: NSRect(x: 0, y: 0, width: width, height: 100),
   styleMask: [.titled, .nonactivatingPanel, .utilityWindow],
   backing: .buffered, defer: false)
