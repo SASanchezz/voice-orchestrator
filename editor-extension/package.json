@@ -1,0 +1,43 @@
+{
+  "name": "reveal-in-finder",
+  "displayName": "Reveal in Finder (Code view)",
+  "description": "Brings desktop VS Code's Reveal in Finder to the Code view's browser VS Code, whose server runs on this Mac.",
+  "publisher": "voice-orchestrator",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "extensionKind": [
+    "workspace"
+  ],
+  "main": "./extension.js",
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "voiceOrchestrator.revealInFinder",
+        "title": "Reveal in Finder"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "voiceOrchestrator.revealInFinder",
+          "group": "navigation@20"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "voiceOrchestrator.revealInFinder",
+          "group": "2_files@20"
+        }
+      ]
+    }
+  }
+}

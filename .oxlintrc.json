@@ -6,7 +6,7 @@
     "suspicious": "error"
   },
   "env": { "node": true, "es2024": true },
-  "ignorePatterns": ["node_modules", "state", "native"],
+  "ignorePatterns": ["node_modules", "state", "native", "editor-extension"],
   "rules": {
     "max-lines": ["error", { "max": 200, "skipBlankLines": true, "skipComments": true }],
     "max-lines-per-function": ["error", { "max": 20, "skipBlankLines": true, "skipComments": true, "IIFEs": true }],
