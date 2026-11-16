@@ -17,14 +17,21 @@ export interface Recording {
 
 /** sox recording 16 kHz mono 16-bit, the format whisper.cpp expects. */
 export function startRecorder(recordBin: string, wav: string): ChildProcess {
-  return spawn(recordBin, [...SAMPLE_FORMAT, wav], { stdio: "ignore" });
+  return killedOnAppExit(spawn(recordBin, [...SAMPLE_FORMAT, wav], { stdio: "ignore" }));
 }
 
 /** The same, as raw samples on its stdout, so they can be read while it records. */
 export function startRawRecorder(recordBin: string): ChildProcess {
-  return spawn(recordBin, [...SAMPLE_FORMAT, "-e", "signed-integer", "-t", "raw", "-"], {
-    stdio: ["ignore", "pipe", "ignore"],
-  });
+  const args = [...SAMPLE_FORMAT, "-e", "signed-integer", "-t", "raw", "-"];
+  return killedOnAppExit(spawn(recordBin, args, { stdio: ["ignore", "pipe", "ignore"] }));
+}
+
+/** A restart or crash mid-recording would otherwise leave sox orphaned, holding the mic until it is killed by hand. */
+function killedOnAppExit(recorder: ChildProcess): ChildProcess {
+  const kill = (): void => void recorder.kill("SIGKILL");
+  process.once("exit", kill);
+  recorder.once("close", () => process.off("exit", kill));
+  return recorder;
 }
 
 /** Stops sox; if it ignores SIGINT (a stalled audio device), it is killed, so the mic is never left on. */
