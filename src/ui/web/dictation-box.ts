@@ -1,16 +1,18 @@
 // A message box you can speak into: its mic button records on this Mac, and your words appear in the box as you speak,
-// after what it already held; click again or press Enter to stop, and they stay there to edit and send. ✕ or Esc
-// discards the recording and puts back what the box held before. The composer and the notice panel's reply use it.
+// after what it already held; click again, press Enter or start editing to stop, and they stay there to edit and
+// send. Send while recording stops, waits for the final words and sends them in one go. ✕ or Esc discards the
+// recording and puts back what the box held before. The composer and the notice panel's reply use it.
 
 import { act } from "./api.js";
 import { autoGrow } from "./dom.js";
+import { wireStopOnEdit } from "./stop-on-edit.js";
 
 type MicState = "idle" | "recording" | "transcribing";
 
 const LABELS: Record<MicState, string> = { idle: "🎙", recording: "■", transcribing: "…" };
 const TITLES: Record<MicState, string> = {
   idle: "Speak your message; your words appear in the box as you talk",
-  recording: "Recording; click or press Enter to stop, then edit and send",
+  recording: "Recording; click, press Enter or start typing to stop and edit, or Send to stop and send",
   transcribing: "Finishing your words…",
 };
 
@@ -34,6 +36,8 @@ export class DictationBox {
     this.parts.mic.addEventListener("click", () => void this.toggle());
     this.parts.cancel.addEventListener("click", () => void this.discard());
     wireRecordingKeys(this, form);
+    wireSendWhileRecording(this, this.parts.send, form);
+    wireStopOnEdit(this, this.parts.input);
     this.show("idle");
   }
 
@@ -52,16 +56,17 @@ export class DictationBox {
 
   async toggle(): Promise<void> {
     if (this.state === "idle") return this.start();
-    if (this.isRecording()) return this.finish();
+    if (this.isRecording()) await this.finish();
   }
 
-  /** Nothing heard leaves the box as it was. */
-  async finish(): Promise<void> {
+  /** Nothing heard leaves the box as it was. False when the server couldn't finish, so nothing should be sent. */
+  async finish(): Promise<boolean> {
     this.show("transcribing");
     const words = await act("/api/dictation/finish");
     writeAfter(this.parts.input, this.typedBefore, words ?? "");
     this.show("idle");
     this.parts.input.focus();
+    return words !== undefined;
   }
 
   async discard(): Promise<void> {
@@ -90,6 +95,20 @@ function wireRecordingKeys(box: DictationBox, form: HTMLFormElement): void {
   form.addEventListener("keydown", (e) => stopOnEnter(box, e), { capture: true });
 }
 
+/** Send while recording stops it and sends the final words, not the ones half-heard; a failed finish sends nothing. */
+function wireSendWhileRecording(box: DictationBox, send: HTMLButtonElement, form: HTMLFormElement): void {
+  send.addEventListener("click", (click) => {
+    if (box.isIdle()) return;
+    click.preventDefault();
+    if (box.isRecording()) void finishThenSend(box, form);
+  });
+}
+
+async function finishThenSend(box: DictationBox, form: HTMLFormElement): Promise<void> {
+  const isFinished = await box.finish();
+  if (isFinished) form.requestSubmit();
+}
+
 /** Enter stops recording instead of sending the words half-heard; it is caught before the box's own Enter. */
 function stopOnEnter(box: DictationBox, e: KeyboardEvent): void {
   if (e.key !== "Enter" || box.isIdle()) return;
@@ -116,5 +135,5 @@ function showMicState({ input, mic, cancel, send }: DictationParts, state: MicSt
   mic.disabled = state === "transcribing";
   cancel.hidden = state !== "recording";
   input.readOnly = state !== "idle"; // the words being heard would overwrite what you type
-  send.disabled = state !== "idle";
+  send.disabled = state === "transcribing";
 }

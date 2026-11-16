@@ -6,29 +6,38 @@ import { act } from "./api.js";
 import { wireAttachmentInput } from "./attachment-input.js";
 import { type AttachmentTray, encodeForSending } from "./attachments.js";
 import type { ChatView } from "./chat.js";
+import { pickedModel, renderComposerModel, resetComposerModel } from "./composer-model.js";
 import { autoGrow, button, byId } from "./dom.js";
+import { markProject } from "./project-links.js";
 import { openTodoCountOf } from "./project-todo.js";
-import { closeNote } from "./session-close.js";
-import { sessionTabs, todoTab } from "./session-tabs.js";
+import { sessionPicker } from "./session-picker.js";
+import { currentSessionTab, todoTab } from "./session-tabs.js";
 import { activeSession, store } from "./store.js";
-import { sweepNote } from "./sweep-note.js";
+import { projectNote } from "./project-note.js";
 
 export function renderConversation(chat: ChatView): void {
   const project = store.selectedProject();
   const tabs = byId("session-tabs", HTMLElement);
   const input = byId("composer-input", HTMLTextAreaElement);
   tabs.hidden = !project;
+  markProject(byId("feed", HTMLOListElement), project?.name);
+  renderComposerModel(project);
   if (!project) {
     input.placeholder = "Message the assistant…";
     return chat.showOrchestrator();
   }
   const session = activeSession(project);
   input.placeholder = `Task for ${project.name} · session ${session.number}…`;
+  const todo = todoTab(project, openTodoCountOf(project.name));
+  const current = currentSessionTab(project, session);
+  tabs.replaceChildren(todo, current, newSessionButton(project), ...sessionPicker(project), ...projectNote(project));
+  void chat.showSession(session.id);
+}
+
+function newSessionButton(project: ProjectView): HTMLButtonElement {
   const newSession = button("+", "ghost session-new", () => void createSession(project));
   newSession.title = `New session in ${project.name}`;
-  const todo = todoTab(project, openTodoCountOf(project.name));
-  tabs.replaceChildren(todo, ...sessionTabs(project), newSession, ...closeNote(project), ...sweepNote(project));
-  void chat.showSession(session.id);
+  return newSession;
 }
 
 /** The new session's chat is shown, even from the To-do tab. */
@@ -61,7 +70,7 @@ async function sendMessage(input: HTMLTextAreaElement, tray: AttachmentTray): Pr
   input.value = "";
   autoGrow(input);
   tray.clear();
-  if ((await send(text, files)) !== undefined) return;
+  if ((await send(text, files)) !== undefined) return resetComposerModel();
   input.value = text;
   autoGrow(input);
   tray.add(files);
@@ -71,6 +80,7 @@ async function send(text: string, files: File[]): Promise<string | undefined> {
   const attachments = await encodeForSending(files);
   if (!attachments) return undefined;
   const project = store.selectedProject();
-  if (project) return act(`/api/sessions/${project.activeSession}/tasks`, { instruction: text, attachments });
+  const model = pickedModel();
+  if (project) return act(`/api/sessions/${project.activeSession}/tasks`, { instruction: text, attachments, model });
   return act("/api/message", { text, attachments });
 }

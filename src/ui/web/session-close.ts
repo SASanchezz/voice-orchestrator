@@ -1,11 +1,11 @@
-// A session tab's ×: the first click turns it into "Confirm close" for a few seconds, with the warning under the tabs;
+// A session tab's ×: the first click turns it into "Confirm close" for a few seconds, with the warning as its tooltip;
 // a second click closes the session. A click anywhere else, or waiting, takes it back.
 
 import { ArmedConfirm } from "../armed-confirm.js";
-import type { ProjectView, SessionView } from "../protocol.js";
+import type { SessionView } from "../protocol.js";
 import { isBusy } from "../running-tasks.js";
 import { act } from "./api.js";
-import { button, el } from "./dom.js";
+import { button } from "./dom.js";
 import { store } from "./store.js";
 
 const CONFIRM_MS = 4000;
@@ -52,12 +52,6 @@ function armClose(session: SessionView): void {
 function closeSession(session: SessionView): void {
   pendingClose.cancel();
   void act(`/api/sessions/${session.id}/close`);
-}
-
-/** What closing will do, under the tabs while a close waits for its confirmation. */
-export function closeNote(project: ProjectView): HTMLParagraphElement[] {
-  const session = project.sessions.find((candidate) => pendingClose.isArmed(candidate.id));
-  return session ? [el("p", { class: "session-close-note" }, closeWarning(session))] : [];
 }
 
 function closeWarning(session: SessionView): string {

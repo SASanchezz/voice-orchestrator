@@ -14,13 +14,12 @@ const RETRY_AFTER_MS = 10_000;
 
 /** Puts the button in the message box, before Send; renderForceStop shows it while there is a task to stop. */
 export function wireForceStop(): void {
-  const composer = byId("composer", HTMLFormElement);
   const icon = el("span", { class: "force-stop-icon", "aria-hidden": "true" });
   const label = el("span", { id: LABEL_ID }, READY_LABEL);
   const stop = el("button", { type: "button", class: "force-stop", id: FORCE_STOP_ID }, icon, label);
   stop.hidden = true;
   stop.addEventListener("click", () => void forceStopShownSession());
-  composer.insertBefore(stop, composer.querySelector('button[type="submit"]'));
+  byId("composer-send", HTMLButtonElement).before(stop);
 }
 
 /** Shown while the selected project's active session runs a task or waits for your permission. */

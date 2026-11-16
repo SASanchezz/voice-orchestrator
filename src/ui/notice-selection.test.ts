@@ -5,7 +5,7 @@ import { NoticeSelection } from "./notice-selection.js";
 
 function notice(id: string, sessionId: string): NoticeView {
   const about = { project: "kaggle", sessionNumber: 1, outcome: "done", headline: "", task: "", summary: "" } as const;
-  return { id, sessionId, ...about, fullNote: "", seen: false, endedAt: "2026-11-05T10:00:00Z" };
+  return { id, sessionId, ...about, seen: false, endedAt: "2026-11-05T10:00:00Z" };
 }
 
 const FIRST = notice("n1", "s1");

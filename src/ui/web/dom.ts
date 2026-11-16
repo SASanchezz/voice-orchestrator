@@ -104,3 +104,8 @@ export function localWrite(key: string, value: string): void {
     // a remembered selection is a convenience only
   }
 }
+
+/** A dialog is up, so Escape belongs to it. */
+export function isDialogOpen(): boolean {
+  return document.querySelector("dialog[open]") !== null;
+}

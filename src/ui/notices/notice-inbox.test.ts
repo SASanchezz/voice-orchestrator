@@ -42,14 +42,6 @@ test("notice inbox: a long note shows its last paragraph as the summary", () => 
   assert.equal(inboxWith(doneIn("s1", LONG_NOTE)).views()[0].summary, "Added a resend countdown.");
 });
 
-test("notice inbox: a long note is there whole", () => {
-  assert.equal(inboxWith(doneIn("s1", LONG_NOTE)).views()[0].fullNote, LONG_NOTE);
-});
-
-test("notice inbox: a short note has nothing more to show", () => {
-  assert.equal(inboxWith(doneIn("s1")).views()[0].fullNote, "");
-});
-
 test("notice inbox: a failed task shows its error", () => {
   const subject = { project: "kaggle", session: "s1", label: "kaggle", sessionNumber: 1, task: "Retrain" };
   const inbox = inboxWith({ kind: "task_failed", ...subject, error: "out of memory" });

@@ -149,11 +149,6 @@ button.badge.todo-project-link:hover {
 .chat-panel.todo-shown > .composer {
   display: none;
 }
-.session-tab.todo-tab .session-open {
-  padding-right: 10px;
-  font-weight: 600;
-}
-
 .todo-done {
   padding: 8px 16px;
 }

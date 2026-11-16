@@ -15,7 +15,7 @@
   box-shadow: var(--glass-rim);
 }
 
-.notice-full > div,
+.notice-summary,
 .notice-explanation {
   border: 1px solid var(--glass-edge);
   border-radius: 10px;

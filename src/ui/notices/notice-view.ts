@@ -14,8 +14,6 @@ export interface TaskNotice {
 }
 
 export function noticeViewOf({ id, event, endedAt, seen, explanation }: TaskNotice): NoticeView {
-  const note = noteOf(event);
-  const summary = closingSummary(note);
   return {
     id,
     sessionId: event.session,
@@ -24,8 +22,7 @@ export function noticeViewOf({ id, event, endedAt, seen, explanation }: TaskNoti
     outcome: event.kind === "task_done" ? "done" : "failed",
     headline: taskHeadline(event),
     task: event.task,
-    summary,
-    fullNote: summary === note.trim() ? "" : note,
+    summary: closingSummary(noteOf(event)),
     explanation,
     seen,
     endedAt,

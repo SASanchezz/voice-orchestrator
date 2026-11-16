@@ -2,6 +2,7 @@
 // No runtime imports, so the page bundles it and Node tests it.
 
 import type { ProjectView, SessionStatus, SessionView, TodoItemView, TodoRunView } from "./protocol.js";
+import { instructionOf } from "../workers/queued-task.js";
 import { isBusy } from "./running-tasks.js";
 
 /** queued: behind the session's running task. sent: no trace of it in the session yet. closed: the session is gone. */
@@ -36,7 +37,7 @@ function placeRun(item: TodoItemView, run: TodoRunView, sessions: SessionView[])
 function stateIn(run: TodoRunView, session: SessionView): TodoRunState {
   const isCurrent = session.task === run.instruction;
   if (isCurrent && isBusy(session)) return session.status;
-  if (session.queued.includes(run.instruction)) return "queued";
+  if (session.queued.map(instructionOf).includes(run.instruction)) return "queued";
   if (isCurrent) return session.status;
   return outcomeIn(run, session);
 }

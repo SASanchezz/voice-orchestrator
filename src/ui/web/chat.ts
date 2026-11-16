@@ -1,42 +1,40 @@
 // The center chat: the orchestrator's conversation, or one worker session's own message history.
 
 import type { FeedEntryView, PendingRequestView, SessionChatLine } from "../protocol.js";
-import { fetchSessionMessages } from "./api.js";
 import { feedItem, feedItems } from "./chat-items.js";
 import { ChatList } from "./chat-list.js";
 import { ConfirmButtons } from "./confirm-buttons.js";
 import { latestTaskEnd, replyLineIds } from "../task-reply.js";
 import { chatRows, joinsPermissionRow } from "../permission-lines.js";
 import { permissionRowItem } from "./permission-items.js";
-import { SessionFeed } from "./session-feed.js";
+import { ShownSessionChat } from "./shown-session-chat.js";
 
 export class ChatView {
   private list = new ChatList();
   private confirmButtons = new ConfirmButtons(this.list);
   private orchestratorEntries: FeedEntryView[] = [];
-  /** undefined: the orchestrator's chat is shown */
-  private shownSession?: string;
-  private sessionFeed = new SessionFeed(this.list);
+  /** While it shows nothing, the orchestrator's chat is shown. */
+  private session = new ShownSessionChat(this.list);
 
   /** The orchestrator's timeline as the server had it when the page connected. */
   setOrchestratorBacklog(entries: FeedEntryView[]): void {
     this.orchestratorEntries = entries;
-    if (!this.shownSession) this.renderOrchestrator();
+    if (!this.session.isShowing()) this.renderOrchestrator();
   }
 
   /** A permission answer right after another about the same session joins its folded line. */
   addOrchestratorEntry(entry: FeedEntryView): void {
     const joins = joinsPermissionRow(this.orchestratorEntries.at(-1), entry);
     this.orchestratorEntries.push(entry);
-    if (this.shownSession) return;
+    if (this.session.isShowing()) return;
     if (joins) this.list.replaceLast(permissionRowItem(chatRows(this.orchestratorEntries).at(-1) ?? [entry]));
     else this.list.append(feedItem(entry));
     this.confirmButtons.show(this.orchestratorEntries);
   }
 
   showOrchestrator(): void {
-    if (!this.shownSession) return;
-    this.shownSession = undefined;
+    if (!this.session.isShowing()) return;
+    this.session.hide();
     this.renderOrchestrator();
   }
 
@@ -51,28 +49,22 @@ export class ChatView {
     if (ended) this.list.highlight(replyLineIds(this.orchestratorEntries, ended));
   }
 
-  async showSession(sessionId: string): Promise<void> {
-    if (this.shownSession === sessionId) return;
-    this.shownSession = sessionId;
-    this.sessionFeed.start(sessionId);
-    const messages = await fetchSessionMessages(sessionId);
-    if (this.shownSession !== sessionId) return; // switched again while loading
-    messages.forEach((message) => this.sessionFeed.add(message));
-    if (!messages.length) this.sessionFeed.showEmpty();
+  showSession(sessionId: string): Promise<void> {
+    return this.session.show(sessionId);
   }
 
   /** A session's chat was wiped on the server; its message ids start over. */
   clearSession(sessionId: string): void {
-    if (sessionId === this.shownSession) this.sessionFeed.clear();
+    this.session.clear(sessionId);
   }
 
   /** Marks which of the shown session's permission requests still wait for an answer. */
   showPendingApprovals(pending: PendingRequestView[]): void {
-    if (this.shownSession) this.sessionFeed.showPendingApprovals(pending);
+    this.session.showPendingApprovals(pending);
   }
 
   /** A live line from any session; shown only if that session is open. */
-  addSessionMessage({ session, message }: SessionChatLine): void {
-    if (session === this.shownSession) this.sessionFeed.add(message);
+  addSessionMessage(line: SessionChatLine): void {
+    this.session.add(line);
   }
 }

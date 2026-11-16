@@ -1,31 +1,104 @@
 /* ---------------------------------------------------------------- composer */
 
-/* The message box gets the row's spare width; the buttons keep their natural size. */
+/* One card: the message box on top, its tools in a row below. Attach and the model sit on the left, the mic and Send
+   on the right, where the thumb and pointer finish. The card, not the box, shows focus. */
 .composer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+  --composer-control-height: 32px;
+  padding: 10px 12px 12px;
   border-top: 1px solid var(--border);
   background: var(--surface);
-  align-items: flex-end;
-  container-type: inline-size;
 }
-.composer > button {
-  flex-shrink: 0;
+.composer-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.15s;
+}
+.composer-box:focus-within {
+  border-color: var(--accent);
 }
 #composer-input {
-  flex: 1 1 0;
-  min-width: 0;
+  min-height: var(--composer-control-height);
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+}
+#composer-input:focus {
+  outline: none;
 }
 
-/* Too narrow for the box and every button on one line: the box takes a full row, the buttons go below it. */
-@container (max-width: 560px) {
-  #composer-input {
-    order: -1;
-    flex-basis: 100%;
-  }
-  .composer > .attach-button {
-    margin-right: auto;
-  }
+.composer-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.composer-tools > button {
+  flex-shrink: 0;
+  height: var(--composer-control-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.composer-tools > button[hidden] {
+  display: none;
+}
+/* Pushes the mic, Force stop and Send to the right, whichever of them are shown. */
+.composer-spacer {
+  flex: 1;
+}
+#composer-send {
+  padding-inline: 16px;
+  margin-left: 2px;
+}
+
+/* Attach, the mic and its discard are quiet square icons until hovered; a recording mic keeps its red. */
+.composer-tools > :is(.icon-button, .mic-button) {
+  width: var(--composer-control-height);
+  padding: 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+.composer-tools > :is(.icon-button, .mic-button.idle) {
+  border-color: transparent;
+}
+.composer-tools > :is(.icon-button, .mic-button.idle):hover:enabled {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* Force stop keeps its red pill, at the row's height. */
+.composer-tools > button.force-stop {
+  padding-inline: 12px;
+}
+
+/* The model a typed task runs on: a quiet chip as wide as its words, the first thing to shorten when room runs out. */
+.composer-model {
+  field-sizing: content;
+  min-width: 0;
+  max-width: 180px;
+  height: 28px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.composer-model:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.composer-model:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.composer-model[hidden] {
+  display: none;
 }

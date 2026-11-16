@@ -59,7 +59,13 @@ test("task notices: a failed task is a notice too", () => {
 });
 
 test("task notices: a permission request is not a task notice", () => {
-  const { panel } = noticesFor({ kind: "permission", id: "p1", ...KAGGLE_1, description: "Bash: ls" });
+  const { panel } = noticesFor({
+    kind: "permission",
+    id: "p1",
+    ...KAGGLE_1,
+    description: "Bash: ls",
+    command: "Bash: ls",
+  });
   assert.deepEqual(panel.shownLinks, []);
 });
 

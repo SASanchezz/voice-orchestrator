@@ -1,73 +1,76 @@
-// A project's sessions as tabs above the chat, like VS Code's.
+// The strip above the chat: the project's to-do list, then one tab for the active session; clicking that tab opens
+// the list of every session (session-picker.ts).
 
 import type { ProjectView, SessionView } from "../protocol.js";
-import { isBusy } from "../running-tasks.js";
-import { act } from "./api.js";
+import { sessionTopic, shortSessionTitle } from "../session-title.js";
 import { budgetBadge } from "./budget-badge.js";
-import { button, el } from "./dom.js";
+import { el } from "./dom.js";
 import { isUnseen } from "./seen-results.js";
 import { closeButton } from "./session-close.js";
 import { openSessionMenu } from "./session-menu.js";
+import { modelBadge } from "./session-model.js";
+import { isSessionPickerOpen, toggleSessionPicker } from "./session-picker.js";
+import { stopButtons } from "./session-stop.js";
 import { STATUS_LABELS, store } from "./store.js";
 
-export function sessionTabs(project: ProjectView): HTMLDivElement[] {
-  return project.sessions.map((session) => {
-    const isActiveSession = session.id === project.activeSession;
-    const shown = isActiveSession && !store.projectTodoShown;
-    const attrs = { class: tabClass(session, shown), role: "tab", "aria-selected": String(shown) };
-    const tab = el("div", attrs, openButton(session, isActiveSession), ...stopButtons(session), closeButton(session));
-    tab.addEventListener("contextmenu", (event) => openSessionMenu(event, project, session));
-    return tab;
-  });
-}
-
-/** A tab with finished work you haven't seen shines, green when it succeeded, red when it failed. */
-function tabClass(session: SessionView, shown: boolean): string {
-  const active = shown ? " active" : "";
-  const unseen = isUnseen(session) ? ` unseen ${session.status}` : "";
-  return `session-tab${active}${unseen}`;
+/** The active session, with its model, context, stop and close; right-click still opens its menu. */
+export function currentSessionTab(project: ProjectView, session: SessionView): HTMLDivElement {
+  const shown = !store.projectTodoShown;
+  const attrs = { class: `session-tab current-session${shown ? " active" : ""}`, role: "tab" };
+  const tab = el("div", { ...attrs, "aria-selected": String(shown) });
+  tab.append(pickerToggle(project, session), ...stopButtons(session), closeButton(session));
+  tab.addEventListener("contextmenu", (event) => openSessionMenu(event, project, session));
+  return tab;
 }
 
 /** The project's to-do list, as the first tab; it takes the chat's place while open. */
 export function todoTab(project: ProjectView, openCount: number): HTMLDivElement {
   const shown = store.projectTodoShown;
   const attrs = { class: `session-tab todo-tab${shown ? " active" : ""}`, role: "tab", "aria-selected": String(shown) };
-  const label = openCount ? `To-do (${openCount})` : "To-do";
-  const open = el("button", { type: "button", class: "session-open", title: `${project.name}'s to-do list` }, label);
+  const title = `${project.name}'s to-do list`;
+  const open = el("button", { type: "button", class: "session-open", title }, todoLabel(), ...todoCount(openCount));
   open.addEventListener("click", () => store.showProjectTodo());
   return el("div", attrs, open);
 }
 
-/** A busy session can be stopped from its tab, whether or not it is the active one; only its own queue is cleared. */
-function stopButtons(session: SessionView): HTMLButtonElement[] {
-  if (!isBusy(session)) return [];
-  const stop = button("■", "ghost session-stop", () => void act(`/api/sessions/${session.id}/stop`));
-  stop.title = `Stop session ${session.number}; its queue is cleared, other sessions keep running`;
-  stop.setAttribute("aria-label", `Stop session ${session.number}`);
-  return [stop];
+/** The word gives way to an icon when the panel is narrow (todo.css). */
+function todoLabel(): HTMLSpanElement {
+  return el("span", { class: "todo-label" }, "To-do");
 }
 
-function openButton(session: SessionView, active: boolean): HTMLButtonElement {
-  const open = el(
+/** How many items are still open, as a pill; none once the list is done. */
+function todoCount(openCount: number): HTMLSpanElement[] {
+  return openCount ? [el("span", { class: "todo-count" }, String(openCount))] : [];
+}
+
+function pickerToggle(project: ProjectView, session: SessionView): HTMLButtonElement {
+  const toggle = el(
     "button",
-    { type: "button", class: "session-open", title: openTitle(session) },
+    { type: "button", class: "session-open session-picker-toggle", title: toggleTitle(session) },
     el("span", { class: `dot ${session.status}`, title: STATUS_LABELS[session.status] }),
-    el("span", { class: "session-name" }, `Session ${session.number}`),
-    el("span", { class: "session-title" }, sessionTitle(session)),
+    el("span", { class: "session-name" }, String(session.number)),
+    el("span", { class: "session-title" }, shortSessionTitle(session)),
+    modelBadge(project, session),
     budgetBadge(session),
+    sessionCount(project, session),
   );
-  open.addEventListener("click", () => {
+  toggle.setAttribute("aria-haspopup", "listbox");
+  toggle.setAttribute("aria-expanded", String(isSessionPickerOpen()));
+  toggle.addEventListener("click", () => {
     store.showProjectChat();
-    if (!active) void act(`/api/sessions/${session.id}/activate`);
+    toggleSessionPicker();
   });
-  return open;
+  return toggle;
 }
 
-function openTitle(session: SessionView): string {
-  return isUnseen(session) ? `Finished; open it to see the result. ${sessionTitle(session)}` : sessionTitle(session);
+function toggleTitle(session: SessionView): string {
+  return `Session ${session.number}: ${sessionTopic(session)}\nClick to see and switch between all sessions.`;
 }
 
-/** Like a VS Code tab: named after what the session is about. */
-function sessionTitle(session: SessionView): string {
-  return session.task ?? session.history[0]?.task ?? "new";
+/** "5 ▾", shining while another session has a result you haven't opened. */
+function sessionCount(project: ProjectView, session: SessionView): HTMLSpanElement {
+  const unseenOthers = project.sessions.filter((other) => other.id !== session.id && isUnseen(other)).length;
+  const unseenClass = unseenOthers ? " unseen" : "";
+  const title = unseenOthers ? `${unseenOthers} other session(s) finished; open the list to see them` : "";
+  return el("span", { class: `session-count${unseenClass}`, title }, `${project.sessions.length} ▾`);
 }

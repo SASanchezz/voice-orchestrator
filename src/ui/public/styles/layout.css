@@ -9,6 +9,25 @@
   border-bottom: 1px solid var(--border);
 }
 
+/* Installed as a Chrome app with its title bar hidden, the top bar takes the title bar's place: it keeps clear of
+   the window buttons on the left and Chrome's menu on the right, and its empty space drags the window. */
+@media (display-mode: window-controls-overlay) {
+  .topbar {
+    min-height: env(titlebar-area-height, 0px);
+    padding-left: calc(env(titlebar-area-x, 0px) + 12px);
+    padding-right: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw) + 12px);
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+  .topbar button,
+  .topbar summary,
+  .topbar .settings-menu,
+  .topbar .plan-usage {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+  }
+}
+
 .connection {
   flex: none;
   width: 9px;

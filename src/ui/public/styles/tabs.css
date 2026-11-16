@@ -123,11 +123,17 @@
 .session-menu-item:hover:enabled {
   background: var(--surface-2);
 }
+.session-menu-separator {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
 .session-menu-item:disabled {
   color: var(--muted);
   cursor: default;
 }
-.session-sweep-note {
+.project-note {
   flex-basis: 100%;
   margin: 0;
   padding: 4px 2px;

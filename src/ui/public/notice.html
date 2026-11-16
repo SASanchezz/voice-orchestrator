@@ -7,6 +7,8 @@
     <title>Notices</title>
     <link rel="stylesheet" href="/styles/base.css" />
     <link rel="stylesheet" href="/styles/markdown.css" />
+    <link rel="stylesheet" href="/styles/chat.css" />
+    <link rel="stylesheet" href="/styles/attachments.css" />
     <link rel="stylesheet" href="/styles/notice.css" />
     <link rel="stylesheet" href="/styles/notice-glass.css" />
     <link rel="stylesheet" href="/styles/buttons.css" />
@@ -24,13 +26,10 @@
       </header>
       <p id="notice-time" class="muted notice-time"></p>
 
-      <section id="notice-scroll" class="notice-scroll" aria-live="polite">
+      <section id="notice-scroll" class="notice-scroll feed-wrap" aria-live="polite">
         <div id="notice-body">
+          <ol id="feed" class="feed notice-chat" aria-label="The worker's whole chat"></ol>
           <div id="notice-summary" class="notice-summary"></div>
-          <details id="notice-full" class="notice-full" hidden>
-            <summary data-shortcut="fullNote" title="Show or fold the worker's whole closing note">Full note</summary>
-            <div id="notice-full-body"></div>
-          </details>
           <section id="notice-explanation" class="notice-explanation" aria-label="Explanation" hidden></section>
         </div>
       </section>
@@ -114,6 +113,14 @@
     </main>
 
     <div id="hover-hint" class="hover-hint" role="tooltip" hidden></div>
+
+    <dialog id="image-viewer" class="image-viewer" aria-label="Attached image">
+      <form method="dialog">
+        <button class="ghost image-viewer-close" title="Close (Esc)" aria-label="Close">×</button>
+      </form>
+      <img id="image-viewer-image" alt="" />
+      <p id="image-viewer-name" class="muted"></p>
+    </dialog>
 
     <script src="/notice.js" type="module"></script>
   </body>

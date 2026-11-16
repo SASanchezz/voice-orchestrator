@@ -5,6 +5,7 @@
 import { editorUrl } from "../../editor/editor-url.js";
 import type { EditorStateName, ProjectView } from "../protocol.js";
 import { token } from "./api.js";
+import { claimCloseKeyIn } from "./close-key.js";
 import { byId, bySelector, el } from "./dom.js";
 import { store } from "./store.js";
 
@@ -60,6 +61,7 @@ function addFrame(project: ProjectView): void {
     src: editorUrl(project.folder, token),
     title: `VS Code on ${project.name}`,
   });
+  claimCloseKeyIn(frame);
   frames.set(project.name, frame);
   byId("code-frames", HTMLElement).append(frame);
 }

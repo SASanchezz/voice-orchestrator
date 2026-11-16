@@ -2,17 +2,7 @@
 // so the two can't drift apart.
 
 export type NoticeCommand =
-  | "send"
-  | "mic"
-  | "close"
-  | "closeAll"
-  | "explain"
-  | "fullNote"
-  | "openAssistant"
-  | "openSession"
-  | "review"
-  | "previous"
-  | "next";
+  "send" | "mic" | "close" | "closeAll" | "explain" | "openAssistant" | "openSession" | "review" | "previous" | "next";
 
 /** ⌘ and `key` (as KeyboardEvent.key has it, lower case), maybe with ⇧; `shown` is how a hint writes it. */
 interface Shortcut {
@@ -27,7 +17,6 @@ const SHORTCUTS: Record<NoticeCommand, Shortcut> = {
   close: { key: "w", shift: false, shown: "⌘W or Esc" },
   closeAll: { key: "w", shift: true, shown: "⌘⇧W" },
   explain: { key: "e", shift: false, shown: "⌘E" },
-  fullNote: { key: "f", shift: false, shown: "⌘F" },
   openAssistant: { key: "1", shift: false, shown: "⌘1" },
   openSession: { key: "2", shift: false, shown: "⌘2" },
   review: { key: "3", shift: false, shown: "⌘3" },

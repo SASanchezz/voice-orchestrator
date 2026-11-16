@@ -13,7 +13,6 @@ const COMMANDS: Record<NoticeCommand, () => void> = {
   close: () => withShown(close),
   closeAll: () => store.state.notices.forEach(close),
   explain: () => withShown((notice) => void explain(notice)),
-  fullNote: () => content.toggleFullNote(),
   openAssistant: () => openView("assistant"),
   openSession: () => openView("session"),
   review: () => openView("review"),

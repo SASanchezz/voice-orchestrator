@@ -3,8 +3,10 @@
 import type { NoticeView } from "../../notice-protocol.js";
 import { NoticeSelection } from "../../notice-selection.js";
 import type { SessionView } from "../../protocol.js";
+import { ChatList } from "../chat-list.js";
 import { DictationBox } from "../dictation-box.js";
 import { byId } from "../dom.js";
+import { ShownSessionChat } from "../shown-session-chat.js";
 import { store } from "../store.js";
 import { HoverHints } from "./hover-hints.js";
 import { NoticeContent } from "./notice-content.js";
@@ -21,6 +23,8 @@ export const box = new DictationBox({
 });
 export const reply = new NoticeReply(box, byId("reply-input", HTMLTextAreaElement));
 export const hints = new HoverHints(byId("hover-hint", HTMLElement));
+/** The worker's whole chat, as the web UI shows it, above the summary. */
+export const chat = new ShownSessionChat(new ChatList());
 
 let isPointerInside = false;
 
@@ -52,6 +56,8 @@ export function render(): void {
   byId("notice", HTMLElement).hidden = !notice;
   if (!notice) return;
   content.render(notice, selection.positionIn(notices), notices.length);
+  void chat.show(notice.sessionId);
+  chat.showPendingApprovals(store.state.pending);
   reply.render(notice, sessionOf(notice.sessionId));
   byId("reply-mic", HTMLButtonElement).hidden = store.state.gestures === "unavailable"; // text mode has no mic
 }

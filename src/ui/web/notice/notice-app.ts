@@ -3,21 +3,26 @@
 
 import { onServerEvent, openEvents } from "../api.js";
 import { byId } from "../dom.js";
+import { wireImageViewer } from "../image-viewer.js";
 import { store } from "../store.js";
 import { AutoClose } from "./auto-close.js";
 import { closeUntouched, markShownSeen, runCommand } from "./notice-commands.js";
-import { box, isBusy, pointer, render } from "./notice-page.js";
+import { box, chat, isBusy, pointer, render } from "./notice-page.js";
 import { commandOfKey, isNoticeCommand } from "./notice-shortcuts.js";
 import { followPointer, reportHeight } from "./panel-bridge.js";
+import { wireProjectLinks } from "../project-links.js";
 import { showShortcutChips } from "./shortcut-chips.js";
 
 const autoClose = new AutoClose(isBusy, closeUntouched);
 const replyInput = byId("reply-input", HTMLTextAreaElement);
+const imageViewer = byId("image-viewer", HTMLDialogElement);
 
 function connect(): void {
   const events = openEvents();
   onServerEvent(events, "state", (state) => store.receive(state));
   onServerEvent(events, "dictation", (words) => box.showWords(words));
+  onServerEvent(events, "chat", (line) => chat.add(line));
+  onServerEvent(events, "chat_cleared", (sessionId) => chat.clear(sessionId));
 }
 
 /** Buttons with a command run it; the mic and Send are wired with the reply box. */
@@ -43,6 +48,7 @@ function wireKeys(): void {
 
 /** Out of the reply box first, so Esc never closes a notice you are writing to. */
 function escape(): void {
+  if (imageViewer.open) return; // Esc closes the picture, not the notice under it
   if (document.activeElement === replyInput) return replyInput.blur();
   runCommand("close");
 }
@@ -70,6 +76,8 @@ document.addEventListener("pointerdown", markShownSeen, { capture: true });
 document.addEventListener("keydown", markShownSeen, { capture: true });
 showShortcutChips();
 wireClicks();
+wireProjectLinks();
+wireImageViewer();
 wireReply(); // before wireKeys: Esc discards a recording before it closes anything
 wireKeys();
 followPointer(pointer);

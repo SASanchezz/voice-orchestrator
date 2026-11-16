@@ -6,6 +6,7 @@ import { chatRows, permissionAnswerOf } from "../permission-lines.js";
 import { collapsible, el, formatWhen } from "./dom.js";
 import { markdownView } from "./markdown-view.js";
 import { permissionItem, permissionRowItem } from "./permission-items.js";
+import { markProject } from "./project-links.js";
 import { sentFiles } from "./sent-files.js";
 import { sessionLink } from "./session-link.js";
 
@@ -42,6 +43,7 @@ export function feedItem(entry: FeedEntryView): HTMLLIElement {
   }[entry.kind];
   const item = chatItem(entry.kind, who, entry);
   item.dataset.entry = String(entry.id);
+  markProject(item, entry.session?.project);
   if (entry.detail) item.append(collapsible("Details", markdownView(entry.detail, "more-body")));
   if (entry.session) item.append(sessionLink(entry.session));
   return item;

@@ -16,8 +16,6 @@ export interface NoticeView {
   task: string;
   /** The plain-language summary that ends the worker's closing note, or the error. */
   summary: string;
-  /** The whole closing note; empty when the summary already is all of it. */
-  fullNote: string;
   /** A longer written explanation of the changes, once you asked for one. */
   explanation?: string;
   /** You clicked or typed in it: it no longer closes by itself. */

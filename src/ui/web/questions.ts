@@ -1,4 +1,5 @@
-// A worker's questions with proposed answers, as a small dialog card: pick an option or type your own answer.
+// "Waiting for you": a worker's questions with proposed answers, as small dialog cards: pick an option or type your
+// own answer. Permission requests aren't shown here; their native pop-ups answer them.
 
 import type { PendingQuestionView } from "../protocol.js";
 import { act } from "./api.js";
@@ -12,6 +13,7 @@ let shownIds = "";
 
 export function renderQuestions(): void {
   const { questions } = store.state;
+  byId("questions", HTMLElement).hidden = !questions.length;
   const ids = questions.map(({ id }) => id).join(" ");
   if (ids === shownIds) return; // replacing the cards would take the keyboard away from an answer being typed
   shownIds = ids;

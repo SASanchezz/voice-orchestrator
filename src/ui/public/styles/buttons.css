@@ -112,10 +112,9 @@ button:is(.intent-review, .intent-allow, .intent-session, .intent-assistant, .in
   content: "✦";
 }
 .session-tab .session-name::before {
-  content: ">_ ";
-  color: #79c0ff;
-  font: 700 10.5px/1 var(--mono);
-  letter-spacing: -0.04em;
+  content: "#";
+  color: var(--muted);
+  font-weight: 400;
 }
 
 /* ------------------------------------------------ a shortcut chip after the words */

@@ -5,7 +5,6 @@ import { store } from "./store.js";
 import { ChatView } from "./chat.js";
 import { renderIndicators, wireSegment, setConnected } from "./indicators.js";
 import { renderProjectTabs, wireAssistantClear } from "./project-tabs.js";
-import { renderApprovals } from "./approvals.js";
 import { renderQuestions } from "./questions.js";
 import { renderConversation, wireComposer } from "./conversation.js";
 import { renderCodeView } from "./code-view.js";
@@ -15,25 +14,32 @@ import { renderProjectTodo } from "./project-todo.js";
 import { noteShownSession, wireSeenResults } from "./seen-results.js";
 import { renderVoiceDraft, showVoiceDraft } from "./voice-draft.js";
 import { navigate, navigateFromLink } from "./navigation.js";
+import { wirePageHistory } from "./page-history.js";
 import { reloadIfRestarted, wireRestart } from "./restart.js";
 import { wireMessengerSetup } from "./messenger-setup.js";
 import { wireMessengerStatus } from "./messenger-status.js";
+import { wireWakeTraining } from "./wake-training.js";
 import { AttachmentTray } from "./attachments.js";
 import { byId } from "./dom.js";
 import { reportDraft, reportDraftWhileShown } from "./draft-report.js";
 import { reportShownSession, reportShownSessionChange, wireShownSessionReport } from "./shown-session-report.js";
+import { reportFrontSession, reportFrontSessionChange, wireFrontSessionReport } from "./front-session-report.js";
 import { wireImageViewer } from "./image-viewer.js";
 import { renderVoiceOffer } from "./voice-offer.js";
 import { wireVoiceDiscard } from "./voice-discard.js";
+import { wireFullScreenEscape } from "./full-screen-escape.js";
+import { wireCloseKey } from "./close-key.js";
 import { wireTodoDialog } from "./todo-dialog.js";
 import { renderForceStop, wireForceStop } from "./force-stop.js";
 import { wirePanelResize } from "./panel-resize.js";
 import { wireChangePoll } from "./change-poll.js";
 import { renderPlanUsage, wirePlanUsagePoll } from "./plan-usage.js";
 import { showLatestReply, showLatestReplyOf, renderLatestReply } from "./latest-reply.js";
+import { wireProjectLinks } from "./project-links.js";
 import { renderReview, wireReview } from "./review.js";
 import { wireSessionClose } from "./session-close.js";
 import { wireSessionMenu } from "./session-menu.js";
+import { wireSessionPicker } from "./session-picker.js";
 import { renderViewMode, wireViewMode } from "./view-mode.js";
 
 const chat = new ChatView();
@@ -44,7 +50,6 @@ function renderPage(): void {
   renderIndicators();
   renderProjectTabs();
   renderPlanUsage();
-  renderApprovals();
   renderQuestions();
   renderConversation(chat);
   renderProjectTodo();
@@ -66,6 +71,7 @@ function connect(): void {
   events.addEventListener("open", reloadIfRestarted);
   events.addEventListener("open", () => reportDraft(tray.count)); // a restarted server knows of no draft
   events.addEventListener("open", reportShownSession);
+  events.addEventListener("open", reportFrontSession);
   events.addEventListener("error", () => setConnected(false)); // EventSource reconnects by itself
   followState(events);
   followChats(events);
@@ -94,13 +100,16 @@ function followChats(events: EventSource): void {
 
 store.onChange(renderPage);
 store.onChange(reportShownSessionChange);
+store.onChange(reportFrontSessionChange);
 wireSegment("permission-mode", "/api/permission-mode");
 wireSegment("speech-mode", "/api/speech-mode");
 wireSegment("gesture-mode", "/api/gestures");
+wireSegment("wake-word-mode", "/api/wake-word");
 wireComposer(tray);
 wireForceStop();
 reportDraftWhileShown(() => tray.count);
 wireShownSessionReport();
+wireFrontSessionReport();
 wireImageViewer();
 wireSeenResults(renderPage);
 wireMicButton(); // before wireVoiceDiscard: Esc discards the recording first
@@ -108,13 +117,19 @@ wireVoiceDiscard();
 wireTodoDialog();
 wireRestart();
 wireMessengerSetup();
+wireProjectLinks();
 wireMessengerStatus();
+wireWakeTraining();
 wirePanelResize();
 wireViewMode();
 wireReview();
 wireAssistantClear();
 wireSessionClose();
 wireSessionMenu();
+wireSessionPicker();
+wireFullScreenEscape(); // after every other Escape handler
+wireCloseKey();
 wireChangePoll();
 wirePlanUsagePoll();
+wirePageHistory();
 connect();
