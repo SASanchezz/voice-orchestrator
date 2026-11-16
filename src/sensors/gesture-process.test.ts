@@ -4,7 +4,8 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sleep } from "../shared/sleep.js";
-import { CAMERA_OFF, GestureProcess, type RestartBackoff } from "./gesture-process.js";
+import { CAMERA_OFF, GestureProcess } from "./gesture-process.js";
+import type { RestartBackoff } from "./restarting-process.js";
 import type { GestureEvent, SnapshotAnswer } from "./sensor-event.js";
 import type { SensorOutput } from "./sensor-lines.js";
 

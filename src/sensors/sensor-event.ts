@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { jsonLineSchema } from "../shared/json-line.js";
 
 /** start/end: a gesture held, like key down and up. tap: a one-shot gesture such as a swipe. */
 const gestureEventSchema = z.object({
@@ -28,17 +29,7 @@ const sensorEventSchema = z.discriminatedUnion("type", [
 ]);
 export type SensorEvent = z.infer<typeof sensorEventSchema>;
 
-const sensorLineSchema = z
-  .string()
-  .transform((line, context): unknown => {
-    try {
-      return JSON.parse(line);
-    } catch {
-      context.addIssue({ code: "custom", message: "not JSON" });
-      return z.NEVER;
-    }
-  })
-  .pipe(sensorEventSchema);
+const sensorLineSchema = jsonLineSchema(sensorEventSchema);
 
 export function readSensorLine(line: string): z.ZodSafeParseResult<SensorEvent> {
   return sensorLineSchema.safeParse(line);
