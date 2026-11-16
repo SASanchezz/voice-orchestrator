@@ -7,6 +7,7 @@ import type { EditorStateName, ProjectView } from "../protocol.js";
 import { token } from "./api.js";
 import { claimCloseKeyIn } from "./close-key.js";
 import { byId, bySelector, el } from "./dom.js";
+import { openEditorLinksInProjectProfile } from "./editor-links.js";
 import { store } from "./store.js";
 
 const EDITOR_NOTICES: Record<EditorStateName, string> = {
@@ -62,6 +63,7 @@ function addFrame(project: ProjectView): void {
     title: `VS Code on ${project.name}`,
   });
   claimCloseKeyIn(frame);
+  openEditorLinksInProjectProfile(frame, project.name);
   frames.set(project.name, frame);
   byId("code-frames", HTMLElement).append(frame);
 }

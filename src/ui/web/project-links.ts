@@ -24,11 +24,11 @@ function openInProjectProfile(event: MouseEvent): void {
 }
 
 /** Says under the tabs which profile it opened in, so a profile Chrome lacks is noticed. */
-async function openLink(url: string, project: string): Promise<void> {
+export async function openLink(url: string, project: string): Promise<void> {
   const reply = await act("/api/links/open", { url, project });
   if (reply) showProjectNote(project, reply);
 }
 
-function hasChromeProfile(project: string): boolean {
+export function hasChromeProfile(project: string): boolean {
   return Boolean(store.state.projects.find((p) => p.name === project)?.chromeProfile);
 }
