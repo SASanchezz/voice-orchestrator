@@ -18,7 +18,7 @@ export class TaskOutcomes {
 
   succeeded(task: RunningTask, result: string, costUsd: number): void {
     this.recorder.succeeded(task, result, costUsd);
-    this.announcer.done(task, result);
+    void this.announcer.done(task, result);
     this.parking.accountWorks(task.account);
     this.announcer.finished(task);
   }

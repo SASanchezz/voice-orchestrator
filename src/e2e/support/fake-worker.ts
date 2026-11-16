@@ -17,6 +17,7 @@ export interface WorkerCall {
   account: string;
   resume?: string;
   bin?: string;
+  model?: string;
   summary: boolean;
 }
 
@@ -57,7 +58,8 @@ function recordCall(options: Options): { account: string; cwd: string; sessionId
   const account = accountOf(options.env?.CLAUDE_CONFIG_DIR);
   const cwd = options.cwd ?? "";
   const summary = isSideCall(options);
-  workerCalls.push({ cwd, account, resume: options.resume, bin: options.pathToClaudeCodeExecutable, summary });
+  const { resume, pathToClaudeCodeExecutable: bin, model } = options;
+  workerCalls.push({ cwd, account, resume, bin, model, summary });
   const sessionId = options.resume && !summary ? options.resume : `sess-${Math.random().toString(36).slice(2, 8)}`;
   if (!summary) sessionsByCwd.set(cwd, sessionId);
   return { account, cwd, sessionId };

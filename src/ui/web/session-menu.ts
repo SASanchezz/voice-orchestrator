@@ -1,12 +1,14 @@
-// A session tab's right-click menu: "Close other sessions" and "Close all sessions" of its project. Sessions whose
-// worker is running are skipped and stay open; "Close all" asks first. It lives outside the tabs, because they are
-// rebuilt on every state push.
+// A session's right-click menu: "Close other sessions" and "Close all sessions" of its project first, as the most
+// used, then the model its worker runs on; the session list ends with the same two. Sessions whose worker is running
+// are skipped and stay open; "Close all" asks first. It lives outside the tabs, because they are rebuilt on every
+// state push.
 
 import type { ProjectView, SessionView } from "../protocol.js";
 import { closeAllWarning, planCloseAll, planCloseOthers, type SessionSweep } from "../session-sweep.js";
 import { act } from "./api.js";
 import { button, confirmInDialog, el } from "./dom.js";
-import { showSweepNote } from "./sweep-note.js";
+import { modelMenuItems } from "./session-model.js";
+import { showProjectNote } from "./project-note.js";
 
 const menu = el("div", { class: "session-menu", role: "menu", hidden: "" });
 const closeAllText = el("p", { class: "explanation" });
@@ -38,7 +40,9 @@ export function wireSessionMenu(): void {
 /** For a tab's "contextmenu": the menu opens at the pointer, or under the tab when opened from the keyboard. */
 export function openSessionMenu(event: MouseEvent, project: ProjectView, session: SessionView): void {
   event.preventDefault();
-  menu.replaceChildren(closeOthersItem(project, session), closeAllItem(project));
+  const models = modelMenuItems(project, session, hideSessionMenu);
+  const separator = el("hr", { class: "session-menu-separator" });
+  menu.replaceChildren(closeOthersItem(project, session.id), closeAllItem(project), separator, ...models);
   menu.hidden = false;
   placeMenu(event);
   menu.querySelector<HTMLButtonElement>("button:enabled")?.focus();
@@ -53,12 +57,13 @@ function placeMenu(event: MouseEvent): void {
   menu.style.top = `${Math.min(top, window.innerHeight - menu.offsetHeight)}px`;
 }
 
-function closeOthersItem(project: ProjectView, session: SessionView): HTMLButtonElement {
-  const sweep = planCloseOthers(project.sessions, session.id);
-  return menuItem("Close other sessions", sweep, () => void closeOthers(project, session));
+/** Also at the foot of the session list. */
+export function closeOthersItem(project: ProjectView, keptId: string): HTMLButtonElement {
+  const sweep = planCloseOthers(project.sessions, keptId);
+  return menuItem("Close other sessions", sweep, () => void closeOthers(project, keptId));
 }
 
-function closeAllItem(project: ProjectView): HTMLButtonElement {
+export function closeAllItem(project: ProjectView): HTMLButtonElement {
   const sweep = planCloseAll(project.sessions);
   return menuItem("Close all sessions", sweep, () => confirmCloseAll(project, sweep));
 }
@@ -75,9 +80,9 @@ function menuItem(label: string, sweep: SessionSweep, onPick: () => void): HTMLB
   return item;
 }
 
-async function closeOthers(project: ProjectView, session: SessionView): Promise<void> {
-  const report = await act(`/api/sessions/${session.id}/close-others`);
-  if (report !== undefined) showSweepNote(project.name, report);
+async function closeOthers(project: ProjectView, keptId: string): Promise<void> {
+  const report = await act(`/api/sessions/${keptId}/close-others`);
+  if (report !== undefined) showProjectNote(project.name, report);
 }
 
 function confirmCloseAll(project: ProjectView, sweep: SessionSweep): void {
@@ -87,7 +92,7 @@ function confirmCloseAll(project: ProjectView, sweep: SessionSweep): void {
 
 async function closeAll(project: ProjectView): Promise<void> {
   const report = await act(`/api/projects/${encodeURIComponent(project.name)}/sessions/close-all`);
-  if (report !== undefined) showSweepNote(project.name, report);
+  if (report !== undefined) showProjectNote(project.name, report);
 }
 
 function hideUnlessInMenu(event: PointerEvent): void {

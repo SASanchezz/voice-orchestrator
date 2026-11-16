@@ -42,6 +42,7 @@ export class WorkerOptions {
     return {
       ...project,
       env: { ...project.env, ...LISTED_IN_HISTORY },
+      model: task.model,
       plugins: [{ type: "local", path: WORKER_PLUGIN_PATH }],
       resume: task.resume,
       abortController,

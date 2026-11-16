@@ -1,3 +1,4 @@
+import type { QueuedTask } from "./queued-task.js";
 import type { SessionQueue } from "./session-queue.js";
 import type { TaskRunner } from "./task-runner.js";
 import type { WorkerDirectory } from "./worker-directory.js";
@@ -23,10 +24,10 @@ export class SessionRuns {
   }
 
   /** Starts the task, or queues it behind the running one. Returns its place in the queue; 0 when it started. */
-  submit(sessionId: string, instruction: string): number {
-    if (this.runs.has(sessionId)) return this.queue.add(sessionId, instruction);
+  submit(sessionId: string, task: QueuedTask): number {
+    if (this.runs.has(sessionId)) return this.queue.add(sessionId, task);
     const abort = new AbortController();
-    this.runs.set(sessionId, { abort, finished: this.loop(sessionId, instruction, abort) });
+    this.runs.set(sessionId, { abort, finished: this.loop(sessionId, task, abort) });
     return 0;
   }
 
@@ -50,9 +51,9 @@ export class SessionRuns {
   }
 
   /** Ends as soon as the queue is empty or a task didn't succeed; the session is free again in that same step. */
-  private async loop(sessionId: string, first: string, abort: AbortController): Promise<void> {
+  private async loop(sessionId: string, first: QueuedTask, abort: AbortController): Promise<void> {
     try {
-      for (let next: string | undefined = first; next; next = this.queue.takeNext(sessionId))
+      for (let next: QueuedTask | undefined = first; next; next = this.queue.takeNext(sessionId))
         await this.runner.run(this.directory.newTask(sessionId, next), abort);
     } finally {
       this.runs.delete(sessionId);

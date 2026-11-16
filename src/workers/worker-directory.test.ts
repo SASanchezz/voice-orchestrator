@@ -14,15 +14,40 @@ function sessionWithHandoff(claudeSessionId?: string) {
   const { registry, projects, sessions } = openRegistry({ webshop: "personal" }, new AppEvents());
   const { id } = registry.activeSession("webshop");
   sessions.updateSession(id, { handoff: "Done: the timer.", claudeSessionId });
-  return { directory: new WorkerDirectory(testConfig({}), projects, sessions), id };
+  const cfg = testConfig({ projects: { webshop: { path: "/w", profile: "personal" } } });
+  return { directory: new WorkerDirectory(cfg, projects, sessions), id };
 }
 
 test("worker directory: a fresh session's first task carries its handoff", () => {
   const { directory, id } = sessionWithHandoff();
-  assert.equal(directory.newTask(id, "add tests").handoff, "Done: the timer.");
+  assert.equal(directory.newTask(id, { instruction: "add tests" }).handoff, "Done: the timer.");
 });
 
 test("worker directory: once the conversation exists, the handoff isn't sent again", () => {
   const { directory, id } = sessionWithHandoff("claude-1");
-  assert.equal(directory.newTask(id, "add tests").handoff, undefined);
+  assert.equal(directory.newTask(id, { instruction: "add tests" }).handoff, undefined);
+});
+
+function directoryWithModels(sessionModel?: string) {
+  setStateDir(mkdtempSync(join(tmpdir(), "vo-directory-")));
+  const { registry, projects, sessions } = openRegistry({ webshop: "personal" }, new AppEvents());
+  const { id } = registry.activeSession("webshop");
+  sessions.updateSession(id, { model: sessionModel });
+  const cfg = testConfig({ projects: { webshop: { path: "/w", profile: "personal", model: "sonnet" } } });
+  return { directory: new WorkerDirectory(cfg, projects, sessions), id };
+}
+
+test("worker directory: a task runs on its session's model", () => {
+  const { directory, id } = directoryWithModels("opus");
+  assert.equal(directory.newTask(id, { instruction: "add tests" }).model, "opus");
+});
+
+test("worker directory: a session without a model runs its tasks on the project's", () => {
+  const { directory, id } = directoryWithModels();
+  assert.equal(directory.newTask(id, { instruction: "add tests" }).model, "sonnet");
+});
+
+test("worker directory: a task's own model wins over its session's", () => {
+  const { directory, id } = directoryWithModels("opus");
+  assert.equal(directory.newTask(id, { instruction: "add tests", model: "haiku" }).model, "haiku");
 });

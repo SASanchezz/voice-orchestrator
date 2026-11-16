@@ -38,12 +38,12 @@ async function runDbadminUpToItsCommit(): Promise<void> {
   await voice.heard(/dbadmin wants approval for Bash: git add dummy.txt/, i);
   i = mark();
   voice.say("yes");
-  await voice.heard(/Allowed once/, i);
-  // the commit is destructive: plain "yes" must NOT pass
+  await voice.heard(/^Allowed, dbadmin/, i);
+  // the commit is destructive: it can be allowed once, never always
   assert.match(await voice.heard(/DESTRUCTIVE: user must say "confirm commit"/, i), /dbadmin/);
   i = mark();
-  voice.say("yes");
-  await voice.heard(/Not approved: destructive/, i);
+  voice.say("allow always");
+  await voice.heard(/dbadmin wants to commit, which can't be always allowed/, i);
 }
 
 /** Started while dbadmin still waits for its commit. */
@@ -83,7 +83,7 @@ test("confirm phrase approves the commit; finished task is announced", async () 
   brain.lastPermission = permissions.views.list().find((p) => p.project === "dbadmin")!.id;
   i = mark();
   voice.say("confirm commit");
-  await voice.heard(/Allowed once: dbadmin: Bash: git .*commit/, i);
+  await voice.heard(/^Allowed, dbadmin/, i);
   await voice.heard(/^dbadmin session \d+ done: /, i);
   assert.equal(commitCount(dbadmin), 2, "commit happened");
   assert.equal(core.registry.activeSession("dbadmin").status, "done");
@@ -93,7 +93,7 @@ test("cleanup step (rm -rf) is destructive too and can be denied; worker still f
   const i = mark();
   await voice.heard(/acme-web wants approval for Bash: rm -rf tmp -- DESTRUCTIVE: user must say "confirm delete"/, 0);
   voice.say("deny");
-  await voice.heard(/Denied acme-web/, i);
+  await voice.heard(/^Denied, acme-web/, i);
   await voice.heard(/^acme-web session \d+ done: /, i);
   assert.ok(existsSync(join(acmeWeb, "tmp/dummy-fe.txt")), "denied delete did not run");
   assert.match(core.registry.activeSession("acme-web").lastResult!, /denied: rm -rf tmp/);

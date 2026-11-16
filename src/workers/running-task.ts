@@ -6,6 +6,8 @@ export interface RunningTask {
   instruction: string;
   /** The project's account; it can't change while the project is busy. */
   account: string;
+  /** The Claude model it runs on: its own, else its session's, else its project's; unset, Claude Code's default. */
+  model?: string;
   /** Claude Code's own session id, if the session has talked before. */
   resume?: string;
   /** The summary a fresh session took over from an earlier one; its first task starts with it. */

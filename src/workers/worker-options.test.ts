@@ -34,7 +34,7 @@ const denyAll = (): Promise<{ behavior: "deny"; message: string }> =>
 
 function taskOptions(): Options {
   const { options, directory, sessionId } = workerOptions();
-  return options.forTask(directory.newTask(sessionId, "add tests"), new AbortController(), denyAll);
+  return options.forTask(directory.newTask(sessionId, { instruction: "add tests" }), new AbortController(), denyAll);
 }
 
 test("worker options: a task's session is tagged to show in Claude Code's session lists", () => {
@@ -74,4 +74,10 @@ test("worker options: a commit in a worktree on its own branch isn't forced to a
 
 test("worker options: a commit in the main checkout is forced to ask", async () => {
   assert.notDeepEqual(await hookAnswer("git commit -m x", makeGitRepo()), {});
+});
+
+test("worker options: a task runs on the model it was given", () => {
+  const { options, directory, sessionId } = workerOptions();
+  const task = directory.newTask(sessionId, { instruction: "add tests", model: "haiku" });
+  assert.equal(options.forTask(task, new AbortController(), denyAll).model, "haiku");
 });

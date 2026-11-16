@@ -72,3 +72,26 @@ test("ui: live state streams to the page", async () => {
   const res = await fetch(new URL(`/api/events?token=${uiToken}`, uiUrl));
   assert.match(await firstChunk(res), /^event: state\ndata: \{"projects":\[/);
 });
+
+/** How many of the assistant's lines in the feed read exactly `text`. */
+function timesShown(text: string): number {
+  return ui.feed.recent().filter((e) => e.kind === "orchestrator" && e.text === text).length;
+}
+
+const REPEATED = 'Session 8 wants to delete two temp files. Say "confirm delete" to allow it.';
+
+test("a reply the model writes twice in one turn is shown once", async () => {
+  const i = mark();
+  voice.say(`twice: ${REPEATED}`);
+  await voice.heard(/Session 8 wants to delete two temp files/, i);
+  await pause(100);
+  assert.equal(timesShown(REPEATED), 1);
+});
+
+test("a reply the model writes twice in one turn is said once", async () => {
+  const i = mark();
+  voice.say(`twice: ${REPEATED} Again.`);
+  await voice.heard(/Again\./, i);
+  await pause(100);
+  assert.equal(voice.spoken.slice(i).filter((s) => s.includes("Again.")).length, 1);
+});

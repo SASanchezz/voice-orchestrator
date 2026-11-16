@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
 import type { SavedTodo } from "../limits/todo-file.js";
+import type { QueuedTask } from "./queued-task.js";
 import type { SessionRuns } from "./session-runs.js";
 import type { WorkerChat } from "./worker-chat.js";
 import type { WorkerDirectory } from "./worker-directory.js";
+import { modelLabel } from "./worker-models.js";
 
 /** Hands instructions to workers: started at once, or queued behind the session's running task. */
 export class TaskIntake {
@@ -18,12 +20,22 @@ export class TaskIntake {
   }
 
   runInSession(sessionId: string, instruction: string): string {
+    return this.submit(sessionId, { instruction });
+  }
+
+  /** Only this task runs on the model; the session's own model stays as it is for the tasks after it. */
+  runOnModel(sessionId: string, instruction: string, model: string): string {
+    return this.submit(sessionId, { instruction, model });
+  }
+
+  private submit(sessionId: string, task: QueuedTask): string {
     const project = this.directory.projectOf(sessionId);
     const label = this.directory.labelOf(sessionId);
     const path = this.directory.folderOf(project);
     if (!existsSync(path)) return `Folder for ${project} not found: ${path}`;
-    this.chat.say(sessionId, "task", instruction);
-    const place = this.runs.submit(sessionId, instruction);
+    this.chat.say(sessionId, "task", task.instruction);
+    if (task.model) this.chat.say(sessionId, "status", `This task runs on ${modelLabel(task.model)}.`);
+    const place = this.runs.submit(sessionId, task);
     if (!place) return `Started on ${label} (${this.directory.accountOf(project)} account).`;
     this.chat.say(sessionId, "status", `Queued as #${place}.`);
     return `${label} is busy; queued as #${place}.`;

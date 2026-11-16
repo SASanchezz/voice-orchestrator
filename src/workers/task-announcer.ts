@@ -1,7 +1,7 @@
 import type { AppEvents } from "../events/app-events.js";
 import type { RunningTask } from "./running-task.js";
+import type { TaskNames } from "./task-names.js";
 import type { WorkerChat } from "./worker-chat.js";
-import type { WorkerDirectory } from "./worker-directory.js";
 
 /** The end of the worker's closing note that is passed on; the rest stays in its chat and history. */
 const RESULT_CHARS = 1200;
@@ -11,12 +11,14 @@ export class TaskAnnouncer {
   constructor(
     private events: AppEvents,
     private chat: WorkerChat,
-    private directory: WorkerDirectory,
+    private names: TaskNames,
   ) {}
 
-  done(task: RunningTask, result: string): void {
+  /** Resolves once the event is out, after its topic is named; naming never fails, it only falls back. */
+  async done(task: RunningTask, result: string): Promise<void> {
     const subject = this.subject(task);
-    this.events.emitEvent({ kind: "task_done", ...subject, result: result.slice(-RESULT_CHARS), note: result });
+    const topic = await this.names.topicOf(task, result);
+    this.events.emitEvent({ kind: "task_done", ...subject, topic, result: result.slice(-RESULT_CHARS), note: result });
   }
 
   finished(task: RunningTask): void {
@@ -34,6 +36,6 @@ export class TaskAnnouncer {
 
   private subject(task: RunningTask) {
     const { project, sessionId: session, instruction, sessionNumber } = task;
-    return { project, session, label: this.directory.labelOf(session), task: instruction, sessionNumber };
+    return { project, session, label: this.names.labelOf(session), task: instruction, sessionNumber };
   }
 }

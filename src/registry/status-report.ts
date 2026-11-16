@@ -50,6 +50,7 @@ function describeSession(s: SessionState): string {
   const bits: string[] = [s.status];
   if (s.task) bits.push(`${taskLabel(s)}="${s.task.slice(0, TASK_CHARS)}"`);
   if (s.queued.length) bits.push(`${s.queued.length} queued`);
+  if (s.model) bits.push(`model: ${s.model}`);
   if (s.lastActivity && s.status === "running") bits.push(`now: ${s.lastActivity}`);
   if (s.lastError && s.status === "failed") bits.push(`error: ${s.lastError.slice(0, ERROR_CHARS)}`);
   return bits.join(", ");

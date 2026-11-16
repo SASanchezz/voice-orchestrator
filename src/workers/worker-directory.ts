@@ -2,6 +2,7 @@ import type { AppConfig } from "../config/app-config.js";
 import type { Projects } from "../registry/projects.js";
 import type { SessionState } from "../registry/registry-schema.js";
 import type { Sessions } from "../registry/sessions.js";
+import type { QueuedTask } from "./queued-task.js";
 import type { RunningTask } from "./running-task.js";
 
 /** What workers need to know about projects and their sessions: folders, accounts, names and conversations. */
@@ -24,6 +25,12 @@ export class WorkerDirectory {
     return this.cfg.projects[project].model;
   }
 
+  /** The model the session's next task runs on unless it names its own: the session's, else its project's. */
+  sessionModelOf(sessionId: string): string | undefined {
+    const { project, model } = this.sessions.session(sessionId);
+    return model ?? this.modelOf(project);
+  }
+
   accountOf(project: string): string {
     return this.projects.get(project).profile;
   }
@@ -44,10 +51,12 @@ export class WorkerDirectory {
     return this.sessions.labelOf(sessionId);
   }
 
-  newTask(sessionId: string, instruction: string): RunningTask {
+  newTask(sessionId: string, { instruction, model }: QueuedTask): RunningTask {
     const { project, number: sessionNumber, claudeSessionId: resume, handoff } = this.sessions.session(sessionId);
     const account = this.accountOf(project);
+    const runsOn = model ?? this.sessionModelOf(sessionId);
     // once the conversation exists, the handoff is already in it
-    return { sessionId, project, sessionNumber, instruction, account, resume, handoff: resume ? undefined : handoff };
+    const handoffToSend = resume ? undefined : handoff;
+    return { sessionId, project, sessionNumber, instruction, account, model: runsOn, resume, handoff: handoffToSend };
   }
 }

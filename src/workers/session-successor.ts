@@ -11,10 +11,13 @@ export class SessionSuccessor {
     private chat: WorkerChat,
   ) {}
 
-  /** The new session becomes the project's active one; the summary shows in its chat and starts its first task. */
+  /**
+   * The new session becomes the project's active one and keeps the old one's model; the summary shows in its chat and
+   * starts its first task.
+   */
   open(from: SessionState, summary: string): SessionState {
     const next = this.registry.createSession(from.project);
-    this.sessions.updateSession(next.id, { handoff: summary });
+    this.sessions.updateSession(next.id, { handoff: summary, model: from.model });
     this.chat.say(next.id, "status", `Handoff from session ${from.number}:\n\n${summary}`);
     return next;
   }

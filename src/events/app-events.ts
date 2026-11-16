@@ -16,12 +16,22 @@ interface TaskSubject {
 
 /** Events the orchestrator turns into speech. */
 export type AppEvent = EventSubject &
-  /** result: the end of the worker's closing note, as passed on to the assistant; note: the whole of it. */
+  /**
+   * result: the end of the worker's closing note, as passed on to the assistant; note: the whole of it;
+   * topic: a few words on what the work was about and what got done, when they could be written.
+   */
   (
-    | (TaskSubject & { kind: "task_done"; result: string; note: string })
+    | (TaskSubject & { kind: "task_done"; result: string; note: string; topic?: string })
     | (TaskSubject & { kind: "task_failed"; error: string })
     | { kind: "usage_limit"; account: string; resetsAt?: string; savedTasks: number }
-    | { kind: "permission"; id: string; description: string; destructiveVerb?: string; reminder?: boolean }
+    | {
+        kind: "permission";
+        id: string;
+        description: string;
+        command: string;
+        destructiveVerb?: string;
+        reminder?: boolean;
+      }
     | { kind: "question"; id: string; questions: WorkerQuestion[] }
     | { kind: "context_full"; sessionNumber: number; percent: number }
   );

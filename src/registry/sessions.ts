@@ -47,10 +47,10 @@ export class Sessions {
     this.save();
   }
 
-  /** Wipes everything recorded about a session but keeps it open, under the same number. */
+  /** Wipes everything recorded about a session but keeps it open, under the same number and on the same model. */
   reset(id: string): void {
-    const { project, number } = this.session(id);
-    this.byId.set(id, emptySession(id, project, number));
+    const { project, number, model } = this.session(id);
+    this.byId.set(id, { ...emptySession(id, project, number), model });
     this.save();
   }
 }

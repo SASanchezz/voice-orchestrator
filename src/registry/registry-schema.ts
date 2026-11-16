@@ -16,6 +16,9 @@ const taskRecordSchema = z.object({
 });
 export type TaskRecord = z.infer<typeof taskRecordSchema>;
 
+/** A queued instruction; one sent with its own model is saved with it, so it runs on that model only. */
+const queuedTaskSchema = z.union([z.string(), z.object({ instruction: z.string(), model: z.string() })]);
+
 /** One worker conversation inside a project, like a Claude Code tab in VS Code. */
 const sessionStateSchema = z.object({
   id: z.string(),
@@ -23,10 +26,14 @@ const sessionStateSchema = z.object({
   /** Spoken and shown as "session 2"; unique among the project's open sessions. */
   number: z.number(),
   status: projectStatusSchema,
+  /** A few words naming what the session is about, written by a model from its first task. */
+  title: z.string().optional(),
   /** Claude Code's own session id, resumed by the next task. */
   claudeSessionId: z.string().optional(),
   task: z.string().optional(),
-  queued: z.array(z.string()),
+  queued: z.array(queuedTaskSchema),
+  /** The Claude model the session's tasks run on; unset, the project's model from config.yaml. */
+  model: z.string().optional(),
   /** When an instruction was last queued; the page lists projects by their latest activity. */
   queuedAt: z.string().optional(),
   lastResult: z.string().optional(),

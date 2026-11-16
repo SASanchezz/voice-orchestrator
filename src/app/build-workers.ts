@@ -13,6 +13,7 @@ import { LimitResumer } from "../workers/limit-resumer.js";
 import { QuietResume } from "../workers/quiet-resume.js";
 import { SessionControl } from "../workers/session-control.js";
 import { SessionHandoff } from "../workers/session-handoff.js";
+import { SessionModels } from "../workers/session-models.js";
 import { QueuedTasks } from "../workers/queued-tasks.js";
 import { SessionQueue } from "../workers/session-queue.js";
 import { SessionRuns } from "../workers/session-runs.js";
@@ -20,10 +21,12 @@ import { SessionSuccessor } from "../workers/session-successor.js";
 import { TaskAnnouncer } from "../workers/task-announcer.js";
 import { TaskIntake } from "../workers/task-intake.js";
 import { TaskLauncher } from "../workers/task-launcher.js";
+import { TaskNames } from "../workers/task-names.js";
 import { TaskOutcomes } from "../workers/task-outcomes.js";
 import { TaskRecorder } from "../workers/task-recorder.js";
 import { TaskRunner } from "../workers/task-runner.js";
 import { TaskStream } from "../workers/task-stream.js";
+import type { TaskTopics } from "../workers/task-topics.js";
 import { TodoRunner } from "../workers/todo-runner.js";
 import type { ToolCallGate } from "../workers/tool-call-gate.js";
 import { WorkerActivity } from "../workers/worker-activity.js";
@@ -37,6 +40,8 @@ export interface WorkerParts {
   chat: WorkerChat;
   intake: TaskIntake;
   control: SessionControl;
+  /** The model each session's worker runs on. */
+  models: SessionModels;
   /** Sessions' queued instructions, to list them or drop one. */
   queuedTasks: QueuedTasks;
   todos: TodoRunner;
@@ -58,10 +63,17 @@ interface WorkerKit {
   todo: TodoList;
   limits: UsageLimits;
   budget: BudgetParts;
+  topics: TaskTopics;
 }
 
-export function buildWorkers(core: Core, gate: ToolCallGate, query: QueryFn): WorkerParts {
-  const kit = workerKit(core);
+/** The models workers reach: Claude Code for tasks, and whatever names a finished task's topic. */
+export interface WorkerModels {
+  query: QueryFn;
+  topics: TaskTopics;
+}
+
+export function buildWorkers(core: Core, gate: ToolCallGate, { query, topics }: WorkerModels): WorkerParts {
+  const kit = workerKit(core, topics);
   const runner = taskRunner(core, kit, new TaskLauncher(kit.options, gate, query));
   const queue = new SessionQueue(core.sessions);
   const runs = new SessionRuns(queue, kit.directory, runner);
@@ -71,13 +83,25 @@ export function buildWorkers(core: Core, gate: ToolCallGate, query: QueryFn): Wo
   return {
     chat: kit.chat,
     intake,
-    control: new SessionControl(core.registry, kit.directory, runs),
+    ...sessionParts(core, kit, runs),
     queuedTasks: new QueuedTasks(queue, kit.directory, kit.chat),
     ...todoParts(core, kit, intake),
     summarizer: new ChangeSummarizer(kit.options, query),
     handoff: new SessionHandoff(writer, runs, successor),
     spend: kit.budget.daily,
     todo: kit.todo,
+  };
+}
+
+/** Stopping, closing and clearing sessions, and the model each one's worker runs on. */
+function sessionParts(
+  { registry, sessions }: Core,
+  kit: WorkerKit,
+  runs: SessionRuns,
+): Pick<WorkerParts, "control" | "models"> {
+  return {
+    control: new SessionControl(registry, kit.directory, runs),
+    models: new SessionModels(sessions, kit.directory, kit.chat),
   };
 }
 
@@ -92,20 +116,21 @@ function todoParts(
   return { todos, resumer: new LimitResumer(todos, new ResumePolicy(cfg.limits), quietResume) };
 }
 
-function workerKit(core: Core): WorkerKit {
+function workerKit(core: Core, topics: TaskTopics): WorkerKit {
   const { cfg, projects, sessions, events, workerRules } = core;
   const directory = new WorkerDirectory(cfg, projects, sessions);
   const todo = new TodoList(resolve(STATE_DIR, "todo"));
   const options = new WorkerOptions(cfg, directory, workerRules);
   const chat = new WorkerChat();
-  return { chat, directory, options, todo, limits: new UsageLimits(todo, events), budget: buildBudget(core, chat) };
+  const limits = new UsageLimits(todo, events);
+  return { chat, directory, options, todo, limits, budget: buildBudget(core, chat), topics };
 }
 
 function taskRunner({ sessions, history, events }: Core, kit: WorkerKit, launcher: TaskLauncher): TaskRunner {
-  const { chat, directory, limits, budget } = kit;
+  const { chat, directory, limits, budget, topics } = kit;
   const outcomes = new TaskOutcomes(
     new TaskRecorder(sessions, history, budget.ledger),
-    new TaskAnnouncer(events, chat, directory),
+    new TaskAnnouncer(events, chat, new TaskNames(directory, topics)),
     new LimitParking(limits, sessions, chat),
   );
   const stream = new TaskStream(sessions, new WorkerActivity(sessions, chat), outcomes);

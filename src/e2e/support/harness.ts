@@ -14,12 +14,16 @@ import { ASSISTANT_AGENT_PATH, SKILLS_DIR } from "../../config/paths.js";
 import { AssistantNotes } from "../../orchestrator/memory/assistant-notes.js";
 import { DestructiveList } from "../../safety/destructive-list.js";
 import { UnavailableGestures } from "../../sensors/gesture-switch.js";
+import { UnavailableWakeWord } from "../../wake/wake-switch.js";
+import { UnavailableWakeTraining } from "../../wake/wake-training.js";
 import { loadSkillLibrary } from "../../skills/skill-library.js";
 import { UnavailableDictation } from "../../voice/dictation.js";
 import { fakeQuery } from "../../testing/fake-query.js";
 import { TestClipboard } from "../../testing/test-clipboard.js";
 import { TestBrowserPage, TestNoticePanel } from "../../testing/test-notices.js";
+import { TestChromeLinks } from "../../testing/test-chrome-links.js";
 import { TestPopups } from "../../testing/test-popups.js";
+import { TestChatPanels } from "../../testing/test-chat-panels.js";
 import { TestConfirmPanels, TestQuestionPanels } from "../../testing/test-panels.js";
 import { connectBrain, fakeOperator } from "./fake-operator.js";
 import { fakeWorker } from "./fake-worker.js";
@@ -33,6 +37,7 @@ export const screen = new TestScreen();
 export const popups = new TestPopups();
 export const questionPanels = new TestQuestionPanels();
 export const confirmPanels = new TestConfirmPanels();
+export const chatPanels = new TestChatPanels();
 export const notices = new TestNoticePanel();
 
 const query = fakeQuery(({ prompt, options }) =>
@@ -51,13 +56,18 @@ export const app = buildApp(cfg, {
   destructive: new DestructiveList(rulesFile),
   query,
   gestures: new UnavailableGestures(),
+  wakeWord: new UnavailableWakeWord(),
+  wakeTraining: new UnavailableWakeTraining("There is no mic in tests."),
   dictation: new UnavailableDictation(),
   explainCommands: false,
+  nameSessions: false,
   popups,
   questionPanels,
   confirmPanels,
+  chatPanels,
   notices,
   browser: new TestBrowserPage(),
+  chromeLinks: new TestChromeLinks(),
 });
 connectBrain(app.operator.tools);
 await startOperator(app, voice);

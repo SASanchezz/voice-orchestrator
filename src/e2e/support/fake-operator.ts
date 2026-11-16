@@ -87,7 +87,7 @@ function askAboutPermission(id: string, request: string): string {
   brain.lastPermission = id;
   return request.includes("DESTRUCTIVE")
     ? `${request} Say the confirm phrase.`
-    : `${request}. Allow once, always, or deny?`;
+    : `${request}. Confirm, confirm always, or deny?`;
 }
 
 /** Where the message itself starts, after the "[UI]" and "[NOTICE]" notes ahead of it (which may span lines). */
@@ -120,7 +120,9 @@ export async function* fakeOperator(inbox: AsyncIterable<SDKUserMessage>, option
     const content = asText(message.message.content);
     if (content === "[USER] crash") throw new Error("session died");
     const slow = content.match(/^\[USER\] slow: (.+)$/);
+    const twice = content.match(/\[USER\] twice: (.+)$/);
     if (slow) yield* slowTurn(slow[1]);
+    else if (twice) yield* repeatedTurn(twice[1]);
     else yield* turn(await reply(content));
   }
 }
@@ -141,6 +143,13 @@ function recordStart(options: Options): void {
 }
 
 function* turn(text: string): Generator<object> {
+  yield { type: "assistant", message: { content: [{ type: "text", text }] } };
+  yield { type: "result", subtype: "success", is_error: false, result: text, total_cost_usd: 0 };
+}
+
+/** The same reply written again after a tool call, as the model sometimes does despite being told not to. */
+function* repeatedTurn(text: string): Generator<object> {
+  yield { type: "assistant", message: { content: [{ type: "text", text }] } };
   yield { type: "assistant", message: { content: [{ type: "text", text }] } };
   yield { type: "result", subtype: "success", is_error: false, result: text, total_cost_usd: 0 };
 }

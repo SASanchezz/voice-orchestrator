@@ -1,6 +1,7 @@
 import type { UsageLimitHit } from "../limits/usage-limit.js";
 import type { UsageLimits } from "../limits/usage-limits.js";
 import type { Sessions } from "../registry/sessions.js";
+import { instructionOf } from "./queued-task.js";
 import type { RunningTask } from "./running-task.js";
 import type { WorkerChat } from "./worker-chat.js";
 
@@ -17,7 +18,7 @@ export class LimitParking {
     this.sessions.updateSession(task.sessionId, { queued: [] });
     const { project, sessionId: session, sessionNumber, account } = task;
     const limited = { project, session, label: this.sessions.labelOf(session), sessionNumber, account };
-    this.limits.park(limited, [task.instruction, ...queued], hit);
+    this.limits.park(limited, [task.instruction, ...queued.map(instructionOf)], hit);
     const alsoQueued = queued.length ? ` and ${queued.length} queued` : "";
     this.chat.sayFailure(session, `The ${account} account hit its usage limit; saved to todo: this task${alsoQueued}.`);
   }
