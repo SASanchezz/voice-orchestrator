@@ -1,15 +1,17 @@
 // The composer's mic button and the recordings its message box follows, whatever started them: your words appear in
 // the box as you speak, after what it already held. ■ or Enter stops and leaves them to edit; the talk key again or
-// saying "finish" sends them, with the files attached, to where you were when you started. Esc drops what you just said.
+// saying "finish" or Send sends them, with the files attached, to where you were when you started. Esc drops what you just said.
 
+import { routeVoiceBoxes } from "./voice-box-router.js";
 import type { AttachmentTray } from "./attachments.js";
 import { BoxNews } from "./box-news.js";
-import { sendSpokenMessage } from "./conversation.js";
+import { sendRecordedMessage, sendSpokenMessage } from "./conversation.js";
 import { DictationBox } from "./dictation-box.js";
 import { byId } from "./dom.js";
 import { store } from "./store.js";
 
 let news: BoxNews | undefined;
+let composerBox: DictationBox | undefined;
 
 export function wireMicButton(tray: AttachmentTray): void {
   const box = new DictationBox({
@@ -18,8 +20,10 @@ export function wireMicButton(tray: AttachmentTray): void {
     cancel: byId("mic-cancel", HTMLButtonElement),
     send: byId("composer-send", HTMLButtonElement),
     target: byId("mic-target", HTMLElement),
+    sendFinished: () => sendRecordedMessage(tray, news?.startedIn()),
   });
   box.wire(byId("composer", HTMLFormElement));
+  composerBox = box;
   news = new BoxNews(box, { describe: destinationOf, send: (session) => sendSpokenMessage(tray, session) });
 }
 
@@ -28,8 +32,13 @@ export function renderMicButton(): void {
   byId("mic-button", HTMLButtonElement).hidden = store.state.gestures === "unavailable";
 }
 
+/** No recording is filling the message box. */
+export function isComposerIdle(): boolean {
+  return composerBox?.isIdle() ?? true;
+}
+
 export function followMicNews(events: EventSource): void {
-  news?.follow(events);
+  if (news) routeVoiceBoxes(events, news);
 }
 
 /** "→ app · session 2" for the session in front when you started talking, or "→ Assistant". */

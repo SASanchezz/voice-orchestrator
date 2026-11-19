@@ -134,13 +134,13 @@ function projectPath(project: string): string {
   return `/api/projects/${encodeURIComponent(project)}`;
 }
 
-function urlOf(path: string, params: Record<string, string>): string {
+export function urlOf(path: string, params: Record<string, string>): string {
   return `${path}?${new URLSearchParams({ ...params, token }).toString()}`;
 }
 
 /** The payload, or the server's reason for refusing. */
 // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- the caller names the protocol type it receives
-async function replyOf<T>(res: Response): Promise<T> {
+export async function replyOf<T>(res: Response): Promise<T> {
   const reply: unknown = await res.json();
   if (!res.ok) throw new Error(fromServer<ActionReply>(reply).error ?? res.statusText);
   return fromServer<T>(reply);
@@ -192,7 +192,7 @@ export function onServerEvent<K extends keyof ServerEvents>(
  * compile, so the two can't drift apart unnoticed; checking them again here would only repeat that.
  */
 // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- the caller names the protocol type it receives
-function fromServer<T>(json: unknown): T {
+export function fromServer<T>(json: unknown): T {
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- see above: typed by protocol.ts on the server
   return json as T;
 }

@@ -37,8 +37,8 @@ export const MESSENGER_GUIDES: MessengerGuide[] = [
     steps: [
       {
         text:
-          "Pick a short name for the workspace (letters, digits, dots, dashes), e.g. acme. To read channels too, " +
-          "add the workspace to config with its channels first, so the login asks for channel access.",
+          "Pick a short name for the workspace (letters, digits, dots, dashes), e.g. acme. The login asks for " +
+          "channel access too, so Messages › All chats can show every channel you are in.",
       },
       { text: "Run the login with that name:", command: "npm run slack-login -- acme" },
       {

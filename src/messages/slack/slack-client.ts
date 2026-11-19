@@ -4,6 +4,8 @@ export type FetchFn = typeof fetch;
 export type Wait = (ms: number) => Promise<void>;
 
 const SLACK_API = "https://slack.com/api/";
+/** The token is only ever sent to Slack's own file host. */
+const SLACK_FILE_HOST = "files.slack.com";
 const TOO_MANY_REQUESTS = 429;
 const MAX_RETRIES = 3;
 const MS_PER_SECOND = 1000;
@@ -15,9 +17,11 @@ const okSchema = z.object({ ok: z.boolean(), error: z.string().optional() });
 
 export type SlackParams = Record<string, string>;
 
-/** The one thing the Slack readers need: call a read method and get its checked response. */
+/** What the Slack readers need: call a method and get its checked response, and download a shared file. */
 export interface SlackCalls {
   call<Schema extends z.ZodType>(method: string, params: SlackParams, schema: Schema): Promise<z.infer<Schema>>;
+  /** A file's url_private_download, fetched with the token (files:read); only Slack's file host is asked. */
+  download(url: string): Promise<Buffer>;
 }
 
 /** Slack's Web API over fetch with a user token; every response is checked, and rate limits are waited out. */
@@ -35,6 +39,13 @@ export class SlackClient implements SlackCalls {
     const { ok, error } = okSchema.parse(body);
     if (!ok) throw new Error(slackErrorText(method, error));
     return schema.parse(body);
+  }
+
+  async download(url: string): Promise<Buffer> {
+    if (!URL.canParse(url) || new URL(url).hostname !== SLACK_FILE_HOST) throw new Error(`Not a Slack file: ${url}`);
+    const response = await this.fetchFn(url, { headers: { Authorization: `Bearer ${this.token}` } });
+    if (!response.ok) throw new Error(`Slack file download failed with HTTP ${response.status}`);
+    return Buffer.from(await response.arrayBuffer());
   }
 
   private async postWithRetries(method: string, params: SlackParams): Promise<Response> {

@@ -1,4 +1,5 @@
 import { isNamed } from "../chat-names.js";
+import type { ChatKind } from "../replies/inbound.js";
 import { conversationListSchema, nextCursorOf, type SlackConversationRecord } from "./slack-api.js";
 import type { SlackCalls, SlackParams } from "./slack-client.js";
 import { groupDmName, type SlackNames } from "./slack-names.js";
@@ -10,6 +11,7 @@ const CHANNEL_TYPES = "public_channel,private_channel";
 /** A DM, group DM or channel the reader looks into. */
 export interface SlackConversation {
   id: string;
+  kind: ChatKind;
   /** Set for channels and group DMs; a DM is named after its person, looked up only when needed. */
   name?: string;
   dmUser?: string;
@@ -30,7 +32,7 @@ export async function conversationName(conversation: SlackConversation, names: S
 async function namedChannels(client: SlackCalls, channelNames: string[]): Promise<SlackConversation[]> {
   const channels = await listAll(client, { types: CHANNEL_TYPES });
   const wanted = channels.filter((channel) => channelNames.some((name) => isNamed(channel.name ?? "", name)));
-  return wanted.map((channel) => ({ id: channel.id, name: `#${channel.name ?? channel.id}` }));
+  return wanted.map((channel) => ({ id: channel.id, kind: "group", name: `#${channel.name ?? channel.id}` }));
 }
 
 /** Every page of conversations.list. */
@@ -54,6 +56,6 @@ function isOpenDm(record: SlackConversationRecord): boolean {
 }
 
 function directConversation(record: SlackConversationRecord): SlackConversation {
-  if (record.is_mpim) return { id: record.id, name: groupDmName(record.name ?? record.id) };
-  return { id: record.id, dmUser: record.user };
+  if (record.is_mpim) return { id: record.id, kind: "group-dm", name: groupDmName(record.name ?? record.id) };
+  return { id: record.id, kind: "dm", dmUser: record.user };
 }

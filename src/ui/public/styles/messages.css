@@ -1,0 +1,474 @@
+/* -------------------------------------------------------------- messages */
+
+/* In place of the code and chat: the replies waiting on the left, the selected one on the right. */
+.messages {
+  --inbox-width: 340px;
+  --bubble-theirs: var(--surface-2);
+  --bubble-mine: color-mix(in srgb, var(--accent) 28%, var(--surface));
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--inbox-width) minmax(0, 1fr);
+}
+.messages[hidden] {
+  display: none;
+}
+.layout.messages-shown {
+  grid-template-columns: minmax(0, 1fr);
+}
+.layout.messages-shown .code-panel,
+.layout.messages-shown .chat-panel,
+.layout.messages-shown .detail,
+.layout.messages-shown .resize-handle {
+  display: none !important;
+}
+
+/* ---------------------------------------------------------------- the list */
+
+.reply-inbox {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+.reply-inbox-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.reply-inbox-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reply-inbox-header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.reply-count {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-align: center;
+}
+.reply-count:empty {
+  display: none;
+}
+
+.reply-rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reply-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  box-shadow: none;
+}
+.reply-row:hover {
+  background: var(--surface-2);
+}
+.reply-row.selected {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.reply-row:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: -2px;
+}
+.reply-row-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reply-row-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.reply-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reply-row-top time {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.reply-row-where,
+.reply-detail-where {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reply-row-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.reply-preview {
+  color: var(--muted);
+  font-size: 0.85rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.reply-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.messages kbd {
+  display: inline-block;
+  min-width: 18px;
+  margin-right: 2px;
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font: 600 0.7rem/1.5 var(--mono);
+  text-align: center;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ---------------------------------------------------------------- avatars and tags */
+
+.reply-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 700;
+  color: #fff;
+  background: hsl(var(--hue, 260) 45% 42%);
+}
+.reply-avatar.small {
+  width: 34px;
+  height: 34px;
+  font-size: 0.8rem;
+}
+.reply-avatar.large {
+  width: 44px;
+  height: 44px;
+  font-size: 1rem;
+}
+
+.reply-source {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+.reply-source.slack {
+  background: color-mix(in srgb, #e01e5a 22%, transparent);
+  color: #f7a1bd;
+}
+.reply-source.telegram {
+  background: color-mix(in srgb, #2aabee 22%, transparent);
+  color: #8fd3f7;
+}
+
+.reply-pill {
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.7rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.reply-pill.kind-code-question,
+.reply-pill.kind-question,
+.reply-pill.kind-request {
+  color: var(--accent-text);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.reply-pill.urgency-high {
+  color: var(--action-text);
+  background: var(--action);
+  border-color: var(--action);
+  font-weight: 700;
+}
+.reply-pill.urgency-low {
+  color: var(--idle);
+}
+
+/* ---------------------------------------------------------------- the selected reply */
+
+.reply-detail-pane {
+  min-height: 0;
+  overflow-y: auto;
+}
+.reply-detail {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 20px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.reply-detail[hidden] {
+  display: none;
+}
+.reply-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.reply-detail-title {
+  flex: 1;
+  min-width: 0;
+}
+.reply-detail-name {
+  margin: 0 0 4px;
+  font-size: 1.15rem;
+}
+.reply-detail-where {
+  margin: 0;
+}
+
+.reply-thread {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reply-thread-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+.reply-bubble {
+  max-width: 78%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.reply-bubble p {
+  margin: 0;
+}
+.reply-bubble.theirs {
+  align-self: flex-start;
+  background: var(--bubble-theirs);
+  border-bottom-left-radius: 4px;
+}
+.reply-bubble.mine {
+  align-self: flex-end;
+  background: var(--bubble-mine);
+  border-bottom-right-radius: 4px;
+}
+.reply-bubble-author {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+/* Your draft: the next bubble of the conversation, dashed until it is sent. */
+.reply-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reply-draft {
+  align-self: flex-end;
+  width: min(100%, 560px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.reply-draft-label {
+  align-self: flex-end;
+  color: var(--accent-text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.reply-text {
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 70%, transparent);
+  border-radius: 14px;
+  border-bottom-right-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--text);
+  font: inherit;
+  line-height: 1.45;
+  resize: none;
+  field-sizing: content;
+}
+.reply-text[readonly] {
+  cursor: text;
+}
+.reply-text[readonly]:hover {
+  border-color: var(--accent-text);
+}
+.reply-text.editing {
+  border-style: solid;
+  border-color: var(--accent-text);
+  background: var(--surface-2);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  resize: vertical;
+}
+
+.reply-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reply-status {
+  flex: 1;
+  min-width: 0;
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+.reply-dismiss {
+  color: var(--muted);
+}
+.reply-dismiss:hover {
+  color: var(--text);
+}
+.reply-send {
+  padding-inline: 16px;
+}
+.messages kbd.reply-send-keys {
+  margin: 0 0 0 6px;
+  padding: 0;
+  min-width: 0;
+  border: none;
+  background: none;
+  color: color-mix(in srgb, var(--action-text) 65%, transparent);
+  font-weight: 600;
+}
+.reply-actions .mic-target[hidden],
+.reply-actions .mic-cancel[hidden] {
+  display: none;
+}
+.reply-voice-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: right;
+}
+
+/* ---------------------------------------------------------------- nothing waiting, and notes */
+
+.no-replies {
+  display: none;
+}
+.messages.empty .reply-inbox,
+.messages.empty .reply-detail-pane {
+  display: none;
+}
+.messages.empty .no-replies {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--muted);
+  text-align: center;
+}
+.no-replies h2 {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-size: 1.15rem;
+}
+.no-replies p {
+  margin: 0;
+}
+.no-replies-mark {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ok) 18%, transparent);
+  color: var(--ok);
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.reply-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 40%);
+  font-size: 0.9rem;
+}
+.reply-toast[hidden] {
+  display: none;
+}
+
+/* A narrow window: the list on top, the reply under it. */
+@media (width < 860px) {
+  .messages {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 40%) minmax(0, 1fr);
+  }
+  .reply-inbox {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+/* The dictation box sets 🎙's text itself, so its name is added beside the icon. */
+.reply-actions .mic-button.idle::after {
+  content: " Dictate";
+  font-size: 0.9rem;
+}

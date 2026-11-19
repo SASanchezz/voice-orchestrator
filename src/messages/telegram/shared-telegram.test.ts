@@ -18,6 +18,9 @@ class Connections {
     return {
       listChats: async () => [],
       readMessages: async () => [],
+      sendMessage: async () => {},
+      saveDraft: async () => {},
+      downloadFile: async () => Buffer.alloc(0),
       onIncoming: () => undefined,
       close: async () => {
         this.closed++;

@@ -22,3 +22,12 @@ test("page target: an unknown view or another hash is no target", () => {
     [undefined, undefined, undefined],
   );
 });
+
+test("page target: a drafted reply survives the link's hash", () => {
+  const target = { view: "messages", draftId: "4c1e-9a" } as const;
+  assert.deepEqual(parsePageHash(pageHash(target)), target);
+});
+
+test("page target: a drafted reply is written as the Messages view", () => {
+  assert.equal(pageHash({ view: "messages", draftId: "d1" }), "#open=messages:d1");
+});

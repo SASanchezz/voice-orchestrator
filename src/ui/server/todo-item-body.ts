@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-const MAX_TITLE_CHARS = 200;
-const MAX_DESCRIPTION_CHARS = 4000;
+export const MAX_TITLE_CHARS = 200;
+export const MAX_DESCRIPTION_CHARS = 4000;
 
 /** An item as the page's form sends it; project "" means none. */
 export const todoItemBody = z.object({

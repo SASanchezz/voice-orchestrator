@@ -3,8 +3,8 @@
 
 import type { ProjectView } from "./protocol.js";
 
-/** chat: the session's chat (or the assistant's); todo: the project's To-do tab; review: the Review view. */
-export type PlaceScreen = "chat" | "todo" | "review";
+/** chat: the session's chat (or the assistant's); todo: the project's To-do tab; review and messages: those views. */
+export type PlaceScreen = "chat" | "todo" | "review" | "messages";
 
 export interface PagePlace {
   /** Empty: the assistant's chat. */
@@ -64,5 +64,5 @@ function isPagePlace(value: unknown): value is PagePlace {
 }
 
 function isPlaceScreen(value: unknown): value is PlaceScreen {
-  return value === "chat" || value === "todo" || value === "review";
+  return value === "chat" || value === "todo" || value === "review" || value === "messages";
 }

@@ -8,6 +8,10 @@
   --tint: var(--ok);
   --tint-text: #7ee787;
 }
+.intent-messages {
+  --tint: var(--accent);
+  --tint-text: var(--accent-text);
+}
 .intent-session {
   --tint: #388bfd;
   --tint-text: #79c0ff;
@@ -22,7 +26,7 @@
 }
 
 /* Coloured glass: mostly solid colour under a sheen, so each action is told apart at a glance. */
-button:is(.intent-review, .intent-allow, .intent-session, .intent-assistant) {
+button:is(.intent-review, .intent-messages, .intent-allow, .intent-session, .intent-assistant) {
   background:
     var(--glass-sheen),
     linear-gradient(
@@ -39,7 +43,7 @@ button:is(.intent-review, .intent-allow, .intent-session, .intent-assistant) {
     var(--glass-rim),
     0 1px 10px color-mix(in srgb, var(--tint) 35%, transparent);
 }
-button:is(.intent-review, .intent-allow, .intent-session, .intent-assistant):hover:enabled {
+button:is(.intent-review, .intent-messages, .intent-allow, .intent-session, .intent-assistant):hover:enabled {
   filter: brightness(1.15);
 }
 
@@ -79,13 +83,24 @@ button.intent-dismiss-all:hover:enabled {
 
 /* ------------------------------------------------ icons, before the words */
 
-button:is(.intent-review, .intent-allow, .intent-session, .intent-assistant, .intent-explain, .intent-dismiss)::before {
+button:is(
+    .intent-review,
+    .intent-messages,
+    .intent-allow,
+    .intent-session,
+    .intent-assistant,
+    .intent-explain,
+    .intent-dismiss
+  )::before {
   display: inline-block;
   margin-right: 6px;
   font-weight: 700;
 }
 .intent-review::before {
   content: "±";
+}
+.intent-messages::before {
+  content: "✉";
 }
 .intent-allow::before {
   content: "✓";

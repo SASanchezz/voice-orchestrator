@@ -9,12 +9,14 @@ import { errorMessage } from "../../shared/errors.js";
 import {
   LOGIN_AGAIN,
   TelegramWaitError,
+  UnknownChatError,
   type IncomingMessage,
   type TelegramChat,
   type TelegramChats,
   type TelegramMessage,
 } from "./telegram-port.js";
 import { KEYCHAIN_ACCOUNTS, TELEGRAM_KEYCHAIN_SERVICE } from "./telegram-keychain.js";
+import { downloadMessageFile, fileOf, hasAttachment } from "./telegram-media.js";
 import { chatKind, senderName } from "./telegram-names.js";
 
 const CONNECTION_RETRIES = 3;
@@ -52,9 +54,10 @@ export async function telegramClient(keychain: Keychain): Promise<TelegramClient
 }
 
 /**
- * The only way the app reaches Telegram: the client is private, only getDialogs and getMessages are called, and
- * new messages are only listened for. Nothing marks anything as read. Secret chats live only on your devices,
- * so they never show up here.
+ * The only way the app reaches Telegram: the client is private; it reads with getDialogs and getMessages, downloads
+ * a message's file when you open it, listens for new messages, and writes only the messages you approved or wrote
+ * and their drafts. Nothing marks anything as read.
+ * Secret chats live only on your devices, so they never show up here.
  */
 class TelegramReader implements TelegramChats {
   private peers = new Map<string, Api.TypeInputPeer>();
@@ -68,10 +71,27 @@ class TelegramReader implements TelegramChats {
   }
 
   async readMessages(chatId: string, afterId: number, limit: number): Promise<TelegramMessage[]> {
-    const peer = this.peers.get(chatId);
-    if (!peer) throw new Error(`chat ${chatId} isn't in the chat list`);
+    const peer = this.peerOf(chatId);
     const messages = await translated(async () => this.client.getMessages(peer, { minId: afterId, limit }));
     return messages.toReversed().map(messageOf);
+  }
+
+  async downloadFile(chatId: string, messageId: number): Promise<Buffer> {
+    const peer = this.peerOf(chatId);
+    return translated(async () => downloadMessageFile(this.client, peer, messageId));
+  }
+
+  async sendMessage(chatId: string, text: string, replyTo?: number): Promise<void> {
+    const peer = this.peerOf(chatId);
+    await translated(async () => this.client.sendMessage(peer, { message: text, replyTo }));
+  }
+
+  async saveDraft(chatId: string, text: string, replyTo?: number): Promise<void> {
+    const peer = this.peerOf(chatId);
+    const reply = replyTo ? new Api.InputReplyToMessage({ replyToMsgId: replyTo }) : undefined;
+    await translated(async () =>
+      this.client.invoke(new Api.messages.SaveDraft({ peer, message: text, replyTo: reply })),
+    );
   }
 
   onIncoming(heard: (message: IncomingMessage) => void): void {
@@ -84,12 +104,18 @@ class TelegramReader implements TelegramChats {
   async close(): Promise<void> {
     await this.client.destroy();
   }
+
+  private peerOf(chatId: string): Api.TypeInputPeer {
+    const peer = this.peers.get(chatId);
+    if (!peer) throw new UnknownChatError(chatId);
+    return peer;
+  }
 }
 
 /** A short update carries only the sender's ID, so the sender is fetched (from GramJS's cache when it can). */
 async function incomingOf(message: Api.Message): Promise<IncomingMessage> {
   await message.getSender();
-  return { chatId: message.chatId?.toString() ?? "", from: senderName(message) };
+  return { chatId: message.chatId?.toString() ?? "", from: senderName(message), messageId: message.id };
 }
 
 function logLostMessage(error: unknown): void {
@@ -118,14 +144,8 @@ function messageOf(message: Api.Message): TelegramMessage {
     sentAt: new Date(message.date * MS_PER_SECOND),
     text: message.message ?? "",
     hasMedia: hasAttachment(message.media),
+    file: fileOf(message),
   };
-}
-
-/** A link preview isn't an attachment; photos, files, voice notes and the like are. */
-function hasAttachment(media: Api.TypeMessageMedia | undefined): boolean {
-  return (
-    media !== undefined && !(media instanceof Api.MessageMediaWebPage) && !(media instanceof Api.MessageMediaEmpty)
-  );
 }
 
 /** GramJS errors as the app's: FloodWait to TelegramWaitError, a revoked session to "run npm run telegram-login". */

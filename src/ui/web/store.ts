@@ -57,6 +57,8 @@ class PageStore {
   private chatOver = false;
   /** The Review view is showing in place of the code and chat. */
   private reviewing = false;
+  /** The Messages view, with drafted Slack and Telegram replies, is showing in place of the code and chat. */
+  private messaging = false;
   private changesByProject: ProjectChangesView[] = [];
   private listeners: (() => void)[] = [];
 
@@ -86,6 +88,10 @@ class PageStore {
 
   get reviewShown(): boolean {
     return this.reviewing;
+  }
+
+  get messagesShown(): boolean {
+    return this.messaging;
   }
 
   get changes(): ProjectChangesView[] {
@@ -128,6 +134,7 @@ class PageStore {
     this.mode = mode;
     this.chatOver = false;
     this.reviewing = false;
+    this.messaging = false;
     localWrite(VIEW_MODE_KEY, mode);
     this.changed();
   }
@@ -139,10 +146,19 @@ class PageStore {
 
   showReview() {
     this.reviewing = true;
+    this.messaging = false;
     this.changed();
   }
 
+  /** Leaving for a chat or code also leaves the Messages view. */
   hideReview() {
+    this.reviewing = false;
+    this.messaging = false;
+    this.changed();
+  }
+
+  showMessages() {
+    this.messaging = true;
     this.reviewing = false;
     this.changed();
   }

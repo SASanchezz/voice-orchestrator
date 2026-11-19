@@ -58,3 +58,7 @@ test("a history entry of the page is recognised", () => {
 test("a history entry left by something else is not", () => {
   assert.equal(isPlaceEntry({ place: { project: "webshop" }, index: 3 }), false);
 });
+
+test("page place: the Messages view is a place a swipe can go back to", () => {
+  assert.equal(isPlaceEntry({ place: { project: "", sessionId: "", screen: "messages" }, index: 1 }), true);
+});

@@ -20,6 +20,17 @@ const conversationSchema = z.object({
 
 export const conversationListSchema = nextPageSchema.extend({ channels: z.array(conversationSchema) });
 
+export const conversationInfoSchema = z.object({ channel: conversationSchema });
+
+/** A file shared in a message; Slack sends some (tombstones, external files) with only a few of these. */
+const slackFileSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().optional(),
+  mimetype: z.string().optional(),
+  size: z.number().optional(),
+  url_private_download: z.string().optional(),
+});
+
 export const slackMessageSchema = z.object({
   ts: z.string(),
   user: z.string().optional(),
@@ -27,7 +38,7 @@ export const slackMessageSchema = z.object({
   bot_profile: z.object({ name: z.string() }).optional(),
   text: z.string().optional(),
   subtype: z.string().optional(),
-  files: z.array(z.unknown()).optional(),
+  files: z.array(slackFileSchema).optional(),
 });
 
 export const historySchema = nextPageSchema.extend({ messages: z.array(slackMessageSchema) });
@@ -38,16 +49,20 @@ const searchMatchSchema = slackMessageSchema.extend({
 
 export const searchSchema = z.object({ messages: z.object({ matches: z.array(searchMatchSchema) }) });
 
-export const userInfoSchema = z.object({
-  user: z.object({
-    name: z.string(),
-    real_name: z.string().optional(),
-    profile: z.object({ display_name: z.string().optional() }).optional(),
-  }),
+const userSchema = z.object({
+  name: z.string(),
+  real_name: z.string().optional(),
+  profile: z.object({ display_name: z.string().optional() }).optional(),
 });
 
+export const userInfoSchema = z.object({ user: userSchema });
+
+export const userListSchema = nextPageSchema.extend({ members: z.array(userSchema.extend({ id: z.string() })) });
+
 export type SlackConversationRecord = z.infer<typeof conversationSchema>;
+export type SlackUser = z.infer<typeof userSchema>;
 export type SlackMessage = z.infer<typeof slackMessageSchema>;
+export type SlackFile = z.infer<typeof slackFileSchema>;
 export type SlackSearchMatch = z.infer<typeof searchMatchSchema>;
 
 /** A page's cursor for the next one; empty when it was the last. */

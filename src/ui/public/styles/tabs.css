@@ -94,7 +94,11 @@
 .review-button {
   flex: none;
 }
-.review-button.shown {
+.messages-button.shown {
+  border-color: var(--accent);
+  background: var(--glass-sheen-hover), color-mix(in srgb, var(--accent) 42%, var(--surface));
+}
+.review-button.shown:not(.messages-button) {
   border-color: var(--ok);
   background: var(--glass-sheen-hover), color-mix(in srgb, var(--ok) 42%, var(--surface));
 }

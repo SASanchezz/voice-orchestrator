@@ -54,6 +54,18 @@ class HeldTelegram implements TelegramChats {
     return this.chats.readMessages(chatId, afterId, limit);
   }
 
+  async downloadFile(chatId: string, messageId: number): Promise<Buffer> {
+    return this.chats.downloadFile(chatId, messageId);
+  }
+
+  async sendMessage(chatId: string, text: string, replyTo?: number): Promise<void> {
+    await this.chats.sendMessage(chatId, text, replyTo);
+  }
+
+  async saveDraft(chatId: string, text: string, replyTo?: number): Promise<void> {
+    await this.chats.saveDraft(chatId, text, replyTo);
+  }
+
   onIncoming(heard: (message: IncomingMessage) => void): void {
     this.chats.onIncoming(heard);
   }

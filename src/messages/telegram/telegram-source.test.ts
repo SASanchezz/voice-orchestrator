@@ -13,7 +13,7 @@ import {
 } from "./telegram-port.js";
 import { TelegramSource } from "./telegram-source.js";
 
-const ALL: TelegramSettings = { profile: "personal", chats: "all", exclude: [], notify: [] };
+const ALL: TelegramSettings = { profile: "personal", chats: "all", exclude: [], notify: [], send: false };
 
 type ChatBasics = Pick<TelegramChat, "id" | "name" | "kind" | "unreadCount">;
 
@@ -62,6 +62,11 @@ class FakeTelegram implements TelegramChats {
     const found = this.chats.find((candidate) => candidate.id === chatId);
     return messages(Math.min(found?.unreadCount ?? 0, limit), chatId === "2");
   }
+
+  async sendMessage(): Promise<void> {}
+
+  async saveDraft(): Promise<void> {}
+  downloadFile = async (): Promise<Buffer> => Buffer.alloc(0);
 
   onIncoming(): void {}
 

@@ -55,8 +55,9 @@ voice:
   hotkey: RIGHT ALT # press to start talking, again to send: e.g. "RIGHT ALT" (= right Option), "RIGHT CMD", "RIGHT CTRL", "F13"
   recordBin: rec # from `brew install sox`
   whisperBin: whisper-cli # from `brew install whisper-cpp`
-  whisperModel: ~/.whisper/ggml-small.en.bin # for several languages: ~/.whisper/ggml-small.bin with language: auto
+  whisperModel: ~/.whisper/ggml-small.en.bin # ~/.whisper/ggml-large-v3-turbo-q5_0.bin hears accents better, about 1.5 s slower; for several languages: ~/.whisper/ggml-small.bin with language: auto
   language: en # "auto" if you switch between languages
+  vocabulary: [Kubernetes, oxlint] # optional: names and terms whisper keeps misspelling; they nudge it towards these spellings
   engine: kokoro # kokoro: natural voice inside the app (model ~90 MB, downloaded on first start) | say: macOS `say`, also used if Kokoro fails to load
   kokoroVoice: af_heart # English voices: af_heart, af_bella, af_nicole, am_michael, am_fenrir, bf_emma, bm_george, …
   kokoroSpeed: 1
@@ -124,8 +125,10 @@ messages:
       profile: work # the Claude account that summarizes it; work messages never reach the personal account
       channels: [] # DMs, group DMs and mentions are always read; channels only when named here, e.g. [general, deploys]
       notify: [] # optional: DMs and channels (from those read) to announce as messages arrive, e.g. [Bob, deploys]; checked once a minute
+      send: false # optional: true lets drafted replies be sent from the app after you approve each one; needs slack-login again
   telegram:
     profile: personal
     chats: all # every chat with new messages; or a list of chat names to limit it, e.g. [Family, Bob]. Missing: none
     exclude: [] # optional: chat names to always skip. With all, every new message (groups and channels too) goes to the summarizer
     notify: [] # optional: chats (from those read) to announce as messages arrive, e.g. [Family, Bob]; sender and count only, no text
+    send: false # optional: true lets drafted replies be sent from the app after you approve each one

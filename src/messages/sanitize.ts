@@ -11,7 +11,7 @@ const CUT_MARK = "…";
 /** Line breaks become spaces, so a message can't start a line of its own that looks like the prompt's. */
 const LINE_BREAKS = /[\t\n\r\v\f\u2028\u2029]+/g;
 /** Control and format characters (zero-width, bidi overrides, Unicode tags) and blank-looking letters. */
-const INVISIBLE = /[\p{Cc}\p{Cf}\u115F\u1160\u2800\u3164\uFFA0]/gu;
+export const INVISIBLE = /[\p{Cc}\p{Cf}\u115F\u1160\u2800\u3164\uFFA0]/gu;
 const SPACES = / {2,}/g;
 const LINK = /\bhttps?:\/\/[^\s<>|"]+/gi;
 

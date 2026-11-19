@@ -6,6 +6,7 @@ import { CONFIG_PATH, NOTES_PATH, SKILLS_DIR } from "../config/paths.js";
 import { MacBrowserPage } from "../macos/mac-browser-page.js";
 import { MacChromeLinks } from "../macos/mac-chrome-links.js";
 import { MacChatPanels } from "../macos/mac-chat-panels.js";
+import { MacDraftPopups } from "../macos/mac-draft-popups.js";
 import { MacConfirmPanels } from "../macos/mac-confirm-panels.js";
 import { MacNoticePanel } from "../macos/mac-notice-panel.js";
 import { MacPopups } from "../macos/mac-popups.js";
@@ -56,13 +57,16 @@ export function chromeAdapters(uiChromeApp?: string): Pick<Adapters, "browser" |
   return { chromeLinks: new MacChromeLinks(), browser: new MacBrowserPage(uiChromeApp) };
 }
 
-/** Permission, question and confirm pop-ups, all from one Swift helper, and the chat pop-up from its own. */
-async function popupPanels(): Promise<Pick<Adapters, "popups" | "questionPanels" | "confirmPanels" | "chatPanels">> {
+type PopupPanels = Pick<Adapters, "popups" | "questionPanels" | "confirmPanels" | "draftPopups" | "chatPanels">;
+
+/** Permission, question, confirm and draft pop-ups, all from one Swift helper, and the chat pop-up from its own. */
+async function popupPanels(): Promise<PopupPanels> {
   const popups = await MacPopups.create();
   const questionPanels = await MacQuestionPanels.create(); // after MacPopups: the helper is built by then
   const confirmPanels = await MacConfirmPanels.create();
+  const draftPopups = await MacDraftPopups.create();
   const chatPanels = await MacChatPanels.create();
-  return { popups, questionPanels, confirmPanels, chatPanels };
+  return { popups, questionPanels, confirmPanels, draftPopups, chatPanels };
 }
 
 /** config/destructive.yaml (hot-reloaded), config/config.yaml, config/notes.md, skills/ and the Agent SDK. */

@@ -34,6 +34,9 @@ async function finishedCheck(open: () => Promise<void>): Promise<TelegramCheck> 
     return {
       listChats: async () => [],
       readMessages: async () => [],
+      sendMessage: async () => {},
+      saveDraft: async () => {},
+      downloadFile: async () => Buffer.alloc(0),
       onIncoming: () => undefined,
       close: async () => undefined,
     };

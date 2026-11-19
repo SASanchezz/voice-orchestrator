@@ -1,0 +1,289 @@
+/* ------------------------------------------------------------- all chats */
+
+/* Over the drafted replies: every chat on the left, the chosen chat's messages on the right. */
+.chat-browser {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: var(--inbox-width) minmax(0, 1fr);
+  background: var(--bg);
+}
+.chat-browser[hidden] {
+  display: none;
+}
+
+.all-chats-button,
+.chat-browser-back,
+.chat-browser-refresh,
+.make-task-button {
+  padding: 3px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-browser-list {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+.chat-browser-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 16px 10px;
+}
+.chat-browser-header h2 {
+  margin: 0;
+  flex: 1;
+  font-size: 1.05rem;
+}
+.chat-browser-filter {
+  margin: 0 12px 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.chat-browser-sources {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 6px 12px;
+}
+.chat-source h3 {
+  margin: 12px 10px 4px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.chat-source-problem,
+.chat-browser-note {
+  margin: 4px 10px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.browsed-chat-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.browsed-chat-row:hover {
+  background: var(--surface-2);
+}
+.browsed-chat-row.selected {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+}
+.browsed-chat-name {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.browsed-chat-kind {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.browsed-chat-unread {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ------------------------------------------------------- one chat's messages */
+
+.chat-browser-chat {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.browsed-message {
+  max-width: 760px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--bubble-theirs);
+}
+.browsed-message-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.browsed-message-from {
+  color: var(--text);
+  font-weight: 600;
+}
+.browsed-message-meta .make-task-button {
+  margin-left: auto;
+  opacity: 0;
+}
+.browsed-message:hover .make-task-button,
+.make-task-button:focus-visible {
+  opacity: 1;
+}
+.browsed-message-text {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+
+/* ------------------------------------------- chat title, files, selection, writing */
+
+.chat-browser-chat {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+.browsed-chat-title {
+  margin: 0;
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 1rem;
+}
+.browsed-chat-title:empty {
+  display: none;
+}
+.browsed-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.browsed-message {
+  position: relative;
+  user-select: text;
+}
+.browsed-message-pick {
+  margin: 0;
+  opacity: 0;
+}
+.browsed-message:hover .browsed-message-pick,
+.browsed-messages.selecting .browsed-message-pick {
+  opacity: 1;
+}
+.browsed-messages.selecting .browsed-message {
+  cursor: pointer;
+  user-select: none;
+}
+.browsed-message.picked {
+  outline: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--bubble-theirs));
+}
+
+.message-files {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.message-file-chip {
+  padding: 3px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.message-file-view {
+  margin-top: 8px;
+}
+.message-file-view img,
+.message-file-view video {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  border-radius: 8px;
+}
+.message-file-view audio {
+  width: 100%;
+}
+.message-file-path {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.message-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.message-selection-bar[hidden] {
+  display: none;
+}
+.message-selection-bar span {
+  flex: 1;
+  font-weight: 600;
+}
+
+.chat-composer {
+  display: flex;
+  gap: 8px;
+  padding: 10px 20px 14px;
+  border-top: 1px solid var(--border);
+}
+.chat-composer[hidden] {
+  display: none;
+}
+.chat-composer textarea {
+  flex: 1;
+  resize: vertical;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+.chat-send-button {
+  align-self: flex-end;
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--action);
+  color: var(--action-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+#chat-composer-hint {
+  padding: 0 20px 12px;
+}

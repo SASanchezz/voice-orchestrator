@@ -18,6 +18,8 @@ const slackWorkspaceSchema = z.object({
   channels: names,
   /** DMs, group DMs and channels from those read whose new messages are announced as they arrive; none by default. */
   notify: names,
+  /** Drafted replies may be sent from the app, after your approval; needs chat:write and the xapp- events token. */
+  send: z.boolean().default(false),
 });
 
 const telegramSchema = z.object({
@@ -27,6 +29,8 @@ const telegramSchema = z.object({
   exclude: names,
   /** Chats from those read whose new messages are announced as they arrive; none by default. */
   notify: names,
+  /** Drafted replies may be sent from the app, after your approval. */
+  send: z.boolean().default(false),
 });
 
 /** The optional `messages` block; without it, no Slack workspace and no Telegram are read. */

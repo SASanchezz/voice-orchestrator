@@ -36,6 +36,11 @@ export class AttachmentFiles {
     return full;
   }
 
+  /** Whether `path` is still a saved file; files go after a week. */
+  has(path: string): boolean {
+    return this.isSavedFile(resolve(this.dir, path));
+  }
+
   /** Saved files sit one folder down: state/attachments/<id>/<name>. */
   private isSavedFile(full: string): boolean {
     const parts = relative(this.dir, full).split(sep);

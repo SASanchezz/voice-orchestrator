@@ -9,6 +9,9 @@ function closingChats(onClose: () => void): TelegramChats {
   return {
     listChats: async () => [],
     readMessages: async () => [],
+    sendMessage: async () => {},
+    saveDraft: async () => {},
+    downloadFile: async () => Buffer.alloc(0),
     onIncoming: () => undefined,
     close: async () => onClose(),
   };

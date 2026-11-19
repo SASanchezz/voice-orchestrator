@@ -1,5 +1,6 @@
-import { userInfoSchema } from "./slack-api.js";
+import { userInfoSchema, userListSchema, type SlackUser } from "./slack-api.js";
 import type { SlackCalls } from "./slack-client.js";
+import { everyPage, type SlackListRequest } from "./slack-pages.js";
 
 /** Slack user IDs to display names, kept in memory only for as long as the app runs. */
 export type UserNameCache = Map<string, string>;
@@ -12,6 +13,8 @@ const BARE_LINK = /<((?:https?|mailto):[^>]+)>/g;
 const MPIM_PREFIX = /^mpdm-/;
 const MPIM_SUFFIX = /-\d+$/;
 const MPIM_SEPARATOR = "--";
+/** Slack takes up to 1000 users a page; fewer pages keep well within users.list's rate limit. */
+const EVERYONE: SlackListRequest = { method: "users.list", params: { limit: "1000" } };
 
 /** Turns user IDs into names, asking users.info once per user. */
 export class SlackNames {
@@ -24,9 +27,15 @@ export class SlackNames {
     const known = this.cache.get(userId);
     if (known) return known;
     const { user } = await this.client.call("users.info", { user: userId }, userInfoSchema);
-    const name = user.profile?.display_name || user.real_name || user.name;
+    const name = SlackNames.displayName(user);
     this.cache.set(userId, name);
     return name;
+  }
+
+  /** Everyone's name at once, a page of users.list at a time, so naming many DMs doesn't ask once per person. */
+  async learnEveryone(): Promise<void> {
+    const pages = await everyPage(this.client, EVERYONE, userListSchema);
+    for (const user of pages.flatMap((page) => page.members)) this.cache.set(user.id, SlackNames.displayName(user));
   }
 
   /** Slack's markup as plain text: "<@U1>" becomes "@Bob", "<#C1|general>" "#general", and a link its address. */
@@ -43,6 +52,11 @@ export class SlackNames {
     const userIds = [...text.matchAll(USER_MENTION)].map(([, userId]) => userId);
     for (const userId of new Set(userIds)) await this.userName(userId);
     return text.replace(USER_MENTION, (_mention, userId: string) => `@${this.cache.get(userId) ?? userId}`);
+  }
+
+  /** The name Slack shows: the display name, else the full name, else the handle. */
+  private static displayName(user: SlackUser): string {
+    return user.profile?.display_name || user.real_name || user.name;
   }
 }
 

@@ -30,13 +30,14 @@ export function renderViewMode(): void {
   for (const [mode, name] of Object.entries(MODE_CLASSES)) layout.classList.toggle(name, mode === store.viewMode);
   layout.classList.toggle("chat-overlaid", store.chatOverlaid);
   layout.classList.toggle("review-shown", store.reviewShown);
+  layout.classList.toggle("messages-shown", store.messagesShown);
   byId("view-mode", HTMLElement).hidden = !hasCode;
-  markSegment("view-mode", store.reviewShown ? "" : store.viewMode);
+  markSegment("view-mode", store.reviewShown || store.messagesShown ? "" : store.viewMode);
   renderChatToggle(hasCode);
 }
 
 function renderChatToggle(hasCode: boolean): void {
   const toggle = byId("chat-toggle", HTMLButtonElement);
-  toggle.hidden = !hasCode || store.viewMode !== "code" || store.reviewShown;
+  toggle.hidden = !hasCode || store.viewMode !== "code" || store.reviewShown || store.messagesShown;
   toggle.textContent = store.chatOverlaid ? "Hide chat" : "Chat";
 }

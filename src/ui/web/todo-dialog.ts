@@ -8,6 +8,14 @@ import { store } from "./store.js";
 const SAVE = "save";
 const NO_PROJECT = "";
 
+/** What the dialog's text fields hold. */
+export interface TodoFields {
+  title: string;
+  description: string;
+}
+
+const EMPTY_FIELDS: TodoFields = { title: "", description: "" };
+
 /** The item being edited; undefined while adding a new one. */
 let editing: TodoItemView | undefined;
 
@@ -28,11 +36,16 @@ export function openTodoDialogIn(project: string): void {
   openDialog(undefined, project);
 }
 
-function openDialog(item: TodoItemView | undefined, project: string): void {
+/** A new item with its text already written, such as one made from a chat message. */
+export function openTodoDialogWith(fields: TodoFields): void {
+  openDialog(undefined, NO_PROJECT, fields);
+}
+
+function openDialog(item: TodoItemView | undefined, project: string, fields: TodoFields = item ?? EMPTY_FIELDS): void {
   editing = item;
   byId("todo-dialog-title", HTMLElement).textContent = item ? `Edit #${item.id}` : "New to-do item";
-  byId("todo-title-input", HTMLInputElement).value = item?.title ?? "";
-  byId("todo-description-input", HTMLTextAreaElement).value = item?.description ?? "";
+  byId("todo-title-input", HTMLInputElement).value = fields.title;
+  byId("todo-description-input", HTMLTextAreaElement).value = fields.description;
   fillProjects(project);
   const dialog = byId("todo-dialog", HTMLDialogElement);
   dialog.returnValue = "";

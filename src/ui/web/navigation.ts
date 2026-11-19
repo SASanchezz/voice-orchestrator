@@ -1,13 +1,21 @@
 // Going where a notice's button points: the assistant's reply to a session's latest task, or the session itself.
-// By voice: a project's chat, its code or its changes.
+// By voice: a project's chat, its code or its changes. The draft pop-up's Open: the Messages view, at that draft.
 
-import { isProjectTarget, parsePageHash, type PageTarget, type ProjectTarget } from "../page-target.js";
+import {
+  isMessagesTarget,
+  isProjectTarget,
+  parsePageHash,
+  type NavigationTarget,
+  type ProjectTarget,
+} from "../page-target.js";
 import type { ChatView } from "./chat.js";
+import { showDraft } from "./messages.js";
 import { openSessionById } from "./session-link.js";
 import { store } from "./store.js";
 
-export async function navigate(target: PageTarget | ProjectTarget, chat: ChatView): Promise<void> {
+export async function navigate(target: NavigationTarget, chat: ChatView): Promise<void> {
   if (isProjectTarget(target)) return showProject(target);
+  if (isMessagesTarget(target)) return showDraft(target.draftId);
   store.hideReview();
   if (target.view === "session") return openSessionById(target.sessionId);
   store.select(""); // the assistant's chat

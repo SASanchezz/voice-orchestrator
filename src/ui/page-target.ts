@@ -20,19 +20,35 @@ export interface ProjectTarget {
   project: string;
 }
 
-/** Anywhere the web UI can be taken: a session's view or a project's. */
-export type NavigationTarget = PageTarget | ProjectTarget;
+export const MESSAGES_VIEW = "messages";
+
+/** The Messages view, with one drafted reply in front. */
+export interface MessagesTarget {
+  view: typeof MESSAGES_VIEW;
+  draftId: string;
+}
+
+/** Anywhere the web UI can be taken: a session's view, a project's, or a drafted reply. */
+export type NavigationTarget = PageTarget | ProjectTarget | MessagesTarget;
 
 export function isProjectTarget(target: NavigationTarget): target is ProjectTarget {
   return "project" in target;
 }
 
+export function isMessagesTarget(target: NavigationTarget): target is MessagesTarget {
+  return "draftId" in target;
+}
+
 const HASH_KEY = "open";
 
-/** "#open=session:<id>", or "#open=review:<project>" */
+/** "#open=session:<id>", "#open=review:<project>" or "#open=messages:<draft id>" */
 export function pageHash(target: NavigationTarget): string {
-  const subject = isProjectTarget(target) ? target.project : target.sessionId;
-  return `#${HASH_KEY}=${target.view}:${encodeURIComponent(subject)}`;
+  return `#${HASH_KEY}=${target.view}:${encodeURIComponent(subjectOf(target))}`;
+}
+
+function subjectOf(target: NavigationTarget): string {
+  if (isProjectTarget(target)) return target.project;
+  return isMessagesTarget(target) ? target.draftId : target.sessionId;
 }
 
 /** The target in a link's #hash, if it has a valid one. */
@@ -44,6 +60,7 @@ export function parsePageHash(hash: string): NavigationTarget | undefined {
 
 /** A session's view of that session, or a project's view of that project; any other view is no target. */
 function targetOf(viewName: string, subject: string): NavigationTarget | undefined {
+  if (viewName === MESSAGES_VIEW) return { view: MESSAGES_VIEW, draftId: subject };
   const view = PAGE_VIEWS.find((known) => known === viewName);
   if (view) return { view, sessionId: subject };
   const projectView = PROJECT_VIEWS.find((known) => known === viewName);

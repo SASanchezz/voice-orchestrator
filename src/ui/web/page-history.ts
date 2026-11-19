@@ -53,6 +53,7 @@ function shownScreen(): ShownScreen {
 
 function shownScreenName(): PlaceScreen {
   if (store.reviewShown) return "review";
+  if (store.messagesShown) return "messages";
   if (store.projectTodoShown) return "todo";
   return "chat";
 }
@@ -99,6 +100,7 @@ async function activateSession({ project, sessionId }: PagePlace): Promise<void>
 function showScreen({ project, screen }: PagePlace): void {
   store.select(project);
   if (screen === "review") return store.showReview();
+  if (screen === "messages") return store.showMessages();
   store.hideReview();
   if (screen === "todo") store.showProjectTodo();
 }

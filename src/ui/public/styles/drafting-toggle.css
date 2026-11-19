@@ -1,0 +1,17 @@
+/* The Messages view's Drafting switch: quiet while drafting runs, amber while it is paused so it isn't forgotten. */
+.drafting-toggle {
+  margin-left: auto;
+  padding: 3px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.drafting-toggle[aria-pressed="false"] {
+  color: #ffc46b;
+  border-color: color-mix(in srgb, #ffb020 55%, transparent);
+  background: color-mix(in srgb, #ffb020 14%, var(--surface));
+}

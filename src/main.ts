@@ -56,7 +56,8 @@ const app = buildApp(
 );
 
 trainingNews.connect(app.operator.orchestrator);
-mac?.voice.endRecordingWhen((words) => app.permissions.spoken.canAnswer(words)); // "allow commit" needs no "finish"
+// "allow commit" and "confirm send" need no "finish"
+mac?.voice.endRecordingWhen((words) => app.permissions.spoken.canAnswer(words) || app.replies.spoken.canAnswer(words));
 mac?.voice.handOffTo(app.ui.boxes.relay);
 await openUi(cfg, app);
 app.editor.server.start(); // once the UI has made the token file it reads
@@ -66,7 +67,7 @@ const messageAlerts = buildMessageAlerts(cfg.messages, app.core.messengers, app.
 startOperator(app, voice)
   .then(connectGestures) // once the mic is ready
   .then(connectWakeWord)
-  .then(() => messageAlerts.start())
+  .then(startMessengers)
   .catch((e: unknown) => {
     console.error(errorMessage(e));
     process.exit(1);
@@ -81,6 +82,11 @@ app.operator.lifecycle.on("restart", () => {
   app.editor.server.keepRunning(); // the Code view's terminals, and the servers running in them, outlive the restart
   shutDown(RESTART_EXIT_CODE);
 });
+
+function startMessengers(): void {
+  messageAlerts.start();
+  app.replies.feeds.start();
+}
 
 /** The camera is used only while the web UI's Gestures switch is on. */
 function connectGestures(): void {

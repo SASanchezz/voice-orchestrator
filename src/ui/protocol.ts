@@ -2,7 +2,7 @@
 // and the page (browser) compile it; the server's payloads are typed against it, so the two can't drift apart unnoticed.
 
 import type { NoticeView } from "./notice-protocol.js";
-import type { PageTarget, ProjectTarget } from "./page-target.js";
+import type { NavigationTarget } from "./page-target.js";
 import type { SessionView } from "./session-protocol.js";
 import type { VoiceBoxNews } from "./voice-box-protocol.js";
 
@@ -15,8 +15,8 @@ export type GestureStateName = "on" | "off" | "unavailable";
 export type WakeWordStateName = "on" | "off" | "unavailable";
 /** queued: your spoken message waits for the assistant to finish its current reply. */
 export type VoiceInputName = "idle" | "recording" | "held" | "queued";
-/** VS Code for the Code view. off: not turned on in config; starting: its first run downloads it first. */
-export type EditorStateName = "off" | "starting" | "ready" | "failed";
+/** VS Code for the Code view. off: not in config; starting: its first run downloads it; restarting: asked from the page. */
+export type EditorStateName = "off" | "starting" | "ready" | "failed" | "restarting";
 
 /** The limits from config.yaml's budget, and what all sessions spent today. */
 export interface BudgetView {
@@ -197,7 +197,7 @@ export interface ServerEvents {
   chat_cleared: string;
   voice_box: VoiceBoxNews; // the recording a page's message box follows, however it was started
   /** A notice's button or a spoken "show me the code": open pages switch to this view. */
-  navigate: PageTarget | ProjectTarget;
+  navigate: NavigationTarget;
 }
 
 /** Every POST answers with a message, or an error. */

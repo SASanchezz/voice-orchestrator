@@ -12,7 +12,7 @@ npm run slack-login -- acme
 
 `acme` is your name for the workspace; you'll use the same name in config.
 
-1. Your browser opens Slack's "Create an app" page with the app already filled in: an internal app, user read scopes only, nothing that can post. Pick the workspace and click **Next › Create**.
+1. Your browser opens Slack's "Create an app" page with the app already filled in: an internal app, user read scopes only (DMs, group DMs and the channels you are in), nothing that can post. Pick the workspace and click **Next › Create**.
 2. Click **Install to Workspace › Allow**. If your workspace needs an admin's approval for apps, request it here.
 3. Under **OAuth & Permissions**, copy the **User OAuth Token** (`xoxp-…`) and paste it at the prompt.
 
@@ -29,7 +29,17 @@ messages:
       notify: [] # optional: DMs and channels to announce as messages arrive, e.g. [Bob, general]
 ```
 
-If you add `channels` later, run `npm run slack-login -- acme` again. The new link then asks for the channel read scopes too. Use **Reinstall to Workspace** and paste the new token.
+A token from before channels were always asked for can only list your DMs and group DMs. Run `npm run slack-login -- acme` again, use **Reinstall to Workspace** and paste the new token.
+
+### Replying from the app (optional)
+
+To have replies drafted and sent from the app (each one only after you approve it), add `send: true` to the workspace in `config/config.yaml`, then run `npm run slack-login -- acme` again:
+
+1. The link it opens describes the replying app: the read scopes plus `chat:write` (posts as you), with **Socket Mode** on and the user events `message.im` and `message.mpim` (plus `message.channels` and `message.groups` when channels are named), so new messages are pushed to the app as they arrive. You can also make these changes by hand in your existing app; then use **Reinstall to Workspace**.
+2. Paste the **User OAuth Token** (`xoxp-…`) as before.
+3. Under **Basic Information › App-Level Tokens**, click **Generate Token and Scopes**, add `connections:write`, generate it, and paste the `xapp-…` token at the second prompt. It only opens the connection that pushes new messages; it is checked with Slack and saved in the Keychain as `voice-orchestrator.slack-events`.
+
+The login says at the start whether it will ask for the app-level token. If your user token is already saved and you only need the app-level one, run `npm run slack-events-login -- acme`.
 
 ## Telegram (once)
 
@@ -57,6 +67,17 @@ With `chats: all`, every new Telegram message is sent to the summarizer on that 
 ## Check it
 
 Say "catch me up on Slack and Telegram". Say it again straight away and it should say nothing is new.
+
+## Browse every chat, write, and make tasks from messages
+
+Open **Messages › All chats**. It lists every Slack DM, group DM and channel you are in, and every Telegram chat, group and channel (except the ones under `exclude` and Telegram's own service account), read straight from the messengers. Pick a chat to see its latest 50 messages.
+
+- **Files:** photos, videos, voice notes and files show as chips under their message. Clicking one downloads it into `state/attachments` (kept a week) and shows it in the page: pictures and videos play there, and the saved path is shown. Files over 200 MB aren't downloaded.
+- **Make task** on a message opens the to-do dialog filled in with who wrote it, where, when and the text. The message's files are downloaded and listed under "Attached files:" so the worker can open them. Edit it, pick a project and save; **Run on…** in the to-do list hands it to a worker as usual.
+- **Several messages, one task:** press and hold a message (or tick the box that shows on hover) to start selecting, then click more. The bar under the chat says how many are selected; **Make one task** puts them all, with all their files, into one to-do item.
+- **Writing:** type in the box under the chat and press **Send** or ⌘↵. Only what you send this way is written; nothing is sent for you. Telegram works as soon as you're logged in. Slack needs `send: true` on the workspace (and a login after adding it), because posting as you needs `chat:write`.
+
+Nothing is marked read. Messages aren't stored; downloaded files stay a week in `state/attachments`. Characters you can't see are taken out of the shown text, and secrets are hidden. The Slack login also asks for `files:read` now, so log in again to open Slack files.
 
 ## Hear new messages as they arrive (optional)
 

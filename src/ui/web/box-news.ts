@@ -3,8 +3,13 @@
 
 import type { VoiceBoxEvent } from "../voice-box-protocol.js";
 import { onServerEvent } from "./api.js";
-import type { DictationBox } from "./dictation-box.js";
 import { PAGE_ID } from "./page-id.js";
+/** The parts of a message box a recording fills. */
+export interface SpokenBox {
+  follow(destination: string): void;
+  showWords(words: string): void;
+  endWith(words: string): void;
+}
 
 /** Where the box's spoken words go: `session`, or the assistant when there is none. */
 export interface SpokenTarget {
@@ -28,17 +33,23 @@ export class BoxNews {
   };
 
   constructor(
-    private box: DictationBox,
+    private box: SpokenBox,
     private target: SpokenTarget,
   ) {}
 
+  /** The session in front when the latest recording started, or none when it was the assistant. */
+  startedIn(): string | undefined {
+    return this.session;
+  }
+
+  /** Every recording meant for this page; the main page routes them itself, so a drafted reply can take one. */
   follow(events: EventSource): void {
     onServerEvent(events, "voice_box", ({ page, event }) => {
       if (page === PAGE_ID) this.receive(event);
     });
   }
 
-  private receive<K extends VoiceBoxEvent["kind"]>(event: Extract<VoiceBoxEvent, { kind: K }>): void {
+  receive<K extends VoiceBoxEvent["kind"]>(event: Extract<VoiceBoxEvent, { kind: K }>): void {
     const handle: (event: Extract<VoiceBoxEvent, { kind: K }>) => void = this.handlers[event.kind];
     handle(event);
   }
