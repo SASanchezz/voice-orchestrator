@@ -1,5 +1,5 @@
 import { BranchCompare } from "../review/branch-compare.js";
-import type { GitChanges } from "../review/git-changes.js";
+import type { FolderChanges } from "../review/folder-changes.js";
 import { GitDefinitions } from "../review/git-definitions.js";
 import { ProjectRepositories } from "../review/project-repositories.js";
 import { ChangesRoutes } from "../ui/server/changes-routes.js";
@@ -11,7 +11,7 @@ import type { UiAccess } from "../ui/server/ui-access.js";
 import type { UiLookup } from "../ui/server/ui-lookup.js";
 
 /** The Review view's reads: uncommitted changes, branch comparisons and where names are defined. */
-export function reviewRoutes(access: UiAccess, lookup: UiLookup, changes: GitChanges): ReviewRoutes {
+export function reviewRoutes(access: UiAccess, lookup: UiLookup, changes: FolderChanges): ReviewRoutes {
   const changesRoutes = new ChangesRoutes(access, lookup, changes);
   const definitions = new DefinitionRoutes(access, lookup, new GitDefinitions());
   const repositories = new RepositoryLookup(lookup, new ProjectRepositories());

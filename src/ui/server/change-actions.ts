@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { GitChanges } from "../../review/git-changes.js";
+import type { FolderChanges } from "../../review/folder-changes.js";
 import { requireChanged } from "./changes-routes.js";
 import type { UiLookup } from "./ui-lookup.js";
 
@@ -9,7 +9,7 @@ const stageBody = z.object({ path: z.string().min(1) });
 export class ChangeActions {
   constructor(
     private lookup: UiLookup,
-    private changes: GitChanges,
+    private changes: FolderChanges,
   ) {}
 
   async stage(project: string, body: unknown): Promise<string> {

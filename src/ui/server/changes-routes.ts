@@ -1,7 +1,8 @@
 import type { ServerResponse } from "node:http";
 import { z } from "zod";
 import { StaleFileError } from "../../review/file-lines.js";
-import type { GitChanges, LinesRequest } from "../../review/git-changes.js";
+import type { FolderChanges } from "../../review/folder-changes.js";
+import type { LinesRequest } from "../../review/git-changes.js";
 import { HTTP_STATUS, HttpError } from "./http-error.js";
 import type { UiAccess } from "./ui-access.js";
 import type { UiLookup } from "./ui-lookup.js";
@@ -19,7 +20,7 @@ export class ChangesRoutes {
   constructor(
     private access: UiAccess,
     private lookup: UiLookup,
-    private changes: GitChanges,
+    private changes: FolderChanges,
   ) {}
 
   async all(url: URL, res: ServerResponse): Promise<void> {
@@ -57,7 +58,7 @@ export class ChangesRoutes {
 }
 
 /** Only files git lists as changed can be read, so a request can't name anything else on this Mac. */
-export async function requireChanged(changes: GitChanges, folder: string, path: string): Promise<void> {
+export async function requireChanged(changes: FolderChanges, folder: string, path: string): Promise<void> {
   if (!(await changes.isChanged(folder, path))) throw new HttpError(HTTP_STATUS.notFound, `No changes in ${path}`);
 }
 

@@ -1,7 +1,9 @@
 import { resolve } from "node:path";
 import { spotlightFinder } from "../attachments/disk-file-finder.js";
 import { STATE_DIR } from "../config/paths.js";
+import { FolderChanges } from "../review/folder-changes.js";
 import { GitChanges } from "../review/git-changes.js";
+import { ProjectRepositories } from "../review/project-repositories.js";
 import { ChatFiles } from "../ui/chat-files.js";
 import { Feed } from "../ui/feed.js";
 import { ActionReporter } from "../ui/server/action-reporter.js";
@@ -82,7 +84,7 @@ export function buildUi(core: Core, neighbors: UiNeighbors, operator: OperatorPa
   const questionClicks = new QuestionActions(neighbors.questions.replies, waiting, reporter);
   const lookup = new UiLookup(core.projects, core.sessions, core.cfg);
   const { clients } = neighbors;
-  const changes = new GitChanges();
+  const changes = new FolderChanges(new GitChanges(), new ProjectRepositories());
   const clicks = { permissionClicks, questionClicks };
   const tasks = new TaskActions(neighbors.workers.inbox, lookup, reporter);
   const boxes = voiceBoxes(clients, neighbors.front, neighbors.devices.mic);
@@ -101,7 +103,7 @@ export interface UiSources {
   waiting: WaitingViews;
   lookup: UiLookup;
   clients: LiveClients;
-  changes: GitChanges;
+  changes: FolderChanges;
   tasks: TaskActions;
   boxes: VoiceBoxes;
   /** The Messages view's All chats. */

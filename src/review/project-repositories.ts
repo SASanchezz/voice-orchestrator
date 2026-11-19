@@ -15,22 +15,23 @@ export class ProjectRepositories {
   /** Sorted by folder; empty when the project's folder neither is nor holds a repository. */
   async list(projectFolder: string): Promise<RepositoryView[]> {
     const isRepository = Boolean(await repositoryRootOf(this.git, projectFolder));
-    const folders = isRepository ? [""] : this.nestedFolders(projectFolder);
+    const folders = isRepository ? [""] : this.nestedIn(projectFolder);
     return await Promise.all(folders.map((folder) => this.describe(projectFolder, folder)));
   }
 
-  /** Whether `folder` names a repository directly inside the project's folder, so nothing else can be reached. */
-  has(projectFolder: string, folder: string): boolean {
-    return ProjectRepositories.isPlainChild(folder) && existsSync(join(projectFolder, folder, ".git"));
-  }
-
-  private nestedFolders(projectFolder: string): string[] {
+  /** The folders of the repositories directly inside the project's folder, sorted. */
+  nestedIn(projectFolder: string): string[] {
     if (!existsSync(projectFolder)) return [];
     const entries = readdirSync(projectFolder, { withFileTypes: true }).filter((entry) => entry.isDirectory());
     return entries
       .map((entry) => entry.name)
       .filter((name) => this.has(projectFolder, name))
       .toSorted();
+  }
+
+  /** Whether `folder` names a repository directly inside the project's folder, so nothing else can be reached. */
+  has(projectFolder: string, folder: string): boolean {
+    return ProjectRepositories.isPlainChild(folder) && existsSync(join(projectFolder, folder, ".git"));
   }
 
   private async describe(projectFolder: string, folder: string): Promise<RepositoryView> {

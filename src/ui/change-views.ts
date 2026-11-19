@@ -22,6 +22,11 @@ export interface ProjectChangesView {
   files: ChangedFileView[];
   /** Changed files left out of `files` because there are too many to list. */
   moreFiles: number;
+  /**
+   * For a project folder that holds several repositories instead of being one: their folders. Each file's path then
+   * starts with its repository's folder.
+   */
+  repositories?: string[];
 }
 
 /** A git repository whose branches a project's Review can compare. */
