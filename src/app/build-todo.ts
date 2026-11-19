@@ -30,7 +30,6 @@ export function buildTodo(core: Core, intake: TaskIntake): TodoParts {
 /** A new session becomes its project's active one, as when opened from its tabs. */
 function taskSessions({ registry, sessions }: Core): TaskSessions {
   return {
-    activeSessionOf: (project) => registry.activeSession(project).id,
     openSessionIn: (project) => registry.createSession(project).id,
     projectOf: (sessionId) => sessions.session(sessionId).project,
   };

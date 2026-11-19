@@ -17,17 +17,14 @@ class RecordingStarter implements TaskStarter {
   }
 }
 
-/** Each project starts with session "<project>-1"; a new session takes the next number. */
+/** Each project already has session "<project>-1"; a new session takes the next number. */
 class NumberedSessions implements TaskSessions {
   private opened = new Map<string, number>();
 
-  activeSessionOf(project: string): string {
-    return `${project}-${this.opened.get(project) ?? 1}`;
-  }
-
   openSessionIn(project: string): string {
-    this.opened.set(project, (this.opened.get(project) ?? 1) + 1);
-    return this.activeSessionOf(project);
+    const next = (this.opened.get(project) ?? 1) + 1;
+    this.opened.set(project, next);
+    return `${project}-${next}`;
   }
 
   projectOf(sessionId: string): string {
@@ -54,12 +51,12 @@ function sessionsOfRuns(items: TodoItems): string[] {
   return items.find(1).runs.map((run) => run.sessionId);
 }
 
-test("todo send: the item goes to its project's active session as its title, then its description", () => {
+test("todo send: the item goes to a new session in its project as its title, then its description", () => {
   const items = emptyList();
   items.add({ title: "Fix the footer", description: "Links overlap on mobile.", project: "webshop" });
   const { sender, tasks } = senderWith(items);
   sender.send(1);
-  assert.deepEqual(tasks.started, [["webshop-1", "Fix the footer\n\nLinks overlap on mobile."]]);
+  assert.deepEqual(tasks.started, [["webshop-2", "Fix the footer\n\nLinks overlap on mobile."]]);
 });
 
 test("todo send: an item without a description goes as its title alone", () => {
@@ -67,7 +64,7 @@ test("todo send: an item without a description goes as its title alone", () => {
   items.add({ title: "Bump the version", description: "", project: "webshop" });
   const { sender, tasks } = senderWith(items);
   sender.send(1);
-  assert.deepEqual(tasks.started, [["webshop-1", "Bump the version"]]);
+  assert.deepEqual(tasks.started, [["webshop-2", "Bump the version"]]);
 });
 
 test("todo send: the item stays open", () => {
@@ -86,7 +83,7 @@ test("todo send: an item without a project can go to a project named for it", ()
   const items = emptyList();
   items.add({ title: "Call the bank", description: "" });
   senderWith(items).sender.send(1, "admin");
-  assert.deepEqual(sessionsOfRuns(items), ["admin-1"]);
+  assert.deepEqual(sessionsOfRuns(items), ["admin-2"]);
 });
 
 test("todo send: the same item runs on several projects, each run remembered", () => {
@@ -94,15 +91,15 @@ test("todo send: the same item runs on several projects, each run remembered", (
   const { sender } = senderWith(items);
   sender.send(1);
   sender.send(1, "blog");
-  assert.deepEqual(sessionsOfRuns(items), ["webshop-1", "blog-1"]);
+  assert.deepEqual(sessionsOfRuns(items), ["webshop-2", "blog-2"]);
 });
 
-test("todo send: a new session runs beside the project's active one", () => {
+test("todo send: every send opens another new session in the project", () => {
   const items = listWithFooterItem();
   const { sender } = senderWith(items);
   sender.send(1);
-  sender.sendToNewSession(1);
-  assert.deepEqual(sessionsOfRuns(items), ["webshop-1", "webshop-2"]);
+  sender.send(1);
+  assert.deepEqual(sessionsOfRuns(items), ["webshop-2", "webshop-3"]);
 });
 
 test("todo send: a run names the project of the session it went to", () => {

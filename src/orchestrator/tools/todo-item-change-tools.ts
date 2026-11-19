@@ -50,23 +50,19 @@ export function restoreTodoItem(trash: TodoTrash): OperatorTool {
 const sendArgs = {
   item: todoItemArg,
   project: z.string().optional().describe("The project to run it on; the item's own project if left out"),
-  newSession: z
-    .boolean()
-    .optional()
-    .describe("true: open a new session for it, so it runs beside the project's busy session instead of queueing"),
 };
 
 export function sendTodoItem(items: TodoItems, sender: TodoItemSender, cfg: AppConfig): OperatorTool {
   return defineTool({
     name: "send_todo_item",
     description:
-      "Send a to-do item to a project's worker as a task (its title and description), like run_task. The item stays open. " +
-      "It may run on several projects, and several items on one project, each in its own session.",
+      "Send a to-do item to a project's worker as a task (its title and description), always in a new session. " +
+      "The item stays open. It may run on several projects, and several items on one project, each in its own session.",
     args: sendArgs,
-    run: ({ item, project, newSession }) => {
+    run: ({ item, project }) => {
       const { id } = pickTodoItem(items.list(), item);
       const chosen = project && needProject(cfg, project);
-      return text(newSession ? sender.sendToNewSession(id, chosen) : sender.send(id, chosen));
+      return text(sender.send(id, chosen));
     },
   });
 }

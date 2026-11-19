@@ -74,7 +74,7 @@ function itemActions(item: TodoItemView): HTMLDivElement {
   return el("div", { class: "todo-actions" }, ...sendControls(item), edit, remove);
 }
 
-/** An open item goes to its project's active session in one click, or anywhere else from "Run on…". */
+/** An open item goes to a new session in its project in one click, or anywhere else from "Run on…". */
 function sendControls(item: TodoItemView): HTMLElement[] {
   if (item.done) return [];
   return [...sendButton(item), runPicker(item)];
@@ -83,6 +83,6 @@ function sendControls(item: TodoItemView): HTMLElement[] {
 function sendButton(item: TodoItemView): HTMLButtonElement[] {
   if (!item.project) return [];
   const send = button(`Send to ${item.project}`, "ghost", () => void act(`/api/todo-items/${item.id}/send`));
-  send.title = "Give this item to the project's active session as a task (title and description); it stays open here";
+  send.title = "Give this item to a new session in the project as a task (title and description); it stays open here";
   return [send];
 }

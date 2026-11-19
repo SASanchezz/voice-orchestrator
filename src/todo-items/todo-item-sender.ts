@@ -9,15 +9,15 @@ export interface TaskStarter {
 
 /** The worker sessions an item can be sent to. */
 export interface TaskSessions {
-  activeSessionOf(project: string): string;
   /** Opens a fresh session in the project, so its task runs beside the project's busy ones; returns its id. */
   openSessionIn(project: string): string;
   projectOf(sessionId: string): string;
 }
 
 /**
- * Hands an item to a worker as a task: to its own project or any other, in a session of your choice, so one item can
- * run on several projects and several items on one project at once. The item stays open until you tick it off.
+ * Hands an item to a worker as a task: to its own project or any other, always in a new session unless you pick an open
+ * one, so one item can run on several projects and several items on one project at once. The item stays open until you
+ * tick it off.
  */
 export class TodoItemSender {
   constructor(
@@ -33,13 +33,8 @@ export class TodoItemSender {
     return run;
   }
 
-  /** To the active session of the project given, or else of the item's own project. */
+  /** To a new session in the project given, or else in the item's own project. */
   send(id: number, project?: string): string {
-    const item = this.items.find(id);
-    return this.runIn(item, this.sessions.activeSessionOf(projectFor(item, project)));
-  }
-
-  sendToNewSession(id: number, project?: string): string {
     const item = this.items.find(id);
     return this.runIn(item, this.sessions.openSessionIn(projectFor(item, project)));
   }

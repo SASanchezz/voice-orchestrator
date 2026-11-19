@@ -63,7 +63,7 @@ export class TodoItemDeletions {
   }
 }
 
-/** Sending an item to a worker as a task with one click: its project's active session, any open session, or a new one. */
+/** Sending an item to a worker as a task with one click: a new session in its own or any project, or an open session. */
 export class TodoItemSends {
   constructor(
     private sender: TodoItemSender,
@@ -84,7 +84,7 @@ export class TodoItemSends {
   sendToNewSession(id: number, body: unknown): string {
     const { project } = todoProjectBody.parse(body);
     this.lookup.requireProject(project);
-    return this.reportSent(id, this.sender.sendToNewSession(id, project));
+    return this.reportSent(id, this.sender.send(id, project));
   }
 
   private reportSent(id: number, message: string): string {

@@ -98,7 +98,7 @@ test("todo items: an item without a project can't be sent", async () => {
   assert.notEqual(res.status, 200);
 });
 
-test("todo items: one click sends an item to its project's worker as a task", async () => {
+test("todo items: one click sends an item to a new session in its project", async () => {
   await uiPost("/api/todo-items", { title: "Echo from the list", description: "run: echo listed", project: "dbadmin" });
   await uiPost(`/api/todo-items/${idOf("Echo from the list")}/send`, {});
   await chatHas(app.core.registry.activeSession("dbadmin").id, /^Echo from the list\n\nrun: echo listed$/);
