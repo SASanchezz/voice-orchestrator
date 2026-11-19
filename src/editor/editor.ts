@@ -9,8 +9,14 @@ export interface Editor {
   keepRunning(): void;
 }
 
+/** The Code view's VS Code, which you can also restart from the web UI when it misbehaves. */
+export interface RestartableEditor extends Editor {
+  /** A new server in place of the running one; its terminals and what runs in them stop. */
+  restart(): Promise<void>;
+}
+
 /** `editor.enabled` is off: there is no Code view. */
-export class OffEditor implements Editor {
+export class OffEditor implements RestartableEditor {
   readonly status = "off";
 
   start(): void {}
@@ -18,4 +24,8 @@ export class OffEditor implements Editor {
   stop(): void {}
 
   keepRunning(): void {}
+
+  restart(): Promise<void> {
+    return Promise.reject(new Error("The Code view is off: editor.enabled in config/config.yaml."));
+  }
 }

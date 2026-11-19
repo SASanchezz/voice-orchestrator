@@ -15,6 +15,7 @@ const EDITOR_NOTICES: Record<EditorStateName, string> = {
   starting: "Starting VS Code… (its first run downloads it)",
   ready: "",
   failed: "VS Code stopped. Starting it again…",
+  restarting: "Restarting VS Code…",
 };
 
 /** Each project's VS Code frame, by project name. */
@@ -28,17 +29,26 @@ export function renderCodeView(): void {
   layout.classList.toggle("project-mode", project !== undefined);
   layout.classList.toggle("ide-mode", shown !== undefined);
   dropRemovedProjects();
+  if (store.state.editor === "restarting") dropAllFrames();
   renderNotice(shown);
   showFrame(shown);
 }
 
 function dropRemovedProjects(): void {
   const names = new Set(store.state.projects.map((p) => p.name));
-  for (const [name, frame] of frames) {
-    if (names.has(name)) continue;
-    frame.remove();
-    frames.delete(name);
+  for (const name of frames.keys()) {
+    if (!names.has(name)) dropFrame(name);
   }
+}
+
+/** A new VS Code server can't take over the old one's windows, so they are made again once it is ready. */
+function dropAllFrames(): void {
+  for (const name of frames.keys()) dropFrame(name);
+}
+
+function dropFrame(name: string): void {
+  frames.get(name)?.remove();
+  frames.delete(name);
 }
 
 function renderNotice(project: ProjectView | undefined): void {
