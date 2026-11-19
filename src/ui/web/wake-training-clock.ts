@@ -2,10 +2,9 @@
 // status line, ticking every second.
 
 import type { WakeTrainingView } from "../protocol.js";
+import { elapsedSince } from "./elapsed.js";
 
 const TICK_MS = 1000;
-const MS_PER_SECOND = 1000;
-const SECONDS_PER_MINUTE = 60;
 const FIRST_STEP = "Starting…";
 
 export class TrainingClock {
@@ -29,14 +28,6 @@ export class TrainingClock {
   private render(): void {
     if (!this.training) return;
     const { startedAt, step } = this.training;
-    this.show(`Training for ${TrainingClock.elapsed(startedAt)}: ${step || FIRST_STEP}`);
-  }
-
-  /** As m:ss. */
-  private static elapsed(startedAt: number): string {
-    const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / MS_PER_SECOND));
-    const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
-    const rest = String(seconds % SECONDS_PER_MINUTE).padStart(2, "0");
-    return `${minutes}:${rest}`;
+    this.show(`Training for ${elapsedSince(startedAt)}: ${step || FIRST_STEP}`);
   }
 }

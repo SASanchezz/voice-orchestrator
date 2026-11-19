@@ -6,7 +6,7 @@ import type { WaitingViews } from "./waiting-views.js";
 /** Everything the page shows that can change at any moment. */
 export class UiStateView {
   constructor(
-    private lookup: UiLookup,
+    private lookup: Pick<UiLookup, "projectViews">,
     private waiting: WaitingViews,
     private voice: VoiceViews,
   ) {}

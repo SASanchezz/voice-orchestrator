@@ -33,4 +33,22 @@ export interface SessionView {
   /** Its model's context window, once a result reported it. */
   contextWindow?: number;
   history: TaskRecordView[];
+  /** Commands and helpers the worker left running while it waits for them to report back. */
+  backgroundJobs?: BackgroundJobView[];
+}
+
+/** A command or helper agent a worker runs in the background; its session stays busy until it reports back. */
+export interface BackgroundJobView {
+  description: string;
+  /** Epoch ms when the page first heard of it. */
+  startedAt: number;
+  /** The last line it printed, or a helper's latest step; empty until there is one. */
+  step: string;
+}
+
+/** A closed session the page can reopen: its Claude conversation, title and ISO time it was last active. */
+export interface ClosedSessionView {
+  claudeSessionId: string;
+  title: string;
+  lastActive: string;
 }

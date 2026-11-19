@@ -1,0 +1,77 @@
+/* ----------------------------------------------------------- background jobs */
+
+/* Just above the message box: what the shown session's worker still runs after its reply. */
+.background-jobs {
+  list-style: none;
+  margin: 0 0 6px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.background-jobs[hidden] {
+  display: none;
+}
+.background-job {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+/* A stopwatch first: its hand sweeps once a minute, and the time beside it is easy to read at a glance. */
+.stopwatch {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px 1px 4px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.stopwatch-face {
+  width: 16px;
+  height: 16px;
+}
+.stopwatch-dial {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+.stopwatch-crown,
+.stopwatch-pin {
+  fill: currentColor;
+}
+.stopwatch-hand {
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.stopwatch-time {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.background-job-name {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+/* The last line it printed: one line, cut short; the whole line is in the tooltip. */
+.background-job-step {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  color: var(--muted);
+}
