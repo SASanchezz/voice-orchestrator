@@ -16,6 +16,10 @@
     <link rel="stylesheet" href="/styles/tabs.css" />
     <link rel="stylesheet" href="/styles/strip.css" />
     <link rel="stylesheet" href="/styles/review.css" />
+    <link rel="stylesheet" href="/styles/messages.css" />
+    <link rel="stylesheet" href="/styles/chat-browser.css" />
+    <link rel="stylesheet" href="/styles/drafting-toggle.css" />
+    <link rel="stylesheet" href="/styles/reply-checkup.css" />
     <link rel="stylesheet" href="/styles/split-diff.css" />
     <link rel="stylesheet" href="/styles/approvals.css" />
     <link rel="stylesheet" href="/styles/questions.css" />
@@ -31,6 +35,7 @@
     <link rel="stylesheet" href="/styles/budget.css" />
     <link rel="stylesheet" href="/styles/todo.css" />
     <link rel="stylesheet" href="/styles/force-stop.css" />
+    <link rel="stylesheet" href="/styles/background-jobs.css" />
     <link rel="stylesheet" href="/styles/code.css" />
     <link rel="stylesheet" href="/styles/code-roles.css" />
     <link rel="stylesheet" href="/styles/resize.css" />
@@ -50,6 +55,14 @@
         title="Every project's changes in one place"
       >
         Review
+      </button>
+      <button
+        type="button"
+        id="messages-button"
+        class="intent-messages review-button messages-button"
+        title="Drafted Slack and Telegram replies waiting for you"
+      >
+        Messages
       </button>
       <div class="segmented" id="view-mode" role="radiogroup" aria-label="View" hidden>
         <button data-value="code" title="Only the code; the chat slides over it when you ask">Code</button>
@@ -147,6 +160,15 @@
           >
             Restart
           </button>
+          <button
+            type="button"
+            id="editor-restart-button"
+            class="ghost"
+            title="Start a new VS Code server for the Code view, when its Markdown preview or other extensions stop working"
+            hidden
+          >
+            Restart VS Code
+          </button>
         </div>
       </details>
     </header>
@@ -165,6 +187,63 @@
           <section id="definition-peek" class="definition-peek" aria-label="Definitions" hidden></section>
         </section>
 
+        <section id="messages-panel" class="messages" aria-label="Drafted replies" hidden>
+          <aside class="reply-inbox">
+            <header class="reply-inbox-header">
+              <div class="reply-inbox-title">
+                <h2>Replies <span id="reply-count" class="reply-count"></span></h2>
+                <button type="button" id="drafting-toggle" class="drafting-toggle" aria-pressed="true">
+                  Drafting on
+                </button>
+                <button type="button" class="reply-setup-status" data-state="checking">Checking setup…</button>
+                <button type="button" class="all-chats-button">All chats</button>
+              </div>
+              <p>Nothing is sent until you press Send or say “confirm send”.</p>
+            </header>
+            <div id="reply-rows" class="reply-rows" role="listbox" aria-label="Drafted replies"></div>
+            <footer class="reply-keys">
+              <span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>E</kbd> edit</span
+              ><span><kbd>⌘</kbd><kbd>↵</kbd> send</span>
+            </footer>
+          </aside>
+          <div id="reply-detail" class="reply-detail-pane"></div>
+          <div class="no-replies">
+            <span class="no-replies-mark" aria-hidden="true">✓</span>
+            <h2>You're all caught up</h2>
+            <p>New replies are drafted as messages arrive, with a small pop-up to tell you.</p>
+            <button type="button" class="reply-setup-status" data-state="checking">Checking setup…</button>
+            <button type="button" class="all-chats-button">All chats</button>
+          </div>
+          <p id="reply-toast" class="reply-toast" role="status" hidden></p>
+          <section id="chat-browser" class="chat-browser" aria-label="All chats" hidden>
+            <aside class="chat-browser-list">
+              <header class="chat-browser-header">
+                <button type="button" id="chat-browser-back" class="chat-browser-back">← Replies</button>
+                <h2>All chats</h2>
+                <button type="button" id="chat-browser-refresh" class="chat-browser-refresh" title="Read again">
+                  ↻
+                </button>
+              </header>
+              <input id="chat-browser-filter" class="chat-browser-filter" type="search" placeholder="Find a chat" />
+              <div id="chat-browser-sources" class="chat-browser-sources"></div>
+            </aside>
+            <div class="chat-browser-chat">
+              <h3 id="browsed-chat-title" class="browsed-chat-title"></h3>
+              <div id="browsed-messages" class="browsed-messages"></div>
+              <div id="message-selection-bar" class="message-selection-bar" hidden>
+                <span id="message-selection-count"></span>
+                <button type="button" id="selection-make-task" class="make-task-button">Make one task</button>
+                <button type="button" id="selection-clear" class="chat-browser-back">Clear</button>
+              </div>
+              <form id="chat-composer" class="chat-composer" hidden>
+                <textarea id="chat-composer-input" rows="2" placeholder="Write a message (⌘↵ sends)"></textarea>
+                <button type="submit" class="chat-send-button">Send</button>
+              </form>
+              <p id="chat-composer-hint" class="chat-browser-note" hidden></p>
+            </div>
+          </section>
+        </section>
+
         <div id="chat-panel" class="chat-panel">
           <nav id="session-tabs" class="session-tabs" role="tablist" aria-label="Sessions" hidden></nav>
 
@@ -174,6 +253,7 @@
             <ol id="feed" class="feed" aria-live="polite"></ol>
           </section>
 
+          <p id="by-path-notice" class="by-path-notice" role="status" hidden></p>
           <ul id="attachment-list" class="attachment-list" aria-label="Attached files" hidden></ul>
 
           <form id="composer" class="composer">
@@ -181,6 +261,7 @@
               <textarea
                 id="composer-input"
                 rows="1"
+                autocomplete="off"
                 placeholder="Message the orchestrator…"
                 title="Enter sends, Shift+Enter adds a line"
               ></textarea>
@@ -270,6 +351,21 @@
       <button type="button" id="chat-toggle" class="ghost chat-toggle" hidden>Chat</button>
     </footer>
 
+    <dialog id="reply-checkup-dialog" class="confirm-dialog reply-checkup-dialog" aria-labelledby="reply-checkup-title">
+      <form method="dialog">
+        <h2 id="reply-checkup-title">Is replying set up?</h2>
+        <p class="muted">
+          Each check is tried now with Slack and Telegram; the live counts are since the app started. Tokens are never
+          shown.
+        </p>
+        <div id="reply-checkup-results" class="reply-checkup-results"></div>
+        <div class="dialog-actions">
+          <button type="button" id="reply-checkup-again" class="ghost">Check again</button>
+          <button value="close" class="intent-dismiss" title="Close (Esc)">Close</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="restart-dialog" class="confirm-dialog">
       <form method="dialog">
         <h2>Restart the orchestrator?</h2>
@@ -277,6 +373,19 @@
         <div class="dialog-actions">
           <button value="cancel" class="intent-dismiss" title="Cancel (Esc)">Cancel</button>
           <button value="confirm" class="danger">Restart</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="editor-restart-dialog" class="confirm-dialog">
+      <form method="dialog">
+        <h2>Restart VS Code?</h2>
+        <p class="explanation">
+          The Code view's terminals close and whatever runs in them stops. Save your files first.
+        </p>
+        <div class="dialog-actions">
+          <button value="cancel" class="intent-dismiss" title="Cancel (Esc)">Cancel</button>
+          <button value="confirm" class="danger">Restart VS Code</button>
         </div>
       </form>
     </dialog>

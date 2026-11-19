@@ -1,9 +1,12 @@
+import type { RestartableEditor } from "../../editor/editor.js";
 import type { VoiceCancel } from "../../orchestrator/conversation/voice-cancel.js";
 import type { PermissionPolicy } from "../../permissions/permission-policy.js";
 import type { GestureControl } from "../../sensors/gesture-switch.js";
 import type { WakeWordControl } from "../../wake/wake-switch.js";
 import type { WakeTrainingControl } from "../../wake/wake-training.js";
 import { wakeTrainingRoutes } from "./wake-training-routes.js";
+import { editorRoutes } from "./editor-routes.js";
+import { voiceRoutes } from "./voice-routes.js";
 import type { AppActions } from "./app-actions.js";
 import type { AssistantActions } from "./assistant-actions.js";
 import type { AttachedText } from "./attached-text.js";
@@ -14,9 +17,12 @@ import type { FrontSessionActions } from "./front-session-actions.js";
 import type { HandoffActions } from "./handoff-actions.js";
 import type { LinkActions } from "./link-actions.js";
 import { MAX_ATTACHED_BODY_BYTES } from "./attachment-body.js";
+import type { DraftingActions } from "./drafting-actions.js";
 import type { PermissionActions } from "./permission-actions.js";
 import type { QuestionActions } from "./question-actions.js";
 import type { QueueActions } from "./queue-actions.js";
+import type { ReplyActions } from "./reply-routes.js";
+import { messageViewRoutes } from "./message-view-routes.js";
 import type { NoticeActions } from "../notices/notice-actions.js";
 import type { ShownSessions } from "../notices/shown-sessions.js";
 import {
@@ -30,8 +36,10 @@ import {
 import type { SessionActions } from "./session-actions.js";
 import type { SessionModelActions } from "./session-model-actions.js";
 import type { SessionSweepActions } from "./session-sweep-actions.js";
+import type { ReopenActions } from "./reopen-actions.js";
 import type { TabActions } from "./tab-actions.js";
 import type { TaskActions } from "./task-actions.js";
+import type { ChatSendActions } from "./chat-send-actions.js";
 import { todoItemRoutes, type TodoItemHandlers } from "./todo-item-routes.js";
 import type { VoiceOfferActions } from "./voice-offer-actions.js";
 
@@ -51,6 +59,8 @@ export interface RouteHandlers {
   /** Saves the files attached to a message or task and lists them after its text. */
   attached: AttachedText;
   changes: ChangeActions;
+  /** The Code view's VS Code, restarted by hand when it misbehaves. */
+  editor: RestartableEditor;
   /** The mic buttons, and the page your words go into while you talk. */
   mic: MicActions;
   /** Your spoken words, sent to the assistant from a page's message box. */
@@ -69,7 +79,13 @@ export interface RouteHandlers {
   permissions: PermissionActions;
   questions: QuestionActions;
   queue: QueueActions;
+  replies: ReplyActions;
+  /** What you write in the Messages view's All chats. */
+  chats: ChatSendActions;
+  /** Whether new messages get drafted replies. */
+  drafting: DraftingActions;
   tabs: TabActions;
+  reopens: ReopenActions;
   tasks: TaskActions;
   todoItems: TodoItemHandlers;
   sessions: SessionActions;
@@ -89,10 +105,10 @@ export class RouteTable {
   private attachedRoutes: Route[];
 
   constructor(h: RouteHandlers) {
-    const sendMessage: Route = (b) => h.assistant.sendMessage(h.attached.message(b));
-    const sendSpoken: Route = (b) => h.spoken.receive(h.attached.message(b));
-    const runTask: Route = (b, m) => h.tasks.runTask(m[1], h.attached.task(b));
-    const attachToVoice: Route = (b, m) => h.voiceOffers.sendWithFiles(m[1], h.attached.savedFiles(b));
+    const sendMessage: Route = async (b) => h.assistant.sendMessage(await h.attached.message(b));
+    const sendSpoken: Route = async (b) => h.spoken.receive(await h.attached.message(b));
+    const runTask: Route = async (b, m) => h.tasks.runTask(m[1], await h.attached.task(b));
+    const attachToVoice: Route = async (b, m) => h.voiceOffers.sendWithFiles(m[1], await h.attached.savedFiles(b));
     this.attachedRoutes = [sendMessage, sendSpoken, runTask, attachToVoice];
     this.routes = [
       [/^\/api\/message$/, sendMessage],
@@ -102,6 +118,7 @@ export class RouteTable {
       ...fileFreeRoutes(h),
       [/^\/api\/projects\/([^/]+)\/changes\/stage$/, (b, m) => h.changes.stage(decodeURIComponent(m[1]), b)],
       ...todoItemRoutes(h.todoItems),
+      ...messageViewRoutes(h),
     ];
   }
 
@@ -136,6 +153,7 @@ function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
     ...noticeRoutes(h),
     ...voiceRoutes(h),
     ...wakeTrainingRoutes(h.wakeTraining),
+    ...editorRoutes(h.editor),
   ];
 }
 
@@ -144,6 +162,10 @@ function sessionRoutes(h: RouteHandlers): [RegExp, Route][] {
   return [
     [/^\/api\/projects\/([^/]+)\/sessions$/, (_b, m) => h.tabs.createSession(decodeURIComponent(m[1]))],
     [/^\/api\/projects\/([^/]+)\/sessions\/close-all$/, (_b, m) => h.sweeps.closeAll(decodeURIComponent(m[1]))],
+    [
+      /^\/api\/projects\/([^/]+)\/closed-sessions\/([\w-]+)\/reopen$/,
+      (_b, m) => h.reopens.reopenSession(decodeURIComponent(m[1]), m[2]),
+    ],
     [/^\/api\/sessions\/([\w-]+)\/activate$/, (_b, m) => h.tabs.activateSession(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/close$/, (_b, m) => h.sessions.closeSession(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/close-others$/, (_b, m) => h.sweeps.closeOthers(m[1])],
@@ -175,23 +197,4 @@ function noteShownSession(shownSessions: ShownSessions, body: unknown): string {
   if (session) shownSessions.pageShows(page, session);
   else shownSessions.pageShowsNoSession(page);
   return "Noted.";
-}
-
-/**
- * The mic buttons and the page you are using, discarding your voice message, whether one waiting goes with the draft's
- * files, and the project tab it goes to. Stopping a recording to edit it brings your words back to the page.
- */
-function voiceRoutes(h: RouteHandlers): [RegExp, Route][] {
-  return [
-    [/^\/api\/dictation\/start$/, (b) => h.mic.start(b)],
-    [/^\/api\/dictation\/cancel$/, () => h.mic.cancel()],
-    [/^\/api\/dictation\/finish$/, () => h.mic.keep()],
-    [/^\/api\/page-used$/, (b) => h.mic.pageUsed(b)],
-    [/^\/api\/page-hidden$/, (b) => h.mic.pageHidden(b)],
-    [/^\/api\/voice\/discard$/, () => h.voice.discardLatest()],
-    [/^\/api\/front-session$/, (b) => h.frontSession.note(b)],
-    [/^\/api\/draft$/, (b) => h.voiceOffers.draftChanged(b)],
-    [/^\/api\/voice-offers\/(\w+)\/keep$/, (_b, m) => h.voiceOffers.keepInDraft(m[1])],
-    [/^\/api\/voice-offers\/(\w+)\/discard$/, (_b, m) => h.voiceOffers.discard(m[1])],
-  ];
 }

@@ -11,13 +11,18 @@ import { HandoffWriter } from "../workers/handoff-writer.js";
 import { LimitParking } from "../workers/limit-parking.js";
 import { LimitResumer } from "../workers/limit-resumer.js";
 import { QuietResume } from "../workers/quiet-resume.js";
+import { ClosedConversations } from "../workers/closed-conversations.js";
 import { SessionControl } from "../workers/session-control.js";
 import { SessionHandoff } from "../workers/session-handoff.js";
 import { SessionModels } from "../workers/session-models.js";
+import { SessionReopener } from "../workers/session-reopener.js";
 import { QueuedTasks } from "../workers/queued-tasks.js";
 import { SessionQueue } from "../workers/session-queue.js";
+import { SessionInbox } from "../workers/session-inbox.js";
 import { SessionRuns } from "../workers/session-runs.js";
 import { SessionSuccessor } from "../workers/session-successor.js";
+import { SideQuestionWriter } from "../workers/side-question-writer.js";
+import { SideQuestions } from "../workers/side-questions.js";
 import { TaskAnnouncer } from "../workers/task-announcer.js";
 import { TaskIntake } from "../workers/task-intake.js";
 import { TaskLauncher } from "../workers/task-launcher.js";
@@ -26,6 +31,8 @@ import { TaskOutcomes } from "../workers/task-outcomes.js";
 import { TaskRecorder } from "../workers/task-recorder.js";
 import { TaskRunner } from "../workers/task-runner.js";
 import { TaskStream } from "../workers/task-stream.js";
+import { BackgroundJobs } from "../workers/background-jobs.js";
+import { JobWatchingStream } from "../workers/job-watching-stream.js";
 import type { TaskTopics } from "../workers/task-topics.js";
 import { TodoRunner } from "../workers/todo-runner.js";
 import type { ToolCallGate } from "../workers/tool-call-gate.js";
@@ -39,7 +46,12 @@ import type { Core } from "./core.js";
 export interface WorkerParts {
   chat: WorkerChat;
   intake: TaskIntake;
+  /** Tasks and /btw side questions you send a session yourself. */
+  inbox: SessionInbox;
   control: SessionControl;
+  /** Closed sessions Claude Code still keeps, and bringing one back. */
+  closedSessions: ClosedConversations;
+  reopener: SessionReopener;
   /** The model each session's worker runs on. */
   models: SessionModels;
   /** Sessions' queued instructions, to list them or drop one. */
@@ -53,6 +65,8 @@ export interface WorkerParts {
   spend: DailySpend;
   /** The todo folder itself, for tests. */
   todo: TodoList;
+  /** The background commands and helpers each session waits on. */
+  backgroundJobs: BackgroundJobs;
 }
 
 /** What the worker classes share. */
@@ -64,6 +78,7 @@ interface WorkerKit {
   limits: UsageLimits;
   budget: BudgetParts;
   topics: TaskTopics;
+  backgroundJobs: BackgroundJobs;
 }
 
 /** The models workers reach: Claude Code for tasks, and whatever names a finished task's topic. */
@@ -77,15 +92,15 @@ export function buildWorkers(core: Core, gate: ToolCallGate, { query, topics }: 
   const runner = taskRunner(core, kit, new TaskLauncher(kit.options, gate, query));
   const queue = new SessionQueue(core.sessions);
   const runs = new SessionRuns(queue, kit.directory, runner);
-  const intake = new TaskIntake(kit.directory, runs, kit.chat);
+  const sending = sendingParts(kit, query, runs);
   const writer = new HandoffWriter(kit.options, query, kit.budget.ledger);
   const successor = new SessionSuccessor(core.registry, core.sessions, kit.chat);
   return {
     chat: kit.chat,
-    intake,
+    ...sending,
     ...sessionParts(core, kit, runs),
     queuedTasks: new QueuedTasks(queue, kit.directory, kit.chat),
-    ...todoParts(core, kit, intake),
+    ...todoParts(core, kit, sending.intake),
     summarizer: new ChangeSummarizer(kit.options, query),
     handoff: new SessionHandoff(writer, runs, successor),
     spend: kit.budget.daily,
@@ -93,15 +108,28 @@ export function buildWorkers(core: Core, gate: ToolCallGate, { query, topics }: 
   };
 }
 
-/** Stopping, closing and clearing sessions, and the model each one's worker runs on. */
+/** Tasks for sessions, and /btw questions answered in a fork of the session's conversation, beside its running task. */
+function sendingParts(kit: WorkerKit, query: QueryFn, runs: SessionRuns): Pick<WorkerParts, "intake" | "inbox"> {
+  const intake = new TaskIntake(kit.directory, runs, kit.chat);
+  const writer = new SideQuestionWriter(kit.options, query, kit.budget.ledger);
+  return { intake, inbox: new SessionInbox(intake, new SideQuestions(kit.directory, writer, kit.chat)) };
+}
+
+/**
+ * Stopping, closing, reopening and clearing sessions, the model each one's worker runs on, and what it runs in the
+ * background.
+ */
 function sessionParts(
-  { registry, sessions }: Core,
+  { cfg, registry, projects, sessions }: Core,
   kit: WorkerKit,
   runs: SessionRuns,
-): Pick<WorkerParts, "control" | "models"> {
+): Pick<WorkerParts, "control" | "closedSessions" | "reopener" | "models" | "backgroundJobs"> {
   return {
     control: new SessionControl(registry, kit.directory, runs),
+    closedSessions: new ClosedConversations(cfg, projects, sessions),
+    reopener: new SessionReopener(registry, sessions, kit.chat),
     models: new SessionModels(sessions, kit.directory, kit.chat),
+    backgroundJobs: kit.backgroundJobs,
   };
 }
 
@@ -123,16 +151,18 @@ function workerKit(core: Core, topics: TaskTopics): WorkerKit {
   const options = new WorkerOptions(cfg, directory, workerRules);
   const chat = new WorkerChat();
   const limits = new UsageLimits(todo, events);
-  return { chat, directory, options, todo, limits, budget: buildBudget(core, chat), topics };
+  const backgroundJobs = new BackgroundJobs();
+  return { chat, directory, options, todo, limits, budget: buildBudget(core, chat), topics, backgroundJobs };
 }
 
 function taskRunner({ sessions, history, events }: Core, kit: WorkerKit, launcher: TaskLauncher): TaskRunner {
-  const { chat, directory, limits, budget, topics } = kit;
+  const { chat, directory, limits, budget, topics, backgroundJobs } = kit;
   const outcomes = new TaskOutcomes(
     new TaskRecorder(sessions, history, budget.ledger),
     new TaskAnnouncer(events, chat, new TaskNames(directory, topics)),
     new LimitParking(limits, sessions, chat),
   );
   const stream = new TaskStream(sessions, new WorkerActivity(sessions, chat), outcomes);
-  return new TaskRunner(launcher, new MeteredStream(stream, budget.meter), outcomes);
+  const watched = new JobWatchingStream(stream, backgroundJobs);
+  return new TaskRunner(launcher, new MeteredStream(watched, budget.meter), outcomes);
 }

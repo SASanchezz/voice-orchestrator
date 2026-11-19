@@ -12,7 +12,7 @@ const idsOfDbadmin = (): string[] => core.sessions.sessionsOf("dbadmin").map((s)
 let kept: SessionState;
 let running: SessionState;
 
-/** Right-clicks `kept` while `running` works, beside the idle session dbadmin had. */
+/** Right-clicks `kept` while `running` works, beside the idle sessions dbadmin had. */
 async function closeOthersOfKept(): Promise<string> {
   kept = core.registry.createSession("dbadmin");
   running = core.registry.createSession("dbadmin");
@@ -24,7 +24,10 @@ async function closeOthersOfKept(): Promise<string> {
 
 test("ui: close other sessions closes the idle ones, keeping the clicked and the running session", async () => {
   const report = await closeOthersOfKept();
-  assert.match(report, new RegExp(`^Closed dbadmin session \\d+\\. Skipped session ${running.number}: its worker`));
+  assert.match(
+    report,
+    new RegExp(`^Closed dbadmin sessions? [\\d, and]+\\. Skipped session ${running.number}: its worker`),
+  );
 });
 
 test("ui: close other sessions leaves the clicked session and the running one open", () => {

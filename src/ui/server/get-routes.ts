@@ -3,16 +3,21 @@ import { ATTACHED_IMAGE_PATH, NOTICE_SCRIPT_PATH, SCRIPT_PATH, type PageFiles } 
 import { NOTICE_PATH } from "./ui-access.js";
 import { MANIFEST_PATH } from "./web-manifest.js";
 import type { ReadRoutes } from "./read-routes.js";
-import type { ReviewRoutes } from "./review-routes.js";
+
+/** A set of GET routes the router asks in turn, such as the Review view's or the Messages view's. */
+export interface GetRouteGroup {
+  handles(url: URL): boolean;
+  route(url: URL, res: ServerResponse): Promise<void>;
+}
 
 const SESSION_MESSAGES_PATH = /^\/api\/sessions\/([\w-]+)\/messages$/;
 
-/** Sends each GET to the page files, the live events and chats, or the projects' changes. */
+/** Sends each GET to the page files, the live events and chats, or a group such as the projects' changes. */
 export class GetRoutes {
   constructor(
     private pages: PageFiles,
     private reads: ReadRoutes,
-    private review: ReviewRoutes,
+    private groups: GetRouteGroup[],
   ) {}
 
   prepare(): Promise<void> {
@@ -20,7 +25,8 @@ export class GetRoutes {
   }
 
   async route(url: URL, res: ServerResponse): Promise<void> {
-    if (this.review.handles(url)) return await this.review.route(url, res);
+    const group = this.groups.find((candidate) => candidate.handles(url));
+    if (group) return await group.route(url, res);
     this.pageOrChat(url, res);
   }
 

@@ -8,6 +8,7 @@
  */
 import { after } from "node:test";
 import { rmSync } from "node:fs";
+import { TestDraftPopups } from "../../testing/test-draft-popups.js";
 import { buildApp, startOperator } from "../../app/build-app.js";
 import { loadAssistantAgent } from "../../config/assistant-agent.js";
 import { ASSISTANT_AGENT_PATH, SKILLS_DIR } from "../../config/paths.js";
@@ -38,6 +39,7 @@ export const screen = new TestScreen();
 export const popups = new TestPopups();
 export const questionPanels = new TestQuestionPanels();
 export const confirmPanels = new TestConfirmPanels();
+export const draftPopups = new TestDraftPopups();
 export const chatPanels = new TestChatPanels();
 export const notices = new TestNoticePanel();
 
@@ -65,6 +67,7 @@ export const app = buildApp(cfg, {
   popups,
   questionPanels,
   confirmPanels,
+  draftPopups,
   chatPanels,
   notices,
   browser: new TestBrowserPage(),

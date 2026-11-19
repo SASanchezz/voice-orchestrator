@@ -15,12 +15,17 @@ export const NOTICE_SCRIPT_PATH = "/notice.js";
 export const ATTACHED_IMAGE_PATH = "/api/attachments";
 /** Attached files stay for a week and never change. */
 const ATTACHED_IMAGE_CACHE = "private, max-age=604800, immutable";
-const STATIC_FILES: Record<string, string> = {
+/** Only these are served; a stylesheet the page links must be listed here. */
+export const STATIC_FILES: Record<string, string> = {
   "/styles/base.css": "text/css",
   "/styles/layout.css": "text/css",
   "/styles/tabs.css": "text/css",
   "/styles/strip.css": "text/css",
   "/styles/review.css": "text/css",
+  "/styles/messages.css": "text/css",
+  "/styles/chat-browser.css": "text/css",
+  "/styles/reply-checkup.css": "text/css",
+  "/styles/drafting-toggle.css": "text/css",
   "/styles/split-diff.css": "text/css",
   "/styles/approvals.css": "text/css",
   "/styles/questions.css": "text/css",
@@ -36,6 +41,7 @@ const STATIC_FILES: Record<string, string> = {
   "/styles/budget.css": "text/css",
   "/styles/todo.css": "text/css",
   "/styles/force-stop.css": "text/css",
+  "/styles/background-jobs.css": "text/css",
   "/styles/code.css": "text/css",
   "/styles/code-roles.css": "text/css",
   "/styles/resize.css": "text/css",

@@ -7,6 +7,7 @@ import { AssistantChatPopup } from "../ui/assistant-chat/assistant-chat-popup.js
 import { VoicedChatPanels, type VoicedChatPanelDevice } from "../ui/voice-box/voiced-chat-panels.js";
 import { VoicedQuestionPanels, type VoicedQuestionPanelDevice } from "../ui/voice-box/voiced-question-panels.js";
 import { ConfirmPopups, type ConfirmPanelDevice } from "../ui/confirm-popups.js";
+import { DraftPopups, type DraftPopupDevice } from "../ui/draft-popups.js";
 import { LatestReply } from "../ui/latest-reply.js";
 import { PermissionPopups, type PopupDevice } from "../ui/permission-popups.js";
 import { QuestionPopups } from "../ui/question-popups.js";
@@ -14,9 +15,11 @@ import { LiveClients } from "../ui/server/live-clients.js";
 import type { ProfileBrowser } from "../ui/server/link-actions.js";
 import { PageOpener, type BrowserPage } from "../ui/server/page-opener.js";
 import { LinkedNoticePanel } from "../ui/notices/linked-notice-panel.js";
+import { ShownTaskSilence } from "../ui/notices/shown-task-silence.js";
 import { TaskNotices, type NoticePanelDevice } from "../ui/notices/task-notices.js";
 import { AfterTalking } from "../voice/after-talking.js";
 import { ApprovalVoice, type VoiceApprovals } from "../voice/approval-voice.js";
+import { VoiceAnswerChain } from "../voice/voice-answer-chain.js";
 import { WorkerVoice } from "../voice/worker-voice.js";
 import { FrontSession } from "../ui/front-session.js";
 import type { TaskActions } from "../ui/server/task-actions.js";
@@ -31,6 +34,7 @@ import { buildNotices, popupActionsFor, type NoticeParts } from "./build-notices
 import { buildOperator, type OperatorParts } from "./build-operator.js";
 import { buildPermissions, type PermissionParts } from "./build-permissions.js";
 import { buildQuestions, type QuestionParts } from "./build-questions.js";
+import { buildReplies, type ReplyParts } from "./build-replies.js";
 import { buildTodo, type TodoParts } from "./build-todo.js";
 import { buildUi, type UiParts } from "./build-ui.js";
 import { buildWorkers, type WorkerModels, type WorkerParts } from "./build-workers.js";
@@ -53,6 +57,8 @@ export interface Adapters extends OperatorDevices {
   questionPanels: VoicedQuestionPanelDevice;
   /** Native pop-ups for the assistant's confirm phrases. */
   confirmPanels: ConfirmPanelDevice;
+  /** The small silent pop-up for each new drafted Slack or Telegram reply. */
+  draftPopups: DraftPopupDevice;
   /** The native chat pop-up with your dialogue with the assistant, brought up by each finished reply. */
   chatPanels: VoicedChatPanelDevice;
   /** The native notice panel, where ended tasks wait to be read and replied to. */
@@ -73,26 +79,27 @@ export interface App {
   ui: UiParts;
   editor: EditorParts;
   notices: NoticeParts;
+  replies: ReplyParts;
 }
 
 /** Builds everything; the operator listens to events before the timeline and the chats do. */
 export function buildApp(cfg: AppConfig, adapters: Adapters): App {
-  const routes = voiceRoutes(() => permissions.spoken);
+  const routes = voiceRoutes(() => [permissions.spoken, replies.spoken]); // permission answers come first
   const devices = { ...adapters, voice: routedVoice(adapters, routes, () => ui.tasks) };
   const core = buildCore(cfg, adapters.destructive);
-  const permissions = buildPermissions(core, commandExplanations(core, adapters));
+  const { permissions, replies } = approvalParts(core, adapters);
   const questions = buildQuestions(core);
   const workers = buildWorkers(core, toolCallGate(permissions, questions), workerModels(core, adapters));
   if (adapters.nameSessions) sessionTitles(core, adapters).follow(workers.chat);
   const todo = buildTodo(core, workers.intake);
   const editor = buildEditor(cfg.editor);
-  const neighbors = { permissions, questions, workers, todo, devices, editor, clients: new LiveClients() };
+  const neighbors = { permissions, questions, workers, todo, devices, editor, replies, clients: new LiveClients() };
   const operator = buildOperator(core, neighbors);
   const pages = new PageOpener(neighbors.clients, adapters.browser, () => ui.server.link());
   const actions = popupActionsFor(pages, operator);
   const notices = buildNotices(workers.summarizer, actions);
   const ui = buildUi(core, { ...neighbors, notices, links: adapters.chromeLinks, front: routes.front }, operator);
-  const app = { core, permissions, questions, workers, todo, operator, ui, editor, notices };
+  const app = { core, permissions, questions, workers, todo, operator, ui, editor, notices, replies };
   showNatively(app, devices, actions);
   return app;
 }
@@ -112,13 +119,23 @@ function routedVoice(adapters: Adapters, { front, approvals }: VoiceRoutes, task
   return new WorkerVoice(voice, front, (session, text) => tasks().runTask(session, { instruction: text }));
 }
 
-/** Spoken approvals answer requests from the permissions, which are built after the voice. */
-function voiceRoutes(spoken: () => VoiceApprovals): VoiceRoutes {
+/**
+ * Spoken whole-message answers ("allow", "confirm send") act on the permissions and drafted replies, which are built
+ * after the voice; the first in the list that can answer does.
+ */
+function voiceRoutes(answerers: () => VoiceApprovals[]): VoiceRoutes {
+  const chain = (): VoiceAnswerChain => new VoiceAnswerChain(answerers());
   const approvals: VoiceApprovals = {
-    canAnswer: (words) => spoken().canAnswer(words),
-    answer: (words, sessionInFront) => spoken().answer(words, sessionInFront),
+    canAnswer: (words) => chain().canAnswer(words),
+    answer: (words, sessionInFront) => chain().answer(words, sessionInFront),
   };
   return { front: new FrontSession(), approvals };
+}
+
+/** What you approve: workers' permission requests, and replies to send to Slack and Telegram. */
+function approvalParts(core: Core, adapters: Adapters): { permissions: PermissionParts; replies: ReplyParts } {
+  const permissions = buildPermissions(core, commandExplanations(core, adapters));
+  return { permissions, replies: buildReplies(core.cfg, core.messengers, adapters) };
 }
 
 /** Plain-language explanations of commands, when the adapters want them. */
@@ -153,14 +170,15 @@ function quickModel(core: Core, adapters: Adapters): QuickModel {
 
 /**
  * Native pop-ups for requests, questions and the assistant's confirm phrases and chat, and the notice panel when a task ends,
- * so you see them from any app; none for quiet sessions.
+ * so you see them from any app; none for quiet sessions. A task ending in the session on screen gets neither panel nor voice.
  */
-function showNatively({ core, ui, notices, operator }: App, adapters: Adapters, actions: PopupActions): void {
+function showNatively({ core, ui, notices, operator, replies }: App, adapters: Adapters, actions: PopupActions): void {
   const permissionPopups = new PermissionPopups(adapters.popups, ui.permissionClicks, actions);
   permissionPopups.follow(core.audibleEvents);
   const noticePanel = new LinkedNoticePanel(adapters.notices, () => ui.server.noticeLink());
   const afterTalking = new AfterTalking(adapters.voice);
   new TaskNotices(noticePanel, notices.inbox, notices.shownSessions).follow(core.audibleEvents, afterTalking);
+  new ShownTaskSilence(notices.shownSessions, operator.voices).follow(core.audibleEvents);
   const questionPanels = new VoicedQuestionPanels(adapters.questionPanels, ui.boxes.panels);
   new QuestionPopups(questionPanels, ui.questionClicks, actions).follow(core.audibleEvents);
   const latestReply = new LatestReply();
@@ -170,6 +188,8 @@ function showNatively({ core, ui, notices, operator }: App, adapters: Adapters, 
   const chatPanels = new VoicedChatPanels(adapters.chatPanels, ui.boxes.panels, operator.spokenMessages);
   const chatPopup = new AssistantChatPopup(chatPanels, operator.clickedWords, operator.confirmAsk);
   chatPopup.follow(operator.lines, operator.context);
+  const openDraft = async (draftId: string): Promise<void> => actions.openPage({ view: "messages", draftId });
+  new DraftPopups(adapters.draftPopups, openDraft, replies.rules).follow(replies.news);
 }
 
 /** The operator's model session starts, then it listens for your voice. */
