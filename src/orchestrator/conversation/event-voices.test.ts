@@ -37,3 +37,16 @@ test("event voices: silencing an event quiets the voice its queued input carries
   voices.silence(KAGGLE_DONE);
   assert.equal(queued.isSilenced(), true);
 });
+
+test("event voices: keeping an event silent quiets the voice its queued input carries", () => {
+  const { voices } = voicesWithStops();
+  const queued = voices.voiceOf(KAGGLE_DONE);
+  voices.keepSilent(KAGGLE_DONE);
+  assert.equal(queued.isSilenced(), true);
+});
+
+test("event voices: keeping an event silent leaves the speech playing now alone", () => {
+  const { voices, speaker } = voicesWithStops();
+  voices.keepSilent(KAGGLE_DONE);
+  assert.equal(speaker.stops, 0);
+});

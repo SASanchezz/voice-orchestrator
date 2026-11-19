@@ -40,3 +40,15 @@ test("single voice: silencing it stops whatever is playing, as the talk key does
   new SingleVoice(() => stops++).silence();
   assert.equal(stops, 1);
 });
+
+test("single voice: kept silent, neither the reply nor the fallback may speak", () => {
+  const voice = new SingleVoice();
+  voice.keepSilent();
+  assert.deepEqual([voice.replyMaySpeak(), voice.claimForFallback()], [false, false]);
+});
+
+test("single voice: keeping it silent leaves whatever is playing alone", () => {
+  let stops = 0;
+  new SingleVoice(() => stops++).keepSilent();
+  assert.equal(stops, 0);
+});

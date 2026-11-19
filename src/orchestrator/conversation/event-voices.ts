@@ -23,4 +23,10 @@ export class EventVoices {
     console.log(`🔇 ${event.label}: pop-up clicked, its speech stopped and dropped`);
     this.voiceOf(event).silence();
   }
+
+  /** You saw it on screen: nothing about it is said, and what is playing now goes on. */
+  keepSilent(event: AppEvent): void {
+    console.log(`🔇 ${event.label}: ended on screen, not said aloud`);
+    this.voiceOf(event).keepSilent();
+  }
 }

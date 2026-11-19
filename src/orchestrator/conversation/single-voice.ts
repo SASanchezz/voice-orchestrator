@@ -32,7 +32,12 @@ export class SingleVoice {
   }
 
   silence(): void {
-    this.silenced = true;
+    this.keepSilent();
     this.stopSpeaking();
+  }
+
+  /** Nothing more is said, but whatever is playing goes on: it may be about something else. */
+  keepSilent(): void {
+    this.silenced = true;
   }
 }
