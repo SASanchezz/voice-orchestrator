@@ -9,22 +9,28 @@ import {
   startComparing,
   stopComparing,
 } from "./branch-comparison.js";
+import type { BranchListView, ProjectChangesView } from "../change-views.js";
+import type { PickerOption } from "../picker-match.js";
 import { button, byId, el } from "./dom.js";
 import { repositoriesKey, repositoryPickers } from "./repository-picker.js";
+import { hasOpenPicker, searchPicker } from "./search-picker.js";
 import { store } from "./store.js";
+import { uncommittedPickerKey, uncommittedPickers } from "./uncommitted-picker.js";
+
+const CURRENT_BRANCH = "current";
 
 export function renderCompareBar(): void {
   const bar = byId("compare-bar", HTMLElement);
   const project = store.selectedProjectName;
   bar.hidden = !project;
   const key = project ? barKey(project) : "";
-  if (!project || bar.dataset.key === key) return; // redrawing would close a branch list you have open
+  if (!project || bar.dataset.key === key || hasOpenPicker(bar)) return; // redrawing would close an open list
   bar.dataset.key = key;
   bar.replaceChildren(modeButtons(project), ...comparisonPickers(project));
 }
 
 function barKey(project: string): string {
-  if (!isComparing(project)) return `${project}\nchanges`;
+  if (!isComparing(project)) return `${project}\nchanges\n${uncommittedPickerKey(changesOf(project))}`;
   const entry = comparisonOf(project);
   const { branches, comparison } = entry;
   return [project, repositoriesKey(entry), comparison.head, comparison.base, ...branches.branches].join("\n");
@@ -45,31 +51,32 @@ function modeButton(label: string, isShown: boolean, onClick: () => void): HTMLB
   return mode;
 }
 
+/** A project with no changes listed yet reads as clean. */
+function changesOf(project: string): ProjectChangesView {
+  const listed = store.changes.find((view) => view.project === project);
+  return listed ?? { project, isRepository: false, files: [], moreFiles: 0 };
+}
+
 function comparisonPickers(project: string): HTMLElement[] {
-  if (!isComparing(project)) return [];
+  if (!isComparing(project)) return uncommittedPickers(changesOf(project));
   return [...repositoryPickers(project, comparisonOf(project)), ...branchPickers(project)];
 }
 
 function branchPickers(project: string): HTMLElement[] {
   const { branches, comparison } = comparisonOf(project);
-  const head = branchSelect("Branch to review", branches.branches, comparison.head);
-  const base = branchSelect("Base branch", branches.branches, comparison.base);
-  const compare = (): void => void compareBranches(project, { base: base.value, head: head.value });
-  head.addEventListener("change", compare);
-  base.addEventListener("change", compare);
-  const swap = button("⇄", "ghost", () => void compareBranches(project, { base: head.value, head: base.value }));
+  const options = branchOptions(branches);
+  const headChoice = { label: "Branch to review", options, selected: comparison.head };
+  const baseChoice = { label: "Base branch", options, selected: comparison.base };
+  const head = searchPicker(headChoice, (branch) => void compareBranches(project, { ...comparison, head: branch }));
+  const base = searchPicker(baseChoice, (branch) => void compareBranches(project, { ...comparison, base: branch }));
+  const swapped = { base: comparison.head, head: comparison.base };
+  const swap = button("⇄", "ghost", () => void compareBranches(project, swapped));
   swap.title = "Swap the branches";
   const refresh = button("Refresh", "ghost", () => void refreshComparison(project));
   refresh.title = "Pick up new commits and branches";
   return [head, el("span", { class: "muted" }, "into"), base, swap, refresh];
 }
 
-function branchSelect(label: string, branches: string[], selected: string): HTMLSelectElement {
-  const select = el("select", { "aria-label": label, title: label }, ...branches.map(branchOption));
-  select.value = selected;
-  return select;
-}
-
-function branchOption(branch: string): HTMLOptionElement {
-  return el("option", { value: branch }, branch);
+function branchOptions({ current, branches }: BranchListView): PickerOption[] {
+  return branches.map((branch) => ({ value: branch, label: branch, detail: branch === current ? CURRENT_BRANCH : "" }));
 }

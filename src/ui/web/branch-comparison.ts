@@ -7,6 +7,7 @@ import type { BranchListView, ComparisonView, ProjectChangesView, RepositoryView
 import { fetchBranches, fetchComparison, fetchRepositories } from "./api.js";
 import { rememberRepository, repositoryToCompare } from "./repository-choice.js";
 import { store } from "./store.js";
+import { uncommittedShown } from "./uncommitted-repository.js";
 
 /** The files that differ, or what to say instead: still loading, a branch that's gone, nothing to show. */
 export type ComparedFiles = { view: ProjectChangesView } | { note: string };
@@ -39,10 +40,13 @@ export function comparisonOf(project: string): ProjectComparison {
   return entry;
 }
 
-/** In branch mode, a project's file list shows what the branch changed instead of what isn't committed. */
+/**
+ * In branch mode, a project's file list shows what the branch changed instead of what isn't committed; otherwise it
+ * shows the uncommitted changes of the repository picked in its folder.
+ */
 export function shownChanges(view: ProjectChangesView): ProjectChangesView {
   const entry = comparisons.get(view.project);
-  if (!entry) return view;
+  if (!entry) return uncommittedShown(view);
   return "view" in entry.files ? entry.files.view : { ...view, files: [], moreFiles: 0 };
 }
 

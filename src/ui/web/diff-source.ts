@@ -12,8 +12,10 @@ export interface DiffSource {
   canStage: boolean;
 }
 
-export function uncommittedSource(project: string): DiffSource {
-  return { project, key: `${project}\nchanges`, route: changesRoute(project), canStage: true };
+/** `repository` is the one picked in a folder of repositories, or empty for all of them. */
+export function uncommittedSource(project: string, repository: string): DiffSource {
+  const key = `${project}\nchanges\n${repository}`;
+  return { project, key, route: changesRoute(project), canStage: true };
 }
 
 export function branchSource(project: string, repository: string, comparison: ComparisonView): DiffSource {

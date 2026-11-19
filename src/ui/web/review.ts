@@ -5,8 +5,8 @@
 
 import type { ProjectChangesView } from "../change-views.js";
 import { changesVersion } from "../reviewed-files.js";
-import { comparisonOf, isComparing } from "./branch-comparison.js";
-import { renderChangeList } from "./change-list.js";
+import { comparisonOf, isComparing, shownChanges } from "./branch-comparison.js";
+import { renderChangeList, wireChangeList } from "./change-list.js";
 import { renderCompareBar } from "./compare-bar.js";
 import {
   keepDiffScroll,
@@ -20,6 +20,7 @@ import { branchSource, type DiffSource, uncommittedSource } from "./diff-source.
 import { byId } from "./dom.js";
 import { store } from "./store.js";
 import { wireSymbolKeys } from "./symbol-links.js";
+import { uncommittedRepositoryOf } from "./uncommitted-repository.js";
 
 let loadedVersion = "";
 /** Which source the loaded diffs came from: a project's uncommitted changes, or two of its branches. */
@@ -28,6 +29,7 @@ let wasShown = false;
 
 export function wireReview(): void {
   byId("review-button", HTMLButtonElement).addEventListener("click", toggleReview);
+  wireChangeList();
   wireSymbolKeys();
 }
 
@@ -70,12 +72,13 @@ function renderSelectedDiffs(): void {
   renderUncommittedDiffs(store.changes.find((view) => view.project === project));
 }
 
-function renderUncommittedDiffs(view: ProjectChangesView | undefined): void {
+function renderUncommittedDiffs(listed: ProjectChangesView | undefined): void {
+  const view = listed && shownChanges(listed);
   if (!view?.files.length) {
     forgetLoadedDiffs();
     return showNoDiffs(view?.project);
   }
-  const source = uncommittedSource(view.project);
+  const source = uncommittedSource(view.project, uncommittedRepositoryOf(view));
   if (source.key !== loadedSource) return loadDiffs(view, source);
   markDiffsOutdated(changesVersion(view) !== loadedVersion, () => loadDiffs(view, source));
 }

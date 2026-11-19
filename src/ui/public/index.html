@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="/styles/tabs.css" />
     <link rel="stylesheet" href="/styles/strip.css" />
     <link rel="stylesheet" href="/styles/review.css" />
+    <link rel="stylesheet" href="/styles/search-picker.css" />
     <link rel="stylesheet" href="/styles/messages.css" />
     <link rel="stylesheet" href="/styles/chat-browser.css" />
     <link rel="stylesheet" href="/styles/drafting-toggle.css" />
@@ -181,7 +182,17 @@
         </div>
 
         <section id="review-panel" class="review" aria-label="Review changes" hidden>
-          <div id="change-list" class="change-list"></div>
+          <div id="change-list" class="change-list">
+            <input
+              id="change-search"
+              class="change-search"
+              type="search"
+              placeholder="Find a project, repo or file  ( / )"
+              aria-label="Find a project, repository or changed file"
+              autocomplete="off"
+            />
+            <div id="change-groups"></div>
+          </div>
           <div id="compare-bar" class="compare-bar" hidden></div>
           <div id="diff-pane" class="diff-pane"></div>
           <section id="definition-peek" class="definition-peek" aria-label="Definitions" hidden></section>

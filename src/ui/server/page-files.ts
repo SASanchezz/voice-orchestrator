@@ -22,6 +22,7 @@ export const STATIC_FILES: Record<string, string> = {
   "/styles/tabs.css": "text/css",
   "/styles/strip.css": "text/css",
   "/styles/review.css": "text/css",
+  "/styles/search-picker.css": "text/css",
   "/styles/messages.css": "text/css",
   "/styles/chat-browser.css": "text/css",
   "/styles/reply-checkup.css": "text/css",
