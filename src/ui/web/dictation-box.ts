@@ -25,6 +25,8 @@ export interface DictationParts {
   cancel: HTMLButtonElement;
   send: HTMLButtonElement;
   target?: HTMLElement;
+  /** Sends the final words after Send during a recording; submitting the form when not given. */
+  sendFinished?: () => void;
 }
 
 export class DictationBox {
@@ -40,7 +42,7 @@ export class DictationBox {
     this.parts.mic.addEventListener("click", () => void this.toggle());
     this.parts.cancel.addEventListener("click", () => void this.discard());
     wireRecordingKeys(this, form);
-    wireSendWhileRecording(this, this.parts.send, form);
+    wireSendWhileRecording(this, this.parts, form);
     wireStopOnEdit(this, this.parts.input);
     this.show("idle");
   }
@@ -107,17 +109,18 @@ function wireRecordingKeys(box: DictationBox, form: HTMLFormElement): void {
 }
 
 /** Send while recording stops it and sends the final words, not the ones half-heard; a failed finish sends nothing. */
-function wireSendWhileRecording(box: DictationBox, send: HTMLButtonElement, form: HTMLFormElement): void {
-  send.addEventListener("click", (click) => {
+function wireSendWhileRecording(box: DictationBox, parts: DictationParts, form: HTMLFormElement): void {
+  const sendFinished = parts.sendFinished ?? (() => form.requestSubmit());
+  parts.send.addEventListener("click", (click) => {
     if (box.isIdle()) return;
     click.preventDefault();
-    if (box.isRecording()) void finishThenSend(box, form);
+    if (box.isRecording()) void finishThenSend(box, sendFinished);
   });
 }
 
-async function finishThenSend(box: DictationBox, form: HTMLFormElement): Promise<void> {
+async function finishThenSend(box: DictationBox, sendFinished: () => void): Promise<void> {
   const isFinished = await box.finish();
-  if (isFinished) form.requestSubmit();
+  if (isFinished) sendFinished();
 }
 
 /** Enter stops recording instead of sending the words half-heard; it is caught before the box's own Enter. */

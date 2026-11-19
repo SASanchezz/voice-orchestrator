@@ -1,13 +1,13 @@
 // Where the message box sends what it holds: a session's worker as a task, or the assistant, typed or spoken. A spoken
 // message reaches the assistant as speech, so it answers aloud.
 
-import type { EncodedFile } from "./attachments.js";
+import type { SentFile } from "./attachments.js";
 import { pickedModel } from "./composer-model.js";
 import { store } from "./store.js";
 
 export interface MessageRoute {
   path: string;
-  body(text: string, attachments: EncodedFile[]): object;
+  body(text: string, attachments: SentFile[]): object;
 }
 
 const TYPED_TO_ASSISTANT: MessageRoute = {
@@ -21,6 +21,11 @@ const SPOKEN_TO_ASSISTANT: MessageRoute = { ...TYPED_TO_ASSISTANT, path: "/api/m
 export function typedRoute(): MessageRoute {
   const project = store.selectedProject();
   return project ? sessionRoute(project.activeSession) : TYPED_TO_ASSISTANT;
+}
+
+/** What you said and sent with the Send button goes, as typed, to the session in front when you started talking. */
+export function recordedRoute(session: string | undefined): MessageRoute {
+  return session ? sessionRoute(session) : TYPED_TO_ASSISTANT;
 }
 
 /** What you said goes to the session in front when you started talking, or else to the assistant. */
