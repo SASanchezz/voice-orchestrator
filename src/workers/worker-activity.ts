@@ -44,7 +44,7 @@ function stepLineOf(block: ContentBlock, toolName: string): Pick<SessionMessage,
 }
 
 /** "Bash npm test", "Edit src/app.ts" or "Agent Review the diff": the tool and what it works on. */
-function stepOf(toolName: string, rawInput: unknown): string {
+export function stepOf(toolName: string, rawInput: unknown): string {
   const input = toolInput(rawInput);
   const detail =
     toolName === "Bash"

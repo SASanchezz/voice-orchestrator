@@ -61,5 +61,6 @@ export class SessionChats extends EventEmitter {
 /** The line as the chat keeps it: numbered after the last one, timestamped, and cut to a sane length. */
 function nextMessage(history: ChatMessage[], line: Omit<SessionMessage, "session">): ChatMessage {
   const id = (history.at(-1)?.id ?? 0) + 1;
-  return { ...line, text: line.text.slice(0, MAX_MESSAGE_CHARS), id, at: new Date().toISOString() };
+  const at = line.at ?? new Date().toISOString();
+  return { ...line, text: line.text.slice(0, MAX_MESSAGE_CHARS), id, at };
 }

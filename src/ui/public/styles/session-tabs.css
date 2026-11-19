@@ -81,7 +81,8 @@
 
 .session-close,
 .session-stop,
-.session-new {
+.session-new,
+.session-reopen {
   flex: none;
   padding: 3px 6px;
   line-height: 1;
@@ -120,9 +121,20 @@
   border-radius: 6px;
   font-size: 18px;
 }
-.session-new:hover {
+.session-new:hover,
+.session-reopen:hover,
+.session-reopen[aria-expanded="true"] {
   color: var(--text);
   background: var(--surface-2);
+}
+/* Reopens a closed session; sits right after "+". */
+.session-reopen {
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 16px;
 }
 
 /* How many sessions the list holds; it shines while another session has a result you haven't opened. */

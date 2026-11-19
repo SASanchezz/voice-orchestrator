@@ -14,8 +14,10 @@ import type { ScreenSource } from "../../screen/screen-source.js";
 import type { GestureControl } from "../../sensors/gesture-switch.js";
 import type { SkillLibrary } from "../../skills/skill-library.js";
 import type { ChangeSummarizer } from "../../workers/change-summarizer.js";
+import type { ClosedConversations } from "../../workers/closed-conversations.js";
 import type { QueuedTasks } from "../../workers/queued-tasks.js";
 import type { SessionControl } from "../../workers/session-control.js";
+import type { SessionReopener } from "../../workers/session-reopener.js";
 import type { TaskIntake } from "../../workers/task-intake.js";
 import type { TodoItemSender } from "../../todo-items/todo-item-sender.js";
 import type { TodoItems } from "../../todo-items/todo-items.js";
@@ -34,6 +36,7 @@ import { lookAtCamera, lookAtScreen, remember, resetContext, restartOrchestrator
 import type { CameraView } from "./camera-views.js";
 import { readAttachment } from "./attachment-tools.js";
 import { readClipboard } from "./clipboard-tools.js";
+import { listClosedSessions, reopenSession } from "./closed-session-tools.js";
 import { askGoAhead, askToConfirm } from "./confirm-tools.js";
 import { destructiveAdd, destructiveRemove, destructiveRules } from "./destructive-tools.js";
 import { setGestures } from "./gesture-tools.js";
@@ -69,6 +72,8 @@ export interface ToolServices {
   accounts: AccountSwitch;
   intake: TaskIntake;
   control: SessionControl;
+  closedSessions: ClosedConversations;
+  reopener: SessionReopener;
   workSessions: WorkSessions;
   queuedTasks: QueuedTasks;
   todos: TodoRunner;
@@ -108,6 +113,8 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => switchSession(s.registry, s.cfg),
   (s) => closeSession(s.registry, s.control, s.cfg),
   (s) => closeOtherSessions(s.workSessions, s.cfg),
+  (s) => listClosedSessions(s.closedSessions, s.cfg),
+  (s) => reopenSession(s.closedSessions, s.reopener, s.cfg),
   (s) => runTask(s.intake, s.registry, s.cfg),
   (s) => listTodo(s.todos),
   (s) => runTodo(s.todos),

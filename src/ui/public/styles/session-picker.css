@@ -83,3 +83,24 @@
 .session-picker-item.unseen.failed .session-picker-meta {
   color: var(--danger);
 }
+
+/* The closed sessions the ↺ beside "+" can reopen: title, then when it was last active. */
+.closed-session-note {
+  margin: 4px 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.closed-session-item {
+  display: grid;
+  row-gap: 2px;
+  padding: 6px 10px;
+  text-align: left;
+  border-color: transparent;
+  background: transparent;
+}
+.closed-session-item:hover {
+  background: var(--surface-2);
+}
+.closed-session-item .session-picker-meta {
+  grid-column: auto;
+}

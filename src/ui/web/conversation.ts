@@ -6,8 +6,9 @@ import { act } from "./api.js";
 import { wireAttachmentInput } from "./attachment-input.js";
 import { type AttachmentTray, encodeForSending } from "./attachments.js";
 import type { ChatView } from "./chat.js";
+import { closedSessionList, reopenButton } from "./closed-session-list.js";
 import { renderComposerModel, resetComposerModel } from "./composer-model.js";
-import { type MessageRoute, spokenRoute, typedRoute } from "./message-routes.js";
+import { type MessageRoute, recordedRoute, spokenRoute, typedRoute } from "./message-routes.js";
 import { autoGrow, button, byId } from "./dom.js";
 import { markProject } from "./project-links.js";
 import { openTodoCountOf } from "./project-todo.js";
@@ -31,7 +32,9 @@ export function renderConversation(chat: ChatView): void {
   input.placeholder = `Task for ${project.name} · session ${session.number}…`;
   const todo = todoTab(project, openTodoCountOf(project.name));
   const current = currentSessionTab(project, session);
-  tabs.replaceChildren(todo, current, newSessionButton(project), ...sessionPicker(project), ...projectNote(project));
+  const buttons = [newSessionButton(project), reopenButton(project)];
+  const dropdowns = [...sessionPicker(project), ...closedSessionList(project)];
+  tabs.replaceChildren(todo, current, ...buttons, ...dropdowns, ...projectNote(project));
   void chat.showSession(session.id);
 }
 
@@ -66,6 +69,11 @@ export function wireComposer(tray: AttachmentTray): void {
 /** What the box holds, with your spoken words in it, goes where you were when you started talking. */
 export function sendSpokenMessage(tray: AttachmentTray, session: string | undefined): void {
   void sendMessage(byId("composer-input", HTMLTextAreaElement), tray, spokenRoute(session));
+}
+
+/** Send pressed during a recording: the box goes where you were when you started talking, even if you moved since. */
+export function sendRecordedMessage(tray: AttachmentTray, session: string | undefined): void {
+  void sendMessage(byId("composer-input", HTMLTextAreaElement), tray, recordedRoute(session));
 }
 
 /** What the box holds and the files attached go along `route`; kept if sending fails. */

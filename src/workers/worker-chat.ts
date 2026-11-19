@@ -13,6 +13,8 @@ export interface SessionMessage {
   toolUseId?: string;
   /** Set on a sub-agent's lines: the tool call that started it. */
   parentToolUseId?: string;
+  /** ISO time the line was first written, for lines brought back from a saved conversation; unset, now. */
+  at?: string;
 }
 
 /** The lines workers add to their sessions' chats. Emits "message" with each SessionMessage. */
