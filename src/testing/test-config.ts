@@ -17,6 +17,7 @@ const BASE: AppConfig = {
     whisperBin: "x",
     whisperModel: "x",
     language: "en",
+    vocabulary: [],
     engine: "say",
     kokoroVoice: "af_heart",
     kokoroSpeed: 1,

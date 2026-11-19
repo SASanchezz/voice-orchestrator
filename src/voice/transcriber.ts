@@ -31,12 +31,18 @@ export class Transcriber {
   }
 
   private async transcribe(wav: string): Promise<string> {
-    const args = ["-m", this.cfg.whisperModel, "-f", wav, "-nt", "-np", "-l", this.cfg.language];
-    const { stdout } = await run(this.cfg.whisperBin, args, { maxBuffer: MAX_BUFFER_BYTES });
+    const { stdout } = await run(this.cfg.whisperBin, this.whisperArgs(wav), { maxBuffer: MAX_BUFFER_BYTES });
     const text = stdout
       .replace(/\[.*?\]/g, "")
       .replace(/\s+/g, " ")
       .trim();
     return NOTHING_SAID.test(text) ? "" : text;
+  }
+
+  /** The vocabulary goes in as whisper's initial prompt, which nudges it towards those spellings. */
+  private whisperArgs(wav: string): string[] {
+    const args = ["-m", this.cfg.whisperModel, "-f", wav, "-nt", "-np", "-l", this.cfg.language];
+    const { vocabulary } = this.cfg;
+    return vocabulary.length ? [...args, "--prompt", `${vocabulary.join(", ")}.`] : args;
   }
 }

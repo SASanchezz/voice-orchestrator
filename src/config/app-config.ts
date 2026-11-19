@@ -57,6 +57,10 @@ const voiceSchema = z.object({
   whisperBin: z.string(),
   whisperModel: z.string().transform(expandHome),
   language: z.string(),
+  vocabulary: z
+    .array(z.string())
+    .nullish()
+    .transform((words) => words ?? []),
   engine: z
     .enum(SPEECH_ENGINES)
     .nullish()
