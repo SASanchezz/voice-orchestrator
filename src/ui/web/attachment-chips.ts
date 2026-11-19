@@ -32,3 +32,10 @@ export function attachmentChip(file: File, thumbnail: Node | string, onRemove: (
   const size = el("span", { class: "attachment-size" }, readableSize(file.size));
   return el("li", { class: "attachment" }, thumbnail, name, size, remove);
 }
+
+/** The chip of a file too large to upload, which goes as its path on this Mac. */
+export function markSentByPath(chip: HTMLLIElement): void {
+  chip.classList.add("by-path");
+  const tag = el("span", { class: "attachment-by-path" }, "path only");
+  chip.insertBefore(tag, chip.lastChild); // before ×
+}

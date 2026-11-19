@@ -1,18 +1,25 @@
 // Files attached to the next message: picked with Attach, dropped on the chat or pasted, listed as chips until sent.
 
-import {
-  MAX_ATTACHMENT_BYTES,
-  MAX_ATTACHMENTS,
-  MAX_ATTACHMENTS_TOTAL_BYTES,
-} from "../../attachments/attachment-limits.js";
-import { readableSize } from "../../attachments/file-size.js";
-import { attachmentChip, ImagePreviews } from "./attachment-chips.js";
+import { MAX_ATTACHMENTS } from "../../attachments/attachment-limits.js";
+import { filesSentByPath } from "../../attachments/upload-plan.js";
+import { attachmentChip, ImagePreviews, markSentByPath } from "./attachment-chips.js";
+import type { ByPathNotice } from "./by-path-notice.js";
 
-/** A file as the server takes it: its name and its bytes in base64. */
-export interface EncodedFile {
+/** A file uploaded with the message: its name and its bytes in base64. */
+interface EncodedFile {
   name: string;
   data: string;
 }
+
+/** A file too large to upload, told by what the server needs to find its path on this Mac. */
+interface FileOnDisk {
+  name: string;
+  size: number;
+  modified: number;
+}
+
+/** A file as the server takes it. */
+export type SentFile = EncodedFile | FileOnDisk;
 
 export class AttachmentTray {
   private files: File[] = [];
@@ -21,6 +28,7 @@ export class AttachmentTray {
   /** `onChange` hears how many files are attached after each change. */
   constructor(
     private list: HTMLElement,
+    private notice: ByPathNotice,
     private onChange: (files: number) => void,
   ) {}
 
@@ -32,7 +40,7 @@ export class AttachmentTray {
     return this.files.length;
   }
 
-  /** Adds the files within the limits and says why any others were left out. */
+  /** Adds the files up to the count limit and says why any others were left out. */
   add(picked: Iterable<File>): void {
     const refusals: string[] = [];
     for (const file of picked) {
@@ -63,28 +71,35 @@ export class AttachmentTray {
 
   private refusalFor(file: File): string | undefined {
     if (this.files.length >= MAX_ATTACHMENTS) return `${file.name}: up to ${MAX_ATTACHMENTS} files per message.`;
-    if (file.size > MAX_ATTACHMENT_BYTES) return `${file.name}: over ${readableSize(MAX_ATTACHMENT_BYTES)}.`;
-    const total = this.files.reduce((sum, kept) => sum + kept.size, file.size);
-    if (total > MAX_ATTACHMENTS_TOTAL_BYTES)
-      return `${file.name}: attachments can't add up to more than ${readableSize(MAX_ATTACHMENTS_TOTAL_BYTES)}.`;
     return undefined;
   }
 
   private render(): void {
     this.list.hidden = this.isEmpty;
-    const chips = this.files.map((file) =>
-      attachmentChip(file, this.previews.thumbnail(file), () => this.remove(file)),
-    );
-    this.list.replaceChildren(...chips);
+    const byPath = filesSentByPath(this.files);
+    this.list.replaceChildren(...this.files.map((file) => this.chipFor(file, byPath)));
+    this.notice.show([...byPath]);
     this.onChange(this.count);
+  }
+
+  private chipFor(file: File, byPath: Set<File>): HTMLLIElement {
+    const chip = attachmentChip(file, this.previews.thumbnail(file), () => this.remove(file));
+    if (byPath.has(file)) markSentByPath(chip);
+    return chip;
   }
 }
 
 /** The files as the server takes them, or undefined after telling you they couldn't be read. */
-export async function encodeForSending(files: File[]): Promise<EncodedFile[] | undefined> {
-  const encoded = await Promise.all(files.map(encode)).catch(() => undefined);
-  if (!encoded) alert("Couldn't read the attached files.");
-  return encoded;
+export async function encodeForSending(files: File[]): Promise<SentFile[] | undefined> {
+  const byPath = filesSentByPath(files);
+  const sent = await Promise.all(files.map((file) => sendable(file, byPath))).catch(() => undefined);
+  if (!sent) alert("Couldn't read the attached files.");
+  return sent;
+}
+
+function sendable(file: File, byPath: Set<File>): Promise<SentFile> {
+  if (byPath.has(file)) return Promise.resolve({ name: file.name, size: file.size, modified: file.lastModified });
+  return encode(file);
 }
 
 function encode(file: File): Promise<EncodedFile> {

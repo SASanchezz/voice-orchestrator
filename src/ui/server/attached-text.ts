@@ -1,31 +1,40 @@
 import type { AttachmentFiles, SavedAttachment } from "../../attachments/attachment-files.js";
+import type { DiskFileFinder } from "../../attachments/disk-file-finder.js";
 import type { QueuedTask } from "../../workers/queued-task.js";
 import { withAttachmentNote } from "../../attachments/attachment-note.js";
-import { decodeUploads, type attachmentsField } from "./attachment-body.js";
+import { decodeUploads, filesOnDisk, type attachmentsField } from "./attachment-body.js";
 import { attachedFilesBody, messageBody, taskBody } from "./request-body.js";
 import type { z } from "zod";
 
-/** A message or task typed in the page, with any attached files saved and listed after its text. */
+/**
+ * A message or task typed in the page, with its attached files listed after its text: uploaded ones saved, ones too
+ * large to upload found where they are on this Mac.
+ */
 export class AttachedText {
-  constructor(private files: AttachmentFiles) {}
+  constructor(
+    private files: AttachmentFiles,
+    private finder: DiskFileFinder,
+  ) {}
 
-  message(body: unknown): string {
+  async message(body: unknown): Promise<string> {
     const { text, attachments } = messageBody.parse(body);
-    return this.attach(text, attachments);
+    return withAttachmentNote(text, await this.attached(attachments));
   }
 
   /** The task's text with its files, and the model it alone runs on if one was picked. */
-  task(body: unknown): QueuedTask {
+  async task(body: unknown): Promise<QueuedTask> {
     const { instruction, attachments, model } = taskBody.parse(body);
-    return { instruction: this.attach(instruction, attachments), model };
+    return { instruction: withAttachmentNote(instruction, await this.attached(attachments)), model };
   }
 
   /** Only files, for the voice message they go with. */
-  savedFiles(body: unknown): SavedAttachment[] {
-    return this.files.save(decodeUploads(attachedFilesBody.parse(body).attachments));
+  savedFiles(body: unknown): Promise<SavedAttachment[]> {
+    return this.attached(attachedFilesBody.parse(body).attachments);
   }
 
-  private attach(text: string, attachments: z.infer<typeof attachmentsField>): string {
-    return withAttachmentNote(text, this.files.save(decodeUploads(attachments)));
+  /** Found first, so a file that can't be found saves nothing. */
+  private async attached(attachments: z.infer<typeof attachmentsField>): Promise<SavedAttachment[]> {
+    const found = await this.finder.findAll(filesOnDisk(attachments));
+    return [...this.files.save(decodeUploads(attachments)), ...found];
   }
 }

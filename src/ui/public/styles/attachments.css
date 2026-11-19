@@ -128,3 +128,23 @@
   outline-offset: -6px;
   background: var(--accent-soft);
 }
+
+.by-path-notice {
+  margin: 0;
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+}
+.by-path-notice[hidden] {
+  display: none;
+}
+.by-path-notice + .attachment-list {
+  border-top: none;
+}
+.attachment-by-path {
+  color: var(--muted);
+  font-style: italic;
+  white-space: nowrap;
+}
