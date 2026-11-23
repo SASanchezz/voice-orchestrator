@@ -1,10 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, renameSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GitDefinitions } from "./git-definitions.js";
+import { ProjectRepositories } from "./project-repositories.js";
 
 function repository(files: Record<string, string>): string {
   const folder = mkdtempSync(join(tmpdir(), "git-definitions-"));
@@ -13,8 +14,10 @@ function repository(files: Record<string, string>): string {
   return folder;
 }
 
+const definitionsFinder = (): GitDefinitions => new GitDefinitions(new ProjectRepositories());
+
 const places = async (folder: string, symbol: string, file = ""): Promise<string[]> => {
-  const definitions = await new GitDefinitions().of(folder, symbol, file);
+  const definitions = await definitionsFinder().of(folder, symbol, file);
   return definitions.map(({ path, line }) => `${path}:${line}`);
 };
 
@@ -35,7 +38,7 @@ test("definitions: the asking file comes first among equals", async () => {
 
 test("definitions: the snippet shows the lines around the definition", async () => {
   const folder = repository({ "a.ts": "// one\n// two\ntype Shop = 1;\n// four\n" });
-  const [definition] = await new GitDefinitions().of(folder, "Shop", "");
+  const [definition] = await definitionsFinder().of(folder, "Shop", "");
   assert.deepEqual(definition.snippet.at(2), { line: 3, text: "type Shop = 1;" });
 });
 
@@ -63,4 +66,20 @@ test("definitions: a name nothing defines has none", async () => {
 test("definitions: a folder outside any repository has none", async () => {
   const folder = mkdtempSync(join(tmpdir(), "no-repo-"));
   assert.deepEqual(await places(folder, "Shop"), []);
+});
+
+function folderOfRepositories(repositories: Record<string, Record<string, string>>): string {
+  const folder = mkdtempSync(join(tmpdir(), "git-definitions-folder-"));
+  for (const [name, files] of Object.entries(repositories)) renameSync(repository(files), join(folder, name));
+  return folder;
+}
+
+test("definitions: in a folder of repositories, the asking file's repository is searched", async () => {
+  const folder = folderOfRepositories({ api: { "a.ts": "class Shop {}\n" }, ui: { "b.ts": "class Shop {}\n" } });
+  assert.deepEqual(await places(folder, "Shop", "api/c.ts"), ["api/a.ts:1"]);
+});
+
+test("definitions: in a folder of repositories, every repository is searched for a file outside them", async () => {
+  const folder = folderOfRepositories({ api: { "a.ts": "class Shop {}\n" }, ui: { "b.ts": "class Shop {}\n" } });
+  assert.deepEqual(await places(folder, "Shop"), ["api/a.ts:1", "ui/b.ts:1"]);
 });

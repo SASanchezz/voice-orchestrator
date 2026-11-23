@@ -13,7 +13,8 @@ import type { UiLookup } from "../ui/server/ui-lookup.js";
 /** The Review view's reads: uncommitted changes, branch comparisons and where names are defined. */
 export function reviewRoutes(access: UiAccess, lookup: UiLookup, changes: FolderChanges): ReviewRoutes {
   const changesRoutes = new ChangesRoutes(access, lookup, changes);
-  const definitions = new DefinitionRoutes(access, lookup, new GitDefinitions());
-  const repositories = new RepositoryLookup(lookup, new ProjectRepositories());
+  const projectRepositories = new ProjectRepositories();
+  const definitions = new DefinitionRoutes(access, lookup, new GitDefinitions(projectRepositories));
+  const repositories = new RepositoryLookup(lookup, projectRepositories);
   return new ReviewRoutes(changesRoutes, definitions, new CompareRoutes(access, repositories, new BranchCompare()));
 }

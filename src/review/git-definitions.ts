@@ -5,6 +5,7 @@ import type { DefinitionKind, DefinitionView, SnippetLine } from "../ui/change-v
 import { definitionMatcher } from "./definition-lines.js";
 import { readLines } from "./file-lines.js";
 import { repositoryRootOf, runGit, type GitRunner } from "./git-runner.js";
+import type { ProjectRepositories } from "./project-repositories.js";
 
 /** Tracked and new files, not ignored ones such as node_modules; `-z` keeps any file name whole. */
 const SEARCH = ["grep", "-n", "-z", "-I", "-w", "-F", "--untracked", "-e"];
@@ -14,6 +15,7 @@ const MAX_LINE_LENGTH = 500;
 const SNIPPET_LINES_BEFORE = 4;
 const SNIPPET_LINES_AFTER = 30;
 const KIND_ORDER: DefinitionKind[] = ["definition", "implementation", "member"];
+const PATH_SEPARATOR = "/";
 
 const searchResult = z.string().regex(/^[^\0]+\0\d+\0.*$/s);
 
@@ -23,21 +25,48 @@ interface Candidate {
   kind: DefinitionKind;
 }
 
+/**
+ * Where paths are reported from, and the repositories searched under it: the one repository the project is in, or,
+ * for a folder of repositories, the one holding the asking file, so paths match the Review's and start with its folder.
+ */
+interface SearchArea {
+  base: string;
+  repositories: string[];
+}
+
 /** Finds where a name is defined by searching the project's own files, so it works in any language. */
 export class GitDefinitions {
-  constructor(private git: GitRunner = runGit) {}
+  constructor(
+    private repositories: ProjectRepositories,
+    private git: GitRunner = runGit,
+  ) {}
 
   /** The best places first, those in `fromFile` first among equals. */
   async of(folder: string, symbol: string, fromFile: string): Promise<DefinitionView[]> {
-    const root = await repositoryRootOf(this.git, folder);
-    if (!root) return [];
-    const best = candidatesIn(await this.search(root, symbol), symbol).toSorted(byRank(fromFile));
-    const views = best.slice(0, MAX_DEFINITIONS).map((candidate) => withSnippet(root, candidate));
+    const { base, repositories } = await this.searchAreaOf(folder, fromFile);
+    const found = await Promise.all(repositories.map((repository) => this.search(base, repository, symbol)));
+    const best = found.flat().toSorted(byRank(fromFile)).slice(0, MAX_DEFINITIONS);
+    const views = best.map((candidate) => withSnippet(base, candidate));
     return (await Promise.all(views)).flat();
   }
 
+  private async searchAreaOf(folder: string, fromFile: string): Promise<SearchArea> {
+    const root = await repositoryRootOf(this.git, folder);
+    if (root) return { base: root, repositories: [""] };
+    const [repository] = fromFile.split(PATH_SEPARATOR);
+    const isInRepository = fromFile.includes(PATH_SEPARATOR) && this.repositories.has(folder, repository);
+    return { base: folder, repositories: isInRepository ? [repository] : this.repositories.nestedIn(folder) };
+  }
+
+  private async search(base: string, repository: string, symbol: string): Promise<Candidate[]> {
+    const output = await this.grep(join(base, repository), symbol);
+    const candidates = candidatesIn(output, symbol);
+    if (!repository) return candidates;
+    return candidates.map((candidate) => ({ ...candidate, path: repository + PATH_SEPARATOR + candidate.path }));
+  }
+
   /** Git exits with an error when nothing matches. */
-  private async search(root: string, symbol: string): Promise<string> {
+  private async grep(root: string, symbol: string): Promise<string> {
     try {
       return await this.git(root, [...SEARCH, symbol]);
     } catch {
