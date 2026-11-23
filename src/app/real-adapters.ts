@@ -72,7 +72,7 @@ async function popupPanels(): Promise<PopupPanels> {
 /** config/destructive.yaml (hot-reloaded), config/config.yaml, config/notes.md, skills/ and the Agent SDK. */
 function filesAndModel(): Pick<
   Adapters,
-  "destructive" | "configFile" | "notes" | "skills" | "query" | "explainCommands" | "nameSessions"
+  "destructive" | "configFile" | "notes" | "skills" | "query" | "explainCommands" | "reviewCommands" | "nameSessions"
 > {
   const destructive = new DestructiveList();
   destructive.watchForChanges();
@@ -85,6 +85,7 @@ function filesAndModel(): Pick<
     skills,
     query: sdkQuery,
     explainCommands: true,
+    reviewCommands: true,
     nameSessions: true,
   };
 }

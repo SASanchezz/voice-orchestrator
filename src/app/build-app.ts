@@ -1,7 +1,5 @@
 import type { AppConfig } from "../config/app-config.js";
-import { CommandExplainer } from "../permissions/command-explainer.js";
 import type { DestructiveList } from "../safety/destructive-list.js";
-import type { ExplainCommand } from "../permissions/permission-types.js";
 import type { PopupActions } from "../ui/popup-actions.js";
 import { AssistantChatPopup } from "../ui/assistant-chat/assistant-chat-popup.js";
 import { VoicedChatPanels, type VoicedChatPanelDevice } from "../ui/voice-box/voiced-chat-panels.js";
@@ -33,6 +31,7 @@ import { buildEditor, type EditorParts } from "./build-editor.js";
 import { buildNotices, popupActionsFor, type NoticeParts } from "./build-notices.js";
 import { buildOperator, type OperatorParts } from "./build-operator.js";
 import { buildPermissions, type PermissionParts } from "./build-permissions.js";
+import { commandExplanations, commandReviews } from "./permission-models.js";
 import { buildQuestions, type QuestionParts } from "./build-questions.js";
 import { buildReplies, type ReplyParts } from "./build-replies.js";
 import { buildTodo, type TodoParts } from "./build-todo.js";
@@ -46,6 +45,8 @@ export interface Adapters extends OperatorDevices {
   destructive: DestructiveList;
   /** Explain each permission request in plain words on its card and pop-up (one extra model call each). */
   explainCommands: boolean;
+  /** In auto mode, a model reads each call that would ask you and runs the routine ones (one extra model call each). */
+  reviewCommands: boolean;
   /**
    * Name each new session's tab after its first task's main subject (one extra model call per session),
    * and announce each finished task by its topic and what got done (one extra model call per finished task).
@@ -134,15 +135,8 @@ function voiceRoutes(answerers: () => VoiceApprovals[]): VoiceRoutes {
 
 /** What you approve: workers' permission requests, and replies to send to Slack and Telegram. */
 function approvalParts(core: Core, adapters: Adapters): { permissions: PermissionParts; replies: ReplyParts } {
-  const permissions = buildPermissions(core, commandExplanations(core, adapters));
+  const permissions = buildPermissions(core, commandExplanations(core, adapters), commandReviews(core, adapters));
   return { permissions, replies: buildReplies(core.cfg, core.messengers, adapters) };
-}
-
-/** Plain-language explanations of commands, when the adapters want them. */
-function commandExplanations(core: Core, adapters: Adapters): ExplainCommand | undefined {
-  if (!adapters.explainCommands) return undefined;
-  const explainer = new CommandExplainer(core.cfg, core.projects, adapters.query);
-  return (project, command) => explainer.explain(project, command);
 }
 
 function sessionTitles(core: Core, adapters: Adapters): SessionTitles {

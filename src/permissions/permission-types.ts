@@ -1,15 +1,28 @@
 import type { PermissionResult, PermissionUpdate } from "@anthropic-ai/claude-agent-sdk";
 import type { DestructiveRule } from "../safety/destructive-rules-file.js";
+import type { ReviewVerdict } from "./command-reviewer.js";
 
 export type Decision = "once" | "always" | "deny";
 
 /** Plain-language explanation of a worker's command, for the approval card. */
 export type ExplainCommand = (project: string, command: string) => Promise<string>;
 
+/** Whether a worker's tool call is routine enough to run without asking you. */
+export type ReviewCommand = (
+  project: string,
+  call: ToolCall,
+  rule: DestructiveRule | undefined,
+) => Promise<ReviewVerdict>;
+
 /** A tool call a worker wants to make. */
 export interface ToolCall {
   toolName: string;
   input: Record<string, unknown>;
+}
+
+/** Where a worker's tool call asks for permission; it resolves once the call may run or is refused. */
+export interface PermissionRequests {
+  request(sessionId: string, call: ToolCall, context: RequestContext): Promise<PermissionResult>;
 }
 
 /** What the SDK passes along with a permission request. */

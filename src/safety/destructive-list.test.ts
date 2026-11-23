@@ -13,13 +13,13 @@ const list = new DestructiveList(rulesFile);
 
 const DANGEROUS: [string, string][] = [
   ["git push origin main", "push"],
-  ["git commit -m 'x'", "commit"],
+  ["git merge feature", "merge"],
   ["git reset --hard HEAD~1", "reset"],
   ["rm -rf dist", "delete"],
   ["git checkout .", "discard"],
   ["psql -c 'DROP TABLE users'", "drop"],
   ["git -C ../repo push", "push"],
-  ["git -c user.name=x -c user.email=y commit -m z", "commit"],
+  ["git -c user.name=x -c user.email=y merge feature", "merge"],
   ["git --no-pager -C 'my repo' reset --hard", "reset"],
   ["cd api && git push --force", "push"],
   ["npm run deploy", "deploy"],

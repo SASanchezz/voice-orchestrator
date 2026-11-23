@@ -11,6 +11,8 @@ export interface DestructiveRule {
   verb: string;
   tools?: string[];
   scope?: RuleScope;
+  /** Always goes to you; the reviewer may never approve it. */
+  alwaysAsk?: boolean;
 }
 
 const ruleSchema = z.object({
@@ -24,6 +26,10 @@ const ruleSchema = z.object({
     .enum(RULE_SCOPES)
     .nullish()
     .transform((scope) => scope ?? undefined),
+  alwaysAsk: z
+    .boolean()
+    .nullish()
+    .transform((alwaysAsk) => alwaysAsk ?? undefined),
 });
 const rulesFileSchema = z.object({ rules: z.array(ruleSchema).nullish() }).nullish();
 

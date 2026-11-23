@@ -24,31 +24,27 @@ async function verbAfterCheck(command: string, folder: string): Promise<string |
   return rules.ruleFor(call, toolUseId)?.verb;
 }
 
-test("branch-scoped rules: a commit on a worktree branch needs no phrase", async () => {
-  assert.equal(await verbAfterCheck("git add -A && git commit --no-edit -q", worktree), undefined);
-});
-
 test("branch-scoped rules: a merge on a worktree branch needs no phrase", async () => {
   assert.equal(await verbAfterCheck("git merge --no-ff --no-edit worktree-agent-b2", worktree), undefined);
 });
 
-test("branch-scoped rules: a commit in the main checkout needs the phrase", async () => {
-  assert.equal(await verbAfterCheck("git commit -m x", repo), "commit");
+test("branch-scoped rules: a commit in the main checkout needs no phrase", async () => {
+  assert.equal(await verbAfterCheck("git commit -m x", repo), undefined);
 });
 
 test("branch-scoped rules: a merge in the main checkout needs the phrase", async () => {
   assert.equal(await verbAfterCheck("git merge feature", repo), "merge");
 });
 
-test("branch-scoped rules: a push next to a worktree commit still needs the phrase", async () => {
-  assert.equal(await verbAfterCheck("git commit -m x && git push", worktree), "push");
+test("branch-scoped rules: a push next to a worktree merge still needs the phrase", async () => {
+  assert.equal(await verbAfterCheck("git merge feature && git push", worktree), "push");
 });
 
-test("branch-scoped rules: a worktree commit next to an unscoped rule still needs a phrase", async () => {
-  assert.notEqual(await verbAfterCheck("rm -rf src && git commit -m x", worktree), undefined);
+test("branch-scoped rules: a worktree merge next to an unscoped rule still needs a phrase", async () => {
+  assert.notEqual(await verbAfterCheck("rm -rf src && git merge feature", worktree), undefined);
 });
 
 test("branch-scoped rules: a call the hook never checked keeps every rule", () => {
-  const call = { toolName: "Bash", input: { command: "git commit -m x" } };
-  assert.equal(workerRules(destructive).ruleFor(call, "never-checked")?.verb, "commit");
+  const call = { toolName: "Bash", input: { command: "git merge feature" } };
+  assert.equal(workerRules(destructive).ruleFor(call, "never-checked")?.verb, "merge");
 });

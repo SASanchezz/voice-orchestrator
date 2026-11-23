@@ -8,7 +8,8 @@ import type { ToolCall } from "./permission-types.js";
 /**
  * Which tool calls may run without asking you. Destructive ones and those that read a secret never may; file edits may
  * only inside the project's folder or a folder you allowed an edit in; ones that only read, search or list always may;
- * anything else may in auto mode and asks you in ask mode.
+ * anything else may in auto mode and asks you in ask mode. In auto mode the reviewer model may pass what would ask you,
+ * except calls matching an always-ask rule.
  */
 export class PermissionPolicy {
   constructor(
@@ -38,6 +39,10 @@ export class PermissionPolicy {
     if (rule || readsSecrets(call.toolName, call.input)) return false;
     if (isFileEdit(call.toolName)) return this.edits.allows(sessionId, call);
     return this.mode === "auto" || isReadOnlyCall(call.toolName, call.input);
+  }
+
+  allowsReview(rule: DestructiveRule | undefined): boolean {
+    return this.mode === "auto" && !rule?.alwaysAsk;
   }
 
   /** You allowed the call: an edit outside the allowed folders opens its folder to the session. */

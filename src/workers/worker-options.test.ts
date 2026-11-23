@@ -67,13 +67,13 @@ async function hookAnswer(command: string, cwd: string): Promise<HookJSONOutput>
   return hook(input, base.tool_use_id, { signal: new AbortController().signal });
 }
 
-test("worker options: a commit in a worktree on its own branch isn't forced to ask", async () => {
+test("worker options: a merge in a worktree on its own branch isn't forced to ask", async () => {
   const worktree = addWorktree(makeGitRepo(), "worktree-agent-a1");
-  assert.deepEqual(await hookAnswer("git commit -m x", worktree), {});
+  assert.deepEqual(await hookAnswer("git merge feature", worktree), {});
 });
 
-test("worker options: a commit in the main checkout is forced to ask", async () => {
-  assert.notDeepEqual(await hookAnswer("git commit -m x", makeGitRepo()), {});
+test("worker options: a merge in the main checkout is forced to ask", async () => {
+  assert.notDeepEqual(await hookAnswer("git merge feature", makeGitRepo()), {});
 });
 
 test("worker options: a task runs on the model it was given", () => {

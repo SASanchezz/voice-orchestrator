@@ -1,6 +1,7 @@
 # Destructive actions. Hot-reloaded on save; also editable by voice ("add terraform apply to destructive").
 #
-# Anything matching here can never be auto-approved or "always allowed".
+# Anything matching here can never be "always allowed". In auto mode the reviewer model reads each match and runs
+# the routine ones (rm -rf node_modules, a rebase of a local branch, ...); the rest, and every match in ask mode, go to you.
 # To approve, you must SAY the confirm phrase: "confirm <verb>" or "allow <verb>" (e.g. "confirm push").
 #
 #   pattern: case-insensitive regex, tested against the command text
@@ -14,10 +15,10 @@
 #            branch (permissions.protectedBranches in config.yaml, or the branch of the repo's main checkout), or
 #            when it can't tell which branch (an unclear cd, a branch switch, a detached HEAD). On any other branch
 #            of a linked worktree it runs like any other command. The operator's own commands always need the phrase.
+#   alwaysAsk: optional; true: always goes to you, the reviewer may never approve it (pushes, deploys, anything remote)
 
 rules:
-  - { pattern: '\bgit\s+push\b',                 verb: push }
-  - { pattern: '\bgit\s+commit\b',               verb: commit, scope: protectedBranch }
+  - { pattern: '\bgit\s+push\b',                 verb: push, alwaysAsk: true }
   - { pattern: '\bgit\s+merge\b',                verb: merge, scope: protectedBranch }
   - { pattern: '\bgit\s+reset\s+--hard\b',       verb: reset }
   - { pattern: '\bgit\s+clean\b',                verb: clean }
@@ -26,12 +27,12 @@ rules:
   - { pattern: '\bgit\s+rebase\b',               verb: rebase }
   - { pattern: '\bgit\s+stash\s+(drop|clear)\b', verb: drop }
   - { pattern: '\brm\s+(-\w*[rf]\w*\s+)',        verb: delete }
-  - { pattern: '\b(drop|truncate)\s+(table|database|schema)\b', verb: drop }
-  - { pattern: '\bnpm\s+publish\b',              verb: publish }
+  - { pattern: '\b(drop|truncate)\s+(table|database|schema)\b', verb: drop, alwaysAsk: true }
+  - { pattern: '\bnpm\s+publish\b',              verb: publish, alwaysAsk: true }
   - { pattern: '\bdocker\s+(system\s+prune|volume\s+rm|rm)\b', verb: prune }
-  - { pattern: '\bkubectl\s+(delete|apply)\b',   verb: apply }
-  - { pattern: '\bterraform\s+(apply|destroy)\b', verb: apply }
-  - { pattern: '\b(migrate|migration)\b.*\b(prod|production)\b', verb: migrate }
-  - { pattern: '\bdeploy\b',                     verb: deploy }
-  - { pattern: '^mcp__claude_ai_Google_Calendar__delete_event\b', verb: delete, tools: [mcp__claude_ai_Google_Calendar__delete_event] }
-  - { pattern: '^mcp__claude_ai_Google_Calendar__update_event\b', verb: update, tools: [mcp__claude_ai_Google_Calendar__update_event] }
+  - { pattern: '\bkubectl\s+(delete|apply)\b',   verb: apply, alwaysAsk: true }
+  - { pattern: '\bterraform\s+(apply|destroy)\b', verb: apply, alwaysAsk: true }
+  - { pattern: '\b(migrate|migration)\b.*\b(prod|production)\b', verb: migrate, alwaysAsk: true }
+  - { pattern: '\bdeploy\b',                     verb: deploy, alwaysAsk: true }
+  - { pattern: '^mcp__claude_ai_Google_Calendar__delete_event\b', verb: delete, tools: [mcp__claude_ai_Google_Calendar__delete_event], alwaysAsk: true }
+  - { pattern: '^mcp__claude_ai_Google_Calendar__update_event\b', verb: update, tools: [mcp__claude_ai_Google_Calendar__update_event], alwaysAsk: true }

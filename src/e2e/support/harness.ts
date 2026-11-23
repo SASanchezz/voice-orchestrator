@@ -63,6 +63,7 @@ export const app = buildApp(cfg, {
   wakeTraining: new UnavailableWakeTraining("There is no mic in tests."),
   mic: new SharedMic(new UnavailableDictation(), { stopSpeaking: () => {}, play: () => {} }),
   explainCommands: false,
+  reviewCommands: false,
   nameSessions: false,
   popups,
   questionPanels,

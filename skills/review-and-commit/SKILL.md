@@ -16,5 +16,5 @@ voice-worker:review-and-commit skill; your part is to pick the session and set t
    ask whether to wait for it or commit now.
 3. Send it to a new session unless the active session is idle and fresh, with exactly this instruction:
    "Operations: review and commit the uncommitted changes, using the voice-worker:review-and-commit skill."
-4. Tell the user each commit will ask for "confirm commit", once per commit. That phrase is still needed every time.
-   The skill never pushes; a push is a separate request.
+4. Tell the user the commits run without asking. The skill never pushes; a push is a separate request that needs
+   "confirm push".
