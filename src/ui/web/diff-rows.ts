@@ -5,6 +5,9 @@ import type { CommentBox } from "./diff-comment.js";
 import { button, el } from "./dom.js";
 import { codeWithSymbols } from "./symbol-links.js";
 
+const GUTTER_CLASS = "diff-gutter";
+const GUTTER_HINT = "Comment on this line";
+
 export type LinesLoader = (range: Pick<HiddenRange, "from" | "to">) => Promise<string[]>;
 
 export function diffEntryRow(entry: DiffLine | HiddenRange, comment: CommentBox, loadLines: LinesLoader): HTMLElement {
@@ -16,8 +19,15 @@ export function diffRow(line: DiffLine, comment: CommentBox): HTMLDivElement {
   const number = el("span", { class: "diff-number" }, line.newLine === undefined ? "" : String(line.newLine));
   const text = line.kind === "hunk" ? [line.text] : codeWithSymbols(line.text);
   const row = el("div", { class: `diff-line ${line.kind}` }, number, el("span", { class: "diff-text" }, ...text));
-  if (line.kind !== "hunk") row.addEventListener("click", () => comment.aimAt(row, line.newLine));
+  if (line.kind !== "hunk") aimFromGutter(number, () => comment.aimAt(row, line.newLine));
   return row;
+}
+
+/** Only the line number aims the comment, so clicking or double-clicking the code just selects text to copy. */
+export function aimFromGutter(number: HTMLElement, aim: () => void): void {
+  number.classList.add(GUTTER_CLASS);
+  number.title = GUTTER_HINT;
+  number.addEventListener("click", aim);
 }
 
 /** Opens, in place, into the rows `rowsOf` makes of the lines it hid. */

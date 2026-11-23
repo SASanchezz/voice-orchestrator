@@ -33,6 +33,7 @@ import { SessionModelActions } from "../ui/server/session-model-actions.js";
 import { SessionSweepActions } from "../ui/server/session-sweep-actions.js";
 import { SiteRouter } from "../ui/server/site-router.js";
 import { StatePublisher } from "../ui/server/state-publisher.js";
+import { FreshSessionTasks } from "../ui/server/fresh-session-tasks.js";
 import { TabActions } from "../ui/server/tab-actions.js";
 import { ReopenActions } from "../ui/server/reopen-actions.js";
 import { TaskActions } from "../ui/server/task-actions.js";
@@ -184,10 +185,11 @@ function noticeHandlers({ actions, shownSessions }: NoticeParts): Pick<RouteHand
 function sessionHandlers(
   core: Core,
   { workers }: OperatorNeighbors,
-  { reporter, lookup }: UiSources,
-): Pick<RouteHandlers, "tabs" | "reopens" | "sessions" | "models" | "sweeps"> {
+  { reporter, lookup, tasks }: UiSources,
+): Pick<RouteHandlers, "tabs" | "freshSessions" | "reopens" | "sessions" | "models" | "sweeps"> {
   return {
     tabs: new TabActions(core.registry, lookup, reporter),
+    freshSessions: new FreshSessionTasks(core.registry, lookup, tasks),
     reopens: new ReopenActions(workers.closedSessions, workers.reopener, reporter),
     sessions: new SessionActions(workers.control, lookup, reporter),
     models: new SessionModelActions(workers.models, lookup, reporter),

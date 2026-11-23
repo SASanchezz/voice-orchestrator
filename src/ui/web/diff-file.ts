@@ -1,4 +1,5 @@
-// One changed file in the Review view: its name and counts, what you can do with it, its diff and a comment box.
+// One changed file in the Review view: its name and counts, what you can do with it, its diff and a comment box, and
+// a second "Mark reviewed" at its end so you needn't scroll back up once you've read it.
 
 import type { ChangedFileView, FileDiffView } from "../change-views.js";
 import { act } from "./api.js";
@@ -13,6 +14,8 @@ import { onSymbolModifierClick } from "./symbol-links.js";
 import { showDefinitions } from "./definition-peek.js";
 
 const LOADING = "Loading…";
+const MARK_LABEL = "Mark reviewed";
+const REVIEWED_LABEL = "Reviewed ✓";
 
 export function diffFile(file: ChangedFileView, source: DiffSource): HTMLDetailsElement {
   const { project } = source;
@@ -23,6 +26,7 @@ export function diffFile(file: ChangedFileView, source: DiffSource): HTMLDetails
     fileSummary(file),
     fileActions(file, source, reviewed),
     el("div", { class: "diff-body" }, el("p", { class: "diff-note" }, LOADING)),
+    el("div", { class: "diff-actions diff-end" }, endMark(project, file, reviewed)),
   );
   section.open = !reviewed;
   return section;
@@ -37,9 +41,21 @@ function fileSummary(file: ChangedFileView): HTMLElement {
 
 function fileActions(file: ChangedFileView, source: DiffSource, reviewed: boolean): HTMLDivElement {
   const { project } = source;
-  const mark = button(reviewed ? "Reviewed ✓" : "Mark reviewed", "ghost diff-mark", () => toggleReview(project, file));
+  const mark = button(markLabel(reviewed), "ghost diff-mark", () => toggleReview(project, file));
   const stage = source.canStage ? stageButton(project, file) : "";
   return el("div", { class: "diff-actions" }, mark, stage, layoutToggle(project, file.path));
+}
+
+/** Marking it here folds the file and brings its name to the top, so the next file follows straight below. */
+function endMark(project: string, file: ChangedFileView, reviewed: boolean): HTMLButtonElement {
+  return button(markLabel(reviewed), "ghost diff-mark", () => {
+    toggleReview(project, file);
+    sectionOf(file)?.scrollIntoView({ block: "start" });
+  });
+}
+
+function markLabel(reviewed: boolean): string {
+  return reviewed ? REVIEWED_LABEL : MARK_LABEL;
 }
 
 function stageButton(project: string, file: ChangedFileView): HTMLButtonElement {
@@ -50,8 +66,13 @@ function stageButton(project: string, file: ChangedFileView): HTMLButtonElement 
 
 function toggleReview(project: string, file: ChangedFileView): void {
   setMarkedReviewed(project, file, !isMarkedReviewed(project, file));
-  const section = document.querySelector<HTMLDetailsElement>(`.diff-file[data-path="${CSS.escape(file.path)}"]`);
+  const section = sectionOf(file);
   if (section) syncDiffFile(section, project, file);
+}
+
+/** Found again each time, since the diffs may have been rebuilt. */
+function sectionOf(file: ChangedFileView): HTMLDetailsElement | undefined {
+  return document.querySelector<HTMLDetailsElement>(`.diff-file[data-path="${CSS.escape(file.path)}"]`) ?? undefined;
 }
 
 async function stageFile(project: string, file: ChangedFileView): Promise<void> {
@@ -63,8 +84,7 @@ async function stageFile(project: string, file: ChangedFileView): Promise<void> 
 export function syncDiffFile(section: HTMLDetailsElement, project: string, file: ChangedFileView): void {
   const reviewed = isMarkedReviewed(project, file);
   section.open = !reviewed;
-  const mark = section.querySelector(".diff-mark");
-  if (mark) mark.textContent = reviewed ? "Reviewed ✓" : "Mark reviewed";
+  for (const mark of section.querySelectorAll(".diff-mark")) mark.textContent = markLabel(reviewed);
 }
 
 /** The diff, or why there is none. All of it goes in as text. Switching layout keeps the comment you're writing. */

@@ -6,6 +6,7 @@ import { fetchFileDiff } from "./api.js";
 import { closeDefinitions } from "./definition-peek.js";
 import { button, byId, el } from "./dom.js";
 import { diffFile, fillDiff, syncDiffFile } from "./diff-file.js";
+import { foldButtons } from "./diff-folding.js";
 import type { DiffSource } from "./diff-source.js";
 
 /** Starts loading a little before a file scrolls into view. */
@@ -29,7 +30,7 @@ export function showDiffsOf({ files }: ProjectChangesView, source: DiffSource): 
     rootMargin: LOAD_AHEAD,
   });
   const sections = files.map((file) => diffFile(file, source));
-  pane.replaceChildren(refreshBar(), symbolHint(), ...sections);
+  pane.replaceChildren(refreshBar(), diffToolbar(), ...sections);
   sections.forEach(watchSection);
 }
 
@@ -71,6 +72,10 @@ export function keepDiffScroll(): void {
 
 export function restoreDiffScroll(): void {
   byId("diff-pane", HTMLElement).scrollTop = keptScrollTop;
+}
+
+function diffToolbar(): HTMLDivElement {
+  return el("div", { class: "diff-toolbar" }, symbolHint(), foldButtons());
 }
 
 function symbolHint(): HTMLParagraphElement {

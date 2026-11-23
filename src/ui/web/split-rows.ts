@@ -3,7 +3,7 @@
 
 import type { SplitEntry, SplitHiddenRange, SplitLine, SplitRow } from "../split-diff.js";
 import type { CommentBox } from "./diff-comment.js";
-import { diffRow, hiddenRangeRow, type LinesLoader } from "./diff-rows.js";
+import { aimFromGutter, diffRow, hiddenRangeRow, type LinesLoader } from "./diff-rows.js";
 import { el } from "./dom.js";
 import { codeWithSymbols } from "./symbol-links.js";
 
@@ -32,7 +32,7 @@ function side(line: SplitLine | undefined, comment: CommentBox, newLine: number 
   const number = el("span", { class: "diff-number" }, String(line.number));
   const text = el("span", { class: "diff-text" }, ...codeWithSymbols(line.text));
   const cell = el("div", { class: `split-side ${line.kind}` }, number, text);
-  cell.addEventListener("click", () => comment.aimAt(cell, newLine));
+  aimFromGutter(number, () => comment.aimAt(cell, newLine));
   return cell;
 }
 

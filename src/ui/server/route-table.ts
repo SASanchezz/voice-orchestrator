@@ -14,6 +14,7 @@ import type { ChangeActions } from "./change-actions.js";
 import type { MicActions } from "./mic-actions.js";
 import type { SpokenMessages } from "../../orchestrator/conversation/spoken-messages.js";
 import type { FrontSessionActions } from "./front-session-actions.js";
+import type { FreshSessionTasks } from "./fresh-session-tasks.js";
 import type { HandoffActions } from "./handoff-actions.js";
 import type { LinkActions } from "./link-actions.js";
 import { MAX_ATTACHED_BODY_BYTES } from "./attachment-body.js";
@@ -37,6 +38,7 @@ import type { SessionActions } from "./session-actions.js";
 import type { SessionModelActions } from "./session-model-actions.js";
 import type { SessionSweepActions } from "./session-sweep-actions.js";
 import type { ReopenActions } from "./reopen-actions.js";
+import { sessionRoutes } from "./session-routes.js";
 import type { TabActions } from "./tab-actions.js";
 import type { TaskActions } from "./task-actions.js";
 import type { ChatSendActions } from "./chat-send-actions.js";
@@ -87,6 +89,8 @@ export interface RouteHandlers {
   tabs: TabActions;
   reopens: ReopenActions;
   tasks: TaskActions;
+  /** Tasks that open a session of their own, like questions asked from the Review view. */
+  freshSessions: FreshSessionTasks;
   todoItems: TodoItemHandlers;
   sessions: SessionActions;
   /** The model a session's worker runs on. */
@@ -154,26 +158,6 @@ function fileFreeRoutes(h: RouteHandlers): [RegExp, Route][] {
     ...voiceRoutes(h),
     ...wakeTrainingRoutes(h.wakeTraining),
     ...editorRoutes(h.editor),
-  ];
-}
-
-/** The session tabs and what a session's buttons and menu do. */
-function sessionRoutes(h: RouteHandlers): [RegExp, Route][] {
-  return [
-    [/^\/api\/projects\/([^/]+)\/sessions$/, (_b, m) => h.tabs.createSession(decodeURIComponent(m[1]))],
-    [/^\/api\/projects\/([^/]+)\/sessions\/close-all$/, (_b, m) => h.sweeps.closeAll(decodeURIComponent(m[1]))],
-    [
-      /^\/api\/projects\/([^/]+)\/closed-sessions\/([\w-]+)\/reopen$/,
-      (_b, m) => h.reopens.reopenSession(decodeURIComponent(m[1]), m[2]),
-    ],
-    [/^\/api\/sessions\/([\w-]+)\/activate$/, (_b, m) => h.tabs.activateSession(m[1])],
-    [/^\/api\/sessions\/([\w-]+)\/close$/, (_b, m) => h.sessions.closeSession(m[1])],
-    [/^\/api\/sessions\/([\w-]+)\/close-others$/, (_b, m) => h.sweeps.closeOthers(m[1])],
-    [/^\/api\/sessions\/([\w-]+)\/clear$/, (_b, m) => h.sessions.clearSession(m[1])],
-    [/^\/api\/sessions\/([\w-]+)\/stop$/, (_b, m) => h.sessions.stopTask(m[1])],
-    [/^\/api\/sessions\/([\w-]+)\/queue\/remove$/, (b, m) => h.queue.removeQueued(m[1], b)],
-    [/^\/api\/sessions\/([\w-]+)\/handoff$/, (_b, m) => h.handoffs.handOff(m[1])],
-    [/^\/api\/sessions\/([\w-]+)\/model$/, (b, m) => h.models.setModel(m[1], b)],
   ];
 }
 

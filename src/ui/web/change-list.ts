@@ -1,17 +1,18 @@
-// The Review view's left side: each project with its changed files, a tick for the ones you've reviewed. A project
-// comparing branches lists the files its branch changed instead. A folder of repositories heads each repository's
-// files with its name, which shows just that repository when clicked. The search box above narrows the projects.
+// The Review view's left side: each project with its changed files as a folder tree, a tick for the ones you've
+// reviewed and a count per folder. A project comparing branches lists the files its branch changed instead. A folder
+// of repositories heads each repository's tree with its name, which shows just that repository when clicked. The search box above narrows the projects.
 
-import type { ChangedFileView, ProjectChangesView } from "../change-views.js";
+import { changeTree } from "../change-tree.js";
+import type { ProjectChangesView } from "../change-views.js";
 import { changeTotals } from "../reviewed-files.js";
 import { shownChanges } from "./branch-comparison.js";
 import { matchesChangeSearch, noMatchNote, wireChangeSearch } from "./change-search.js";
-import { revealDiff, syncReviewed } from "./diff-pane.js";
+import { reviewedCount, treeRows } from "./change-tree-rows.js";
 import { byId, el } from "./dom.js";
-import { isMarkedReviewed, setMarkedReviewed } from "./review-marks.js";
 import { store } from "./store.js";
 import {
   ALL_REPOSITORIES,
+  filesIn,
   repositoryOfFile,
   showUncommittedIn,
   uncommittedRepositoryOf,
@@ -88,29 +89,30 @@ function closeGroup(): void {
 function headNote(view: ProjectChangesView): string {
   if (!view.isRepository) return "no git";
   if (!view.files.length) return "clean";
-  return `${view.files.length} · ${changeTotals(view)}`;
+  return `${reviewedCount(view.project, view.files)} reviewed · ${changeTotals(view)}`;
 }
 
 /** Only the open project lists its files, so the list stays short with many projects. */
 function groupBody(view: ProjectChangesView): HTMLElement[] {
   if (!isOpen(view)) return [];
-  const files = view.files.flatMap((_file, index) => fileRows(view, index));
+  const rows = showsAllRepositories(view) ? repositoryRows(view) : treeRows(view.project, changeTree(view.files, ""));
   const more = el("p", { class: "change-note" }, `…and ${view.moreFiles} more files`);
-  return view.moreFiles ? [...files, more] : files;
+  return view.moreFiles ? [...rows, more] : rows;
 }
 
-/** The file's row, under its repository's name when it's the first file listed from that repository. */
-function fileRows(view: ProjectChangesView, index: number): HTMLElement[] {
-  const file = view.files[index];
-  const row = fileRow(view.project, file);
-  if (!startsRepository(view, index)) return [row];
-  return [repositoryHeading(view.project, repositoryOfFile(file)), row];
+function showsAllRepositories(view: ProjectChangesView): boolean {
+  return Boolean(view.repositories?.length) && uncommittedRepositoryOf(view) === ALL_REPOSITORIES;
 }
 
-function startsRepository(view: ProjectChangesView, index: number): boolean {
-  const showsAllRepositories = Boolean(view.repositories?.length) && uncommittedRepositoryOf(view) === ALL_REPOSITORIES;
-  if (!showsAllRepositories || index === 0) return showsAllRepositories;
-  return repositoryOfFile(view.files[index - 1]) !== repositoryOfFile(view.files[index]);
+/** Each repository's name, then its files' tree. */
+function repositoryRows(view: ProjectChangesView): HTMLElement[] {
+  const repositories = [...new Set(view.files.map(repositoryOfFile))];
+  return repositories.flatMap((repository) => repositorySection(view, repository));
+}
+
+function repositorySection(view: ProjectChangesView, repository: string): HTMLElement[] {
+  const tree = changeTree(filesIn(view.files, repository), `${repository}/`);
+  return [repositoryHeading(view.project, repository), ...treeRows(view.project, tree)];
 }
 
 function repositoryHeading(project: string, repository: string): HTMLButtonElement {
@@ -118,17 +120,4 @@ function repositoryHeading(project: string, repository: string): HTMLButtonEleme
   heading.title = `Show only ${repository}`;
   heading.addEventListener("click", () => showUncommittedIn(project, repository));
   return heading;
-}
-
-function fileRow(project: string, file: ChangedFileView): HTMLDivElement {
-  const reviewed = isMarkedReviewed(project, file);
-  const tick = el("input", { type: "checkbox", title: "Reviewed", "aria-label": `Reviewed ${file.path}` });
-  tick.checked = reviewed;
-  tick.addEventListener("change", () => {
-    setMarkedReviewed(project, file, tick.checked);
-    syncReviewed(project, file);
-  });
-  const name = el("button", { type: "button", title: `${file.path} (${file.kind})` }, `‎${file.path}`);
-  name.addEventListener("click", () => revealDiff(file.path));
-  return el("div", { class: `change-file${reviewed ? " reviewed" : ""}` }, tick, name);
 }

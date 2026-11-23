@@ -7,7 +7,7 @@
 .split-side {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
-  cursor: pointer;
+  cursor: text;
 }
 .split-side + .split-side {
   border-left: 1px solid var(--border);
@@ -16,7 +16,7 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-.split-side:hover {
+.split-side:has(.diff-gutter:hover) {
   outline: 1px solid var(--border);
 }
 .split-side.commented {
@@ -32,7 +32,4 @@
 .split-side.empty {
   background: var(--surface-2);
   cursor: default;
-}
-.split-side.empty:hover {
-  outline: none;
 }
