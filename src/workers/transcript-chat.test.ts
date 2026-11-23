@@ -51,3 +51,33 @@ test("tool results, background notifications and Claude Code's own lines are lef
   const meta = userEntry("Caveat: local commands", { isMeta: true });
   assert.deepEqual(await chatOf([toolResult, notification, meta]), []);
 });
+
+test("a later task ends the run before it, as the live chat's status line does", async () => {
+  const chat = await chatOf([
+    userEntry("first"),
+    assistantEntry([{ type: "text", text: "Answer." }]),
+    userEntry("second"),
+  ]);
+  assert.deepEqual(
+    chat.map((line) => [line.kind, line.text]),
+    [
+      ["task", "first"],
+      ["reply", "Answer."],
+      ["status", "Finished."],
+      ["task", "second"],
+    ],
+  );
+});
+
+test("a run's end keeps the time of its last line", async () => {
+  const chat = await chatOf([assistantEntry([{ type: "text", text: "Answer." }]), userEntry("next")]);
+  assert.equal(chat.find((line) => line.kind === "status")?.at, "2026-11-19T07:01:00.000Z");
+});
+
+test("tasks in a row with no worker lines between them add no run end", async () => {
+  const chat = await chatOf([userEntry("first"), userEntry("second")]);
+  assert.deepEqual(
+    chat.map((line) => line.kind),
+    ["task", "task"],
+  );
+});

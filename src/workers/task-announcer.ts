@@ -5,6 +5,8 @@ import type { WorkerChat } from "./worker-chat.js";
 
 /** The end of the worker's closing note that is passed on; the rest stays in its chat and history. */
 const RESULT_CHARS = 1200;
+/** The status line that ends a run in the session's chat, which keeps the run's answer out of its folded steps. */
+export const FINISHED_NOTE = "Finished.";
 
 /** Tells the orchestrator (an event) and the session's chat (a status line) how a task ended. */
 export class TaskAnnouncer {
@@ -22,7 +24,7 @@ export class TaskAnnouncer {
   }
 
   finished(task: RunningTask): void {
-    this.chat.say(task.sessionId, "status", "Finished.");
+    this.chat.say(task.sessionId, "status", FINISHED_NOTE);
   }
 
   failed(task: RunningTask, error: string): void {

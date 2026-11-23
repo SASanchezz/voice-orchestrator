@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
+import { FINISHED_NOTE } from "./task-announcer.js";
 import { HEADLESS_NOTE, PARALLEL_WORK_NOTE } from "./task-launcher.js";
 import type { SessionMessage } from "./worker-chat.js";
 import { stepOf } from "./worker-activity.js";
@@ -34,7 +35,20 @@ const ADDED_NOTES = [PARALLEL_WORK_NOTE, HEADLESS_NOTE];
  */
 export async function readTranscriptChat(file: string): Promise<TranscriptLine[]> {
   const lines = (await readFile(file, "utf8")).split("\n");
-  return lines.flatMap(parsedEntry).flatMap(chatLinesOf);
+  return withRunEnds(lines.flatMap(parsedEntry).flatMap(chatLinesOf));
+}
+
+/** The transcript doesn't record where a run ended, so each later task closes the one before, as the live chat does. */
+function withRunEnds(lines: TranscriptLine[]): TranscriptLine[] {
+  return lines.flatMap((line, index) => {
+    const previous = lines[index - 1];
+    const endsRun = line.kind === "task" && previous !== undefined && previous.kind !== "task";
+    return endsRun ? [runEndAfter(previous), line] : [line];
+  });
+}
+
+function runEndAfter(previous: TranscriptLine): TranscriptLine {
+  return { kind: "status", text: FINISHED_NOTE, at: previous.at };
 }
 
 function parsedEntry(line: string): Entry[] {

@@ -2,6 +2,7 @@ import { EventEmitter } from "node:events";
 import type { AppEvent, AppEvents } from "../events/app-events.js";
 import type { SessionMessage, WorkerChat } from "../workers/worker-chat.js";
 import type { ChatFiles, ChatMessage } from "./chat-files.js";
+import { trimChat } from "./chat-trim.js";
 import { questionsLine } from "./feed-entry.js";
 
 const MAX_MESSAGES_PER_SESSION = 200;
@@ -41,7 +42,7 @@ export class SessionChats extends EventEmitter {
   private add({ session, ...line }: SessionMessage): void {
     const history = this.messagesOf(session);
     const message = nextMessage(history, line);
-    const next = [...history, message].slice(-MAX_MESSAGES_PER_SESSION);
+    const next = trimChat([...history, message], MAX_MESSAGES_PER_SESSION);
     this.chats.set(session, next);
     this.files.write(session, next);
     this.emit("message", { session, message });
