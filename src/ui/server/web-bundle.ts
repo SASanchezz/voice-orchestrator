@@ -2,9 +2,10 @@ import { build } from "esbuild";
 import { resolve } from "node:path";
 import { APP_DIR } from "../../config/paths.js";
 
-/** The web UI's page, and the notice panel's. */
+/** The web UI's page, the notice panel's and the quick panel's. */
 export const APP_ENTRY = resolve(APP_DIR, "src/ui/web/app.ts");
 export const NOTICE_ENTRY = resolve(APP_DIR, "src/ui/web/notice/notice-app.ts");
+export const QUICK_ENTRY = resolve(APP_DIR, "src/ui/web/quick/quick-app.ts");
 
 /**
  * Compiles a page's TypeScript (src/ui/web/) into one browser script, in memory.

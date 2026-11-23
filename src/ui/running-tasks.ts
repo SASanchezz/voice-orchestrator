@@ -6,7 +6,11 @@ import type { ProjectView, SessionStatus, SessionView } from "./protocol.js";
 const BUSY_STATUSES: SessionStatus[] = ["running", "waiting_permission"];
 
 export function isBusy(session: SessionView): boolean {
-  return BUSY_STATUSES.includes(session.status);
+  return isBusyStatus(session.status);
+}
+
+export function isBusyStatus(status: SessionStatus): boolean {
+  return BUSY_STATUSES.includes(status);
 }
 
 /** Tasks in progress across every project, including those waiting for your permission. */

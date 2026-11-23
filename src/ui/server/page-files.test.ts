@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { APP_DIR } from "../../config/paths.js";
 import { STATIC_FILES } from "./page-files.js";
 
-const PAGES = ["src/ui/public/index.html", "src/ui/public/notice.html"];
+const PAGES = ["src/ui/public/index.html", "src/ui/public/notice.html", "src/ui/public/quick.html"];
 
 function linkedStylesheets(page: string): string[] {
   const html = readFileSync(resolve(APP_DIR, page), "utf8");

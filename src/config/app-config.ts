@@ -4,6 +4,7 @@ import { cameraSchema } from "./camera-config.js";
 import { editorSchema } from "./editor-config.js";
 import { messagesSchema } from "./messages-config.js";
 import { limitsSchema } from "./limits-config.js";
+import { DEFAULT_QUICK_PANEL_HOTKEY, quickPanelHotkeySchema } from "./quick-panel-config.js";
 import { expandHome } from "./paths.js";
 import { sensorsSchema } from "./sensor-config.js";
 import { numberOr } from "./yaml-values.js";
@@ -23,7 +24,7 @@ export type SpeechMode = (typeof SPEECH_MODES)[number];
 
 const DEFAULT_RESET_MINUTES = 60;
 const DEFAULT_ANSWER_WINDOW_SECONDS = 15;
-const DEFAULT_UI = { port: 4777, open: true };
+const DEFAULT_UI = { port: 4777, open: true, quickPanelHotkey: DEFAULT_QUICK_PANEL_HOTKEY };
 /** Branches where a commit or merge still needs the confirm phrase, even in a worktree; `*` matches anything. */
 export const DEFAULT_PROTECTED_BRANCHES = ["main", "master", "develop", "release/*"];
 const DEFAULT_PERMISSIONS = { mode: "ask", reminderMinutes: 5, alwaysDestination: "localSettings" } as const;
@@ -84,6 +85,7 @@ const uiSchema = z
       .transform((open) => open ?? DEFAULT_UI.open),
     /** The Chrome app (Install page as app) the web UI runs in; a notice's buttons bring its window up. */
     chromeApp: optionalString,
+    quickPanelHotkey: quickPanelHotkeySchema,
   })
   .nullish()
   .transform((ui) => ui ?? { ...DEFAULT_UI });

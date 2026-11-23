@@ -1,6 +1,12 @@
 import type { ServerResponse } from "node:http";
-import { ATTACHED_IMAGE_PATH, NOTICE_SCRIPT_PATH, SCRIPT_PATH, type PageFiles } from "./page-files.js";
-import { NOTICE_PATH } from "./ui-access.js";
+import {
+  ATTACHED_IMAGE_PATH,
+  NOTICE_SCRIPT_PATH,
+  QUICK_SCRIPT_PATH,
+  SCRIPT_PATH,
+  type PageFiles,
+} from "./page-files.js";
+import { NOTICE_PATH, QUICK_PATH } from "./ui-access.js";
 import { MANIFEST_PATH } from "./web-manifest.js";
 import type { ReadRoutes } from "./read-routes.js";
 
@@ -31,15 +37,25 @@ export class GetRoutes {
   }
 
   private pageOrChat(url: URL, res: ServerResponse): void {
-    if (url.pathname === "/") return this.pages.page(url, res);
-    if (url.pathname === NOTICE_PATH) return this.pages.noticePage(url, res);
-    if (url.pathname === "/api/events") return this.reads.events(url, res);
+    const exact = this.exactRoutes[url.pathname];
+    if (exact) return exact(url, res);
     const sessionMessages = url.pathname.match(SESSION_MESSAGES_PATH);
     if (sessionMessages) return this.reads.sessionMessages(url, sessionMessages[1], res);
-    if (url.pathname === ATTACHED_IMAGE_PATH) return this.pages.attachedImage(url, res);
-    if (url.pathname === SCRIPT_PATH) return this.pages.serveScript(res);
-    if (url.pathname === NOTICE_SCRIPT_PATH) return this.pages.serveNoticeScript(res);
-    if (url.pathname === MANIFEST_PATH) return this.pages.manifest(url, res);
     this.pages.staticFile(url.pathname, res);
   }
+
+  /** The pages, their scripts, the live events, attached images and the manifest, each at a path of its own. */
+  private exactRoutes: Record<string, ExactRoute | undefined> = {
+    "/": (url, res) => this.pages.page(url, res),
+    [NOTICE_PATH]: (url, res) => this.pages.noticePage(url, res),
+    [QUICK_PATH]: (url, res) => this.pages.quickPage(url, res),
+    "/api/events": (url, res) => this.reads.events(url, res),
+    [ATTACHED_IMAGE_PATH]: (url, res) => this.pages.attachedImage(url, res),
+    [SCRIPT_PATH]: (_url, res) => this.pages.serveScript(res),
+    [NOTICE_SCRIPT_PATH]: (_url, res) => this.pages.serveNoticeScript(res),
+    [QUICK_SCRIPT_PATH]: (_url, res) => this.pages.serveQuickScript(res),
+    [MANIFEST_PATH]: (url, res) => this.pages.manifest(url, res),
+  };
 }
+
+type ExactRoute = (url: URL, res: ServerResponse) => void;

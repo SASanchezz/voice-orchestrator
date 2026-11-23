@@ -36,6 +36,11 @@ export class UiServer {
     return this.access.noticeLink();
   }
 
+  /** The quick panel's page, once started; it carries the token. */
+  quickLink(): string {
+    return this.access.quickLink();
+  }
+
   stop(): void {
     this.publisher.stop();
     this.server?.close();

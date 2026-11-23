@@ -11,7 +11,8 @@ const run = promisify(execFile);
 /** Code from native/shared/ that a helper is compiled together with, by helper name. */
 const SHARED_SOURCES: Record<string, string[]> = {
   "popup-panel": ["glass", "voice-panel"],
-  "notice-panel": ["glass", "edit-menu", "panel-sizing"],
+  "notice-panel": ["glass", "edit-menu", "panel-sizing", "page-guard"],
+  "quick-panel": ["glass", "edit-menu", "page-guard", "key-combo"],
   "chat-panel": ["glass", "edit-menu", "chat-messages", "voice-panel"],
 };
 

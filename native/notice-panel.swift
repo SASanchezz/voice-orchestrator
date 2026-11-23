@@ -13,7 +13,6 @@ let width: CGFloat = 460
 let minHeight: CGFloat = 160
 let heightLimits = HeightLimits(min: minHeight, maxScreenShare: 0.7)
 let screenMargin: CGFloat = 12
-let messageName = "panel"
 
 /**
  * Takes typing only after a click into it, never just by appearing, so a new notice doesn't pull the keyboard away from
@@ -59,45 +58,12 @@ final class PointerRelay: NSResponder {
   }
 }
 
-/** Keeps the panel on the page's origin, sends links to the browser, and passes the page's height on for sizing. */
-final class PageGuard: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
-  var origin: URL?
-
-  func webView(
-    _ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
-    decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-  ) {
-    guard let url = action.request.url, !isOwn(url) else { return decisionHandler(.allow) }
-    NSWorkspace.shared.open(url)
-    decisionHandler(.cancel)
-  }
-
-  /** A link meant for a new window ("target=_blank") opens in the browser instead. */
-  func webView(
-    _ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
-    for action: WKNavigationAction, windowFeatures: WKWindowFeatures
-  ) -> WKWebView? {
-    if let url = action.request.url { NSWorkspace.shared.open(url) }
-    return nil
-  }
-
-  func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
-    guard let body = message.body as? [String: Any], let height = body["height"] as? NSNumber else { return }
-    sizing.fit(pageHeight: CGFloat(truncating: height))
-  }
-
-  private func isOwn(_ url: URL) -> Bool {
-    guard let origin else { return false }
-    return url.scheme == origin.scheme && url.host == origin.host && url.port == origin.port
-  }
-}
-
 let app = NSApplication.shared
 app.setActivationPolicy(.accessory)  // never in the Dock; still takes typing once you click the panel
 let pageGuard = PageGuard()
 
 let configuration = WKWebViewConfiguration()
-configuration.userContentController.add(pageGuard, name: messageName)
+configuration.userContentController.add(pageGuard, name: pageMessageName)
 let webView = NoticeWebView(frame: NSRect(x: 0, y: 0, width: width, height: minHeight), configuration: configuration)
 webView.navigationDelegate = pageGuard
 webView.uiDelegate = pageGuard
@@ -114,6 +80,11 @@ let pageHolder = NSView(frame: NSRect(x: 0, y: 0, width: width, height: minHeigh
 pageHolder.addSubview(webView)
 glaze(panel, around: pageHolder)
 let sizing = PanelSizing(of: panel, width: width, heightLimits: heightLimits)
+/** The page tells its natural height, and the panel fits it. */
+pageGuard.onMessage = { body in
+  guard let height = body["height"] as? NSNumber else { return }
+  sizing.fit(pageHeight: CGFloat(truncating: height))
+}
 let titlebarInset = titlebarHeight(of: panel)
 webView.frame = NSRect(x: 0, y: 0, width: width, height: pageHolder.bounds.height - titlebarInset)
 panel.level = .floating

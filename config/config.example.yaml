@@ -69,12 +69,13 @@ ui:
   port: 4777 # the web UI at http://127.0.0.1:4777 (link with access token is printed on start)
   open: true # open it in the browser on start
   chromeApp: Orchestrator # optional: the Chrome app you installed the UI as; pop-ups bring its window up, no new tab
+  quickPanelHotkey: ctrl+option+space # brings up the quick panel from any app, to write to a session or the assistant
 
 permissions:
   mode: auto # auto: workers run everything except destructive commands without asking | ask: every request goes to you. Switch by voice: "ask mode" / "auto mode"
   reminderMinutes: 5 # re-announce unanswered permission requests
   alwaysDestination: localSettings # where "always allow" is saved: localSettings (project's .claude/settings.local.json) | projectSettings | userSettings | session
-  protectedBranches: [main, master, develop, "release/*"] # commits and merges here (and on the main checkout's branch) need "confirm commit" / "confirm merge"; in a worktree on any other branch they run without asking
+  protectedBranches: [main, master, develop, "release/*"] # merges here (and on the main checkout's branch) need "confirm merge"; in a worktree on any other branch they run without asking
 
 # When a session counts as large or expensive. Context: percent of the model's context window
 # (amber badge from warn, red badge plus one spoken notice and a handoff offer from critical). Costs in USD.

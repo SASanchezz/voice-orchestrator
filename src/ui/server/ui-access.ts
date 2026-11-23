@@ -7,6 +7,7 @@ import { HTTP_STATUS, HttpError } from "./http-error.js";
 const TOKEN_BYTES = 24;
 const TOKEN_PLACEHOLDER = "__UI_TOKEN__";
 export const NOTICE_PATH = "/notice";
+export const QUICK_PATH = "/quick";
 
 /**
  * Bound to 127.0.0.1; every API call needs the token from the printed link, so other websites open
@@ -28,6 +29,11 @@ export class UiAccess {
   /** The notice panel's page; it only ever reaches the panel through its stdin, never a command line. */
   noticeLink(): string {
     return this.linkTo(NOTICE_PATH);
+  }
+
+  /** The quick panel's page; like the notice panel's, it reaches the panel only through its stdin. */
+  quickLink(): string {
+    return this.linkTo(QUICK_PATH);
   }
 
   isLocalHost(host: string | undefined): boolean {

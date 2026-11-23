@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="ui-token" content="__UI_TOKEN__" />
+    <title>Quick message</title>
+    <link rel="stylesheet" href="/styles/base.css" />
+    <link rel="stylesheet" href="/styles/tabs.css" />
+    <link rel="stylesheet" href="/styles/buttons.css" />
+    <link rel="stylesheet" href="/styles/quick.css" />
+  </head>
+  <body class="quick-page">
+    <main id="quick" class="quick" aria-label="Quick message">
+      <header class="quick-head">
+        <button
+          type="button"
+          id="quick-target"
+          class="ghost quick-target"
+          aria-haspopup="listbox"
+          aria-expanded="false"
+          aria-controls="quick-options"
+          title="Change who gets your message (⌘K)"
+        >
+          <span id="quick-target-dot" class="dot"></span>
+          <span class="quick-target-to muted">To</span>
+          <span id="quick-target-name" class="quick-target-name"></span>
+          <span class="quick-target-caret" aria-hidden="true">▾</span>
+        </button>
+        <kbd class="quick-key">⌘K</kbd>
+      </header>
+      <p id="quick-context" class="quick-context muted"></p>
+
+      <section id="quick-picker" class="quick-picker" hidden>
+        <input
+          id="quick-search"
+          class="quick-search"
+          type="text"
+          role="combobox"
+          aria-label="Find a project or session"
+          aria-controls="quick-options"
+          aria-expanded="true"
+          aria-autocomplete="list"
+          placeholder="Find a project or session…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <ul id="quick-options" class="quick-options" role="listbox" aria-label="Projects and sessions"></ul>
+      </section>
+
+      <form id="quick-form" class="quick-form">
+        <textarea id="quick-input" class="quick-input" rows="1" aria-label="Message"></textarea>
+        <div class="quick-buttons">
+          <button type="button" id="quick-mic-cancel" class="ghost" title="Discard this recording (Esc)" hidden>
+            ✕
+          </button>
+          <button type="button" id="quick-mic" class="ghost mic-button" aria-label="Speak your message">🎙</button>
+          <button type="submit" id="quick-send" class="primary" title="Send (↩)">Send</button>
+        </div>
+      </form>
+      <p id="quick-status" class="quick-status" role="status" aria-live="polite"></p>
+
+      <nav id="quick-recent" class="quick-recent" aria-label="Recent sessions"></nav>
+      <footer class="quick-hints muted">
+        <span><kbd>↩</kbd> send</span>
+        <span><kbd>⇧↩</kbd> new line</span>
+        <span><kbd>⌘↩</kbd> new session</span>
+        <span><kbd>⌘1</kbd>–<kbd>⌘5</kbd> recent</span>
+        <span><kbd>⌘0</kbd> assistant</span>
+        <span><kbd>esc</kbd> close</span>
+      </footer>
+    </main>
+
+    <script src="/quick.js" type="module"></script>
+  </body>
+</html>

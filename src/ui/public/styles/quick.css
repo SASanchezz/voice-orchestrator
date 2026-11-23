@@ -1,0 +1,212 @@
+/* The quick panel: who gets it, the box, the recent sessions and the shortcuts, on the native panel's glass. The page
+   is only as tall as its content, so the native panel can fit it; past its limit the list scrolls. */
+
+html:has(body.quick-page),
+body.quick-page {
+  height: auto;
+  background: transparent;
+  overflow: hidden;
+}
+body.quick-page {
+  font-size: 13.5px;
+}
+
+.quick {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 10px;
+}
+
+kbd {
+  font: 11px/1 var(--mono);
+  color: var(--muted);
+  padding: 2px 5px;
+  border: 1px solid var(--glass-edge);
+  border-radius: 5px;
+  background: var(--glass-frost);
+}
+
+/* Who gets it: one button, big enough to read at a glance, that opens the list. */
+.quick-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.quick-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 4px 8px;
+  margin-left: -8px;
+  border-color: transparent;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+}
+.quick-target:hover {
+  background: var(--glass-frost);
+}
+.quick-target-to {
+  font-weight: 400;
+}
+.quick-target-name,
+.quick-chip-name,
+.quick-option-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-target-caret {
+  color: var(--muted);
+  font-size: 11px;
+}
+.dot.assistant {
+  background: var(--assistant);
+}
+.quick-context {
+  margin: -4px 0 0;
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The box is the focus of the panel: large type, roomy, the Send button beside it. */
+.quick-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.quick-input {
+  flex: 1 1 auto;
+  font-size: 15px;
+  line-height: 1.4;
+  padding: 10px 12px;
+  background: rgb(13 17 23 / 55%);
+  border-color: var(--glass-edge);
+}
+.quick-buttons {
+  display: flex;
+  gap: 6px;
+}
+.quick-buttons button {
+  height: 40px;
+}
+/* An empty box has nothing to send; the button says so without changing what it does. */
+.quick-form:has(.quick-input:placeholder-shown) button.primary {
+  opacity: 0.45;
+}
+.quick-form .mic-button.recording {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+.quick-form .mic-button.transcribing {
+  cursor: progress;
+}
+
+.quick-status {
+  margin: 0;
+  min-height: 1em;
+  font-size: 12.5px;
+}
+.quick-status:empty {
+  display: none;
+}
+.quick-status.working {
+  color: var(--muted);
+}
+.quick-status.done {
+  color: var(--ok);
+}
+.quick-status.problem {
+  color: var(--danger);
+}
+
+/* Recent sessions, one ⌘-number away each; the chosen one is marked. */
+.quick-recent {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.quick-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 184px;
+  padding: 3px 6px 3px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+}
+.quick-chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* The ⌘K list replaces the context and recent rows while it is open. */
+body.picking .quick-context,
+body.picking .quick-recent {
+  display: none;
+}
+.quick-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.quick-picker[hidden] {
+  display: none;
+}
+.quick-search {
+  font: inherit;
+  color: var(--text);
+  background: rgb(13 17 23 / 55%);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 7px 10px;
+  outline: none;
+}
+.quick-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 264px;
+  overflow-y: auto;
+}
+.quick-options li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.quick-options li.active {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.quick-option-detail {
+  margin-left: auto;
+  flex: none;
+  font-size: 12px;
+}
+.quick-options .quick-empty {
+  cursor: default;
+}
+
+.quick-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 11.5px;
+  padding-top: 6px;
+  border-top: 1px solid var(--glass-edge);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot.running {
+    animation: none;
+  }
+}

@@ -1,8 +1,11 @@
-// Talking to the native notice panel around this page: the page's natural height, so the panel fits it, and where the
-// pointer is, which the panel passes on while it isn't focused (until then the page itself may not see the pointer).
+// Talking to the native panel around this page (the notice panel or the quick panel): the page's natural height, so the
+// panel fits it, where the pointer is, which the notice panel passes on while it isn't focused (until then the page
+// itself may not see the pointer), and asking the panel to put itself away.
+
+type PanelMessage = { height: number } | { command: "hide" };
 
 interface PanelMessages {
-  postMessage(message: { height: number }): void;
+  postMessage(message: PanelMessage): void;
 }
 
 declare global {
@@ -46,4 +49,9 @@ export function reportHeight(scroller: HTMLElement, content: HTMLElement): void 
   const observer = new ResizeObserver(report);
   observer.observe(content);
   observer.observe(document.body);
+}
+
+/** Puts the panel away, as Esc does in a launcher; the page stays loaded, keeping what you wrote. */
+export function hidePanel(): void {
+  window.webkit?.messageHandlers?.panel?.postMessage({ command: "hide" });
 }

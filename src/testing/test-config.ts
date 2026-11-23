@@ -4,6 +4,7 @@ import { DEFAULT_LIMITS } from "../config/limits-config.js";
 import { DEFAULT_CAMERA } from "../config/camera-config.js";
 import { DEFAULT_EDITOR_SETTINGS } from "../config/editor-config.js";
 import { DEFAULT_MESSAGES } from "../config/messages-config.js";
+import { DEFAULT_QUICK_PANEL_HOTKEY } from "../config/quick-panel-config.js";
 import { DEFAULT_SENSORS } from "../config/sensor-config.js";
 
 const BASE: AppConfig = {
@@ -23,7 +24,7 @@ const BASE: AppConfig = {
     kokoroSpeed: 1,
     speak: "all",
   },
-  ui: { port: 0, open: false },
+  ui: { port: 0, open: false, quickPanelHotkey: DEFAULT_QUICK_PANEL_HOTKEY },
   permissions: {
     mode: "ask",
     reminderMinutes: 60,

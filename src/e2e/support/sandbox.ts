@@ -1,5 +1,5 @@
 import { execSync } from "node:child_process";
-import { copyFileSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_PROTECTED_BRANCHES, type AppConfig } from "../../config/app-config.js";
@@ -8,6 +8,7 @@ import { DEFAULT_LIMITS } from "../../config/limits-config.js";
 import { DEFAULT_CAMERA } from "../../config/camera-config.js";
 import { DEFAULT_EDITOR_SETTINGS } from "../../config/editor-config.js";
 import { DEFAULT_MESSAGES } from "../../config/messages-config.js";
+import { DEFAULT_QUICK_PANEL_HOTKEY } from "../../config/quick-panel-config.js";
 import { DEFAULT_SENSORS } from "../../config/sensor-config.js";
 import { DESTRUCTIVE_PATH, setStateDir } from "../../config/paths.js";
 
@@ -41,6 +42,8 @@ writeFileSync(
   "projects:\n  scratchpad: # a throwaway\n    path: ~/code/scratchpad\n    profile: personal\n  keepme:\n    path: ~/code/keepme\n    profile: personal\n",
 );
 copyFileSync(DESTRUCTIVE_PATH, rulesFile);
+// The shipped rules let commits run; the flows still need a branch-scoped rule a worker trips on its main checkout.
+appendFileSync(rulesFile, "  - { pattern: '\\bgit\\s+commit\\b', verb: commit, scope: protectedBranch }\n");
 writeFileSync(notesFile, "# Assistant notes\n\n## Aliases\n\n- dbadmin is also called database admin.\n");
 
 export const cfg: AppConfig = {
@@ -61,7 +64,7 @@ export const cfg: AppConfig = {
     kokoroSpeed: 1,
     speak: "all",
   },
-  ui: { port: 0, open: false },
+  ui: { port: 0, open: false, quickPanelHotkey: DEFAULT_QUICK_PANEL_HOTKEY },
   permissions: {
     mode: "ask",
     reminderMinutes: 60,

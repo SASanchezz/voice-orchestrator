@@ -5,6 +5,7 @@ import { buildGestures, gestureActions, gestureSetting } from "./app/build-gestu
 import { buildMessageAlerts } from "./app/build-message-alerts.js";
 import { buildWakeTraining, buildWakeWord, isWakeWordSetUp, wakeWordSetting } from "./app/build-wake-word.js";
 import { checkLogins } from "./app/login-check.js";
+import { startQuickPanel } from "./app/quick-panel-start.js";
 import { chromeAdapters, macVoice, realAdapters } from "./app/real-adapters.js";
 import { RESTART_EXIT_CODE, RESTARTED_ENV } from "./app/restart.js";
 import type { AppConfig } from "./config/app-config.js";
@@ -60,6 +61,7 @@ trainingNews.connect(app.operator.orchestrator);
 mac?.voice.endRecordingWhen((words) => app.permissions.spoken.canAnswer(words) || app.replies.spoken.canAnswer(words));
 mac?.voice.handOffTo(app.ui.boxes.relay);
 await openUi(cfg, app);
+await startQuickPanel(cfg.ui, app.ui.server);
 app.editor.server.start(); // once the UI has made the token file it reads
 if (cfg.limits.autoResume) app.workers.resumer.start();
 const messageAlerts = buildMessageAlerts(cfg.messages, app.core.messengers, app.operator.orchestrator);

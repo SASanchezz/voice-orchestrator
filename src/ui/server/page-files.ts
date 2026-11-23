@@ -6,12 +6,13 @@ import { imageTypeOf } from "../../attachments/image-types.js";
 import { APP_DIR } from "../../config/paths.js";
 import { HTTP_STATUS, HttpError } from "./http-error.js";
 import type { UiAccess } from "./ui-access.js";
-import { APP_ENTRY, bundleWebPage, NOTICE_ENTRY } from "./web-bundle.js";
+import { APP_ENTRY, bundleWebPage, NOTICE_ENTRY, QUICK_ENTRY } from "./web-bundle.js";
 import type { WebManifest } from "./web-manifest.js";
 
 const PUBLIC_DIR = resolve(APP_DIR, "src/ui/public");
 export const SCRIPT_PATH = "/app.js";
 export const NOTICE_SCRIPT_PATH = "/notice.js";
+export const QUICK_SCRIPT_PATH = "/quick.js";
 export const ATTACHED_IMAGE_PATH = "/api/attachments";
 /** Attached files stay for a week and never change. */
 const ATTACHED_IMAGE_CACHE = "private, max-age=604800, immutable";
@@ -23,6 +24,7 @@ export const STATIC_FILES: Record<string, string> = {
   "/styles/strip.css": "text/css",
   "/styles/review.css": "text/css",
   "/styles/search-picker.css": "text/css",
+  "/styles/change-tree.css": "text/css",
   "/styles/messages.css": "text/css",
   "/styles/chat-browser.css": "text/css",
   "/styles/reply-checkup.css": "text/css",
@@ -50,16 +52,18 @@ export const STATIC_FILES: Record<string, string> = {
   "/styles/wake-training.css": "text/css",
   "/styles/notice.css": "text/css",
   "/styles/notice-glass.css": "text/css",
+  "/styles/quick.css": "text/css",
   "/styles/buttons.css": "text/css",
 };
 
 /**
- * The page and the notice panel's page, their scripts (compiled from src/ui/web/ at start), their stylesheets, the
+ * The page, the notice panel's and the quick panel's pages, their scripts (compiled from src/ui/web/ at start), their stylesheets, the
  * page's app manifest and the attached images the page shows.
  */
 export class PageFiles {
   private script = "";
   private noticeScript = "";
+  private quickScript = "";
 
   constructor(
     private access: UiAccess,
@@ -68,7 +72,8 @@ export class PageFiles {
   ) {}
 
   async prepare(): Promise<void> {
-    [this.script, this.noticeScript] = await Promise.all([bundleWebPage(APP_ENTRY), bundleWebPage(NOTICE_ENTRY)]);
+    const entries = [APP_ENTRY, NOTICE_ENTRY, QUICK_ENTRY];
+    [this.script, this.noticeScript, this.quickScript] = await Promise.all(entries.map(bundleWebPage));
   }
 
   page(url: URL, res: ServerResponse): void {
@@ -79,12 +84,20 @@ export class PageFiles {
     this.htmlPage("notice.html", url, res);
   }
 
+  quickPage(url: URL, res: ServerResponse): void {
+    this.htmlPage("quick.html", url, res);
+  }
+
   serveScript(res: ServerResponse): void {
     sendScript(this.script, res);
   }
 
   serveNoticeScript(res: ServerResponse): void {
     sendScript(this.noticeScript, res);
+  }
+
+  serveQuickScript(res: ServerResponse): void {
+    sendScript(this.quickScript, res);
   }
 
   manifest(url: URL, res: ServerResponse): void {
