@@ -19,7 +19,7 @@ export class SessionControl {
     const label = this.directory.labelOf(sessionId);
     if (!this.runs.isRunning(sessionId)) return `${label} is not running.`;
     this.runs.stop(sessionId);
-    return `Stopping ${label}; its queue was cleared.`;
+    return `Stopping ${label}; anything queued waits until you resume it.`;
   }
 
   stopAll(): void {

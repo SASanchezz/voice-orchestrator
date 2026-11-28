@@ -2,6 +2,7 @@
 // its own stop and close at the end. Right-click opens the same menu as the session tab.
 
 import type { ProjectView, SessionView } from "../protocol.js";
+import { queuedLabel } from "../queue-label.js";
 import { firstLine, sessionTopic, shortSessionTitle } from "../session-title.js";
 import { budgetBadge } from "./budget-badge.js";
 import { el } from "./dom.js";
@@ -52,6 +53,6 @@ function metaLine(session: SessionView): string {
   const parts = [isUnseen(session) ? `${STATUS_LABELS[session.status]}, not seen yet` : STATUS_LABELS[session.status]];
   const current = session.task === undefined ? "" : firstLine(session.task);
   if (current && current !== firstLine(sessionTopic(session))) parts.push(`now: ${current}`);
-  if (session.queued.length) parts.push(`${session.queued.length} queued`);
+  if (session.queued.length) parts.push(queuedLabel(session));
   return parts.join(META_SEPARATOR);
 }

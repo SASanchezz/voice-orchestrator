@@ -7,16 +7,18 @@ import { UsageLimits } from "../limits/usage-limits.js";
 import { MeteredStream } from "../budget/metered-stream.js";
 import type { DailySpend } from "../budget/daily-spend.js";
 import { ChangeSummarizer } from "../workers/change-summarizer.js";
+import { CompactionNotes } from "../workers/compaction-notes.js";
+import { ContextCompactor } from "../workers/context-compactor.js";
 import { HandoffWriter } from "../workers/handoff-writer.js";
 import { LimitParking } from "../workers/limit-parking.js";
 import { LimitResumer } from "../workers/limit-resumer.js";
 import { QuietResume } from "../workers/quiet-resume.js";
 import { ClosedConversations } from "../workers/closed-conversations.js";
+import { SessionCompaction } from "../workers/session-compaction.js";
 import { SessionControl } from "../workers/session-control.js";
 import { SessionHandoff } from "../workers/session-handoff.js";
 import { SessionModels } from "../workers/session-models.js";
 import { SessionReopener } from "../workers/session-reopener.js";
-import { QueuedTasks } from "../workers/queued-tasks.js";
 import { SessionQueue } from "../workers/session-queue.js";
 import { SessionInbox } from "../workers/session-inbox.js";
 import { SessionRuns } from "../workers/session-runs.js";
@@ -30,6 +32,7 @@ import { TaskNames } from "../workers/task-names.js";
 import { TaskOutcomes } from "../workers/task-outcomes.js";
 import { TaskRecorder } from "../workers/task-recorder.js";
 import { TaskRunner } from "../workers/task-runner.js";
+import { TaskStarter } from "../workers/task-starter.js";
 import { TaskStream } from "../workers/task-stream.js";
 import { BackgroundJobs } from "../workers/background-jobs.js";
 import { JobWatchingStream } from "../workers/job-watching-stream.js";
@@ -40,27 +43,31 @@ import { WorkerActivity } from "../workers/worker-activity.js";
 import { WorkerChat } from "../workers/worker-chat.js";
 import { WorkerDirectory } from "../workers/worker-directory.js";
 import { WorkerOptions } from "../workers/worker-options.js";
+import type { Sessions } from "../registry/sessions.js";
 import { type BudgetParts, buildBudget } from "./build-budget.js";
+import { type QueueParts, queueParts } from "./build-queue.js";
 import type { Core } from "./core.js";
 
-export interface WorkerParts {
+export interface WorkerParts extends QueueParts {
   chat: WorkerChat;
   intake: TaskIntake;
   /** Tasks and /btw side questions you send a session yourself. */
   inbox: SessionInbox;
+  /** /btw questions the assistant asks for you, answered beside the session's running task. */
+  sideQuestions: SideQuestions;
   control: SessionControl;
   /** Closed sessions Claude Code still keeps, and bringing one back. */
   closedSessions: ClosedConversations;
   reopener: SessionReopener;
-  /** The model each session's worker runs on. */
+  /** The model each session's worker runs on, and how hard it thinks. */
   models: SessionModels;
-  /** Sessions' queued instructions, to list them or drop one. */
-  queuedTasks: QueuedTasks;
   todos: TodoRunner;
   /** Runs tasks saved by a usage limit again once it resets; started only with limits.autoResume. */
   resumer: LimitResumer;
   summarizer: ChangeSummarizer;
   handoff: SessionHandoff;
+  /** Shrinking a session's context in place, with Claude Code's /compact. */
+  compaction: SessionCompaction;
   /** What all workers spent each day. */
   spend: DailySpend;
   /** The todo folder itself, for tests. */
@@ -71,6 +78,7 @@ export interface WorkerParts {
 
 /** What the worker classes share. */
 interface WorkerKit {
+  sessions: Sessions;
   chat: WorkerChat;
   directory: WorkerDirectory;
   options: WorkerOptions;
@@ -91,32 +99,42 @@ export function buildWorkers(core: Core, gate: ToolCallGate, { query, topics }: 
   const kit = workerKit(core, topics);
   const runner = taskRunner(core, kit, new TaskLauncher(kit.options, gate, query));
   const queue = new SessionQueue(core.sessions);
-  const runs = new SessionRuns(queue, kit.directory, runner);
+  const runs = new SessionRuns(queue, kit.directory, new TaskStarter(kit.directory, runner, kit.chat));
   const sending = sendingParts(kit, query, runs);
-  const writer = new HandoffWriter(kit.options, query, kit.budget.ledger);
   const successor = new SessionSuccessor(core.registry, core.sessions, kit.chat);
   return {
     chat: kit.chat,
     ...sending,
     ...sessionParts(core, kit, runs),
-    queuedTasks: new QueuedTasks(queue, kit.directory, kit.chat),
+    ...queueParts(queue, runs, kit.directory),
     ...todoParts(core, kit, sending.intake),
     summarizer: new ChangeSummarizer(kit.options, query),
-    handoff: new SessionHandoff(writer, runs, successor),
+    handoff: new SessionHandoff(new HandoffWriter(kit.options, query, kit.budget.ledger), runs, successor),
+    compaction: compactionOf(kit, query, runs),
     spend: kit.budget.daily,
     todo: kit.todo,
   };
 }
 
+function compactionOf(kit: WorkerKit, query: QueryFn, runs: SessionRuns): SessionCompaction {
+  const compactor = new ContextCompactor(kit.options, query, kit.budget.ledger);
+  return new SessionCompaction(compactor, runs, new CompactionNotes(kit.sessions, kit.chat));
+}
+
 /** Tasks for sessions, and /btw questions answered in a fork of the session's conversation, beside its running task. */
-function sendingParts(kit: WorkerKit, query: QueryFn, runs: SessionRuns): Pick<WorkerParts, "intake" | "inbox"> {
-  const intake = new TaskIntake(kit.directory, runs, kit.chat);
+function sendingParts(
+  kit: WorkerKit,
+  query: QueryFn,
+  runs: SessionRuns,
+): Pick<WorkerParts, "intake" | "inbox" | "sideQuestions"> {
+  const intake = new TaskIntake(kit.directory, runs);
   const writer = new SideQuestionWriter(kit.options, query, kit.budget.ledger);
-  return { intake, inbox: new SessionInbox(intake, new SideQuestions(kit.directory, writer, kit.chat)) };
+  const sideQuestions = new SideQuestions(kit.directory, writer, kit.chat);
+  return { intake, inbox: new SessionInbox(intake, sideQuestions), sideQuestions };
 }
 
 /**
- * Stopping, closing, reopening and clearing sessions, the model each one's worker runs on, and what it runs in the
+ * Stopping, closing, reopening and clearing sessions, the model and effort each one's worker runs with, and what it runs in the
  * background.
  */
 function sessionParts(
@@ -152,7 +170,8 @@ function workerKit(core: Core, topics: TaskTopics): WorkerKit {
   const chat = new WorkerChat();
   const limits = new UsageLimits(todo, events);
   const backgroundJobs = new BackgroundJobs();
-  return { chat, directory, options, todo, limits, budget: buildBudget(core, chat), topics, backgroundJobs };
+  const budget = buildBudget(core, chat);
+  return { sessions, chat, directory, options, todo, limits, budget, topics, backgroundJobs };
 }
 
 function taskRunner({ sessions, history, events }: Core, kit: WorkerKit, launcher: TaskLauncher): TaskRunner {

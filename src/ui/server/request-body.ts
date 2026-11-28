@@ -6,6 +6,7 @@ import { GESTURE_MODES } from "../../sensors/gesture-setting.js";
 import { RECORDING_LABELS } from "../../wake/training-command.js";
 import { RECORDING_NAME } from "../../wake/wake-recordings.js";
 import { WAKE_WORD_MODES } from "../../wake/wake-setting.js";
+import { WORKER_EFFORT_IDS } from "../../workers/worker-efforts.js";
 import { WORKER_MODEL_IDS } from "../../workers/worker-models.js";
 import { NOTICE_TARGETS } from "../notice-protocol.js";
 import { attachmentsField } from "./attachment-body.js";
@@ -46,7 +47,9 @@ export const taskBody = z
   .refine((body) => body.instruction || body.attachments.length, NOTHING_TO_SEND);
 /** No model: back to the project's. */
 export const sessionModelBody = z.object({ model: modelField.optional() });
-export const queueRemovalBody = z.object({ place: z.number().int().positive(), instruction: z.string().min(1) });
+/** No effort: back to Claude Code's default. */
+export const sessionEffortBody = z.object({ effort: z.enum(WORKER_EFFORT_IDS).optional() });
+export const queueEditBody = z.object({ instruction: z.string().trim().min(1, "Write the task's instruction") });
 export const attachedFilesBody = z
   .object({ attachments: attachmentsField })
   .refine((body) => body.attachments.length, "Attach a file");

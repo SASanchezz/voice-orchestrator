@@ -35,8 +35,9 @@ export function stopTask(control: SessionControl, registry: Registry, cfg: AppCo
   return defineTool({
     name: "stop_task",
     description:
-      "Stop the running worker of one session, the project's active session unless a number is given, and clear " +
-      "that session's queue. The project's other sessions keep running. To drop just one queued task, use remove_queued_task.",
+      "Stop the running worker of one session, the project's active session unless a number is given, and pause " +
+      "that session's queue until resume_queue. The project's other sessions keep running. " +
+      "To drop just one queued task, use remove_queued_task.",
     args: { project: projectArg, session: optionalSessionArg },
     run: ({ project, session }) =>
       text(control.stopSession(sessionOf(registry, needProject(cfg, project), session).id)),

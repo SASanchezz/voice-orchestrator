@@ -15,9 +15,29 @@ export function sessionRoutes(h: RouteHandlers): [RegExp, Route][] {
     [/^\/api\/sessions\/([\w-]+)\/close-others$/, (_b, m) => h.sweeps.closeOthers(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/clear$/, (_b, m) => h.sessions.clearSession(m[1])],
     [/^\/api\/sessions\/([\w-]+)\/stop$/, (_b, m) => h.sessions.stopTask(m[1])],
-    [/^\/api\/sessions\/([\w-]+)\/queue\/remove$/, (b, m) => h.queue.removeQueued(m[1], b)],
+    ...queueRoutes(h),
     [/^\/api\/sessions\/([\w-]+)\/handoff$/, (_b, m) => h.handoffs.handOff(m[1])],
+    [/^\/api\/sessions\/([\w-]+)\/compact$/, (_b, m) => h.compactions.compact(m[1])],
+    ...modelRoutes(h),
+  ];
+}
+
+/** The chat's model picker: the model a session's worker runs on, and how hard it thinks. */
+function modelRoutes(h: RouteHandlers): [RegExp, Route][] {
+  return [
     [/^\/api\/sessions\/([\w-]+)\/model$/, (b, m) => h.models.setModel(m[1], b)],
+    [/^\/api\/sessions\/([\w-]+)\/effort$/, (b, m) => h.models.setEffort(m[1], b)],
+  ];
+}
+
+/** The queue strip's buttons: the whole queue, or one task in it by id. */
+function queueRoutes(h: RouteHandlers): [RegExp, Route][] {
+  return [
+    [/^\/api\/sessions\/([\w-]+)\/queue\/resume$/, (_b, m) => h.queue.resume(m[1])],
+    [/^\/api\/sessions\/([\w-]+)\/queue\/clear$/, (_b, m) => h.queue.clear(m[1])],
+    [/^\/api\/sessions\/([\w-]+)\/queue\/([\w-]+)\/remove$/, (_b, m) => h.queue.remove(m[1], m[2])],
+    [/^\/api\/sessions\/([\w-]+)\/queue\/([\w-]+)\/edit$/, (b, m) => h.queue.edit(m[1], m[2], b)],
+    [/^\/api\/sessions\/([\w-]+)\/queue\/([\w-]+)\/next$/, (_b, m) => h.queue.runNext(m[1], m[2])],
   ];
 }
 

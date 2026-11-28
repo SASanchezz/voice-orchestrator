@@ -15,7 +15,10 @@ import type { GestureControl } from "../../sensors/gesture-switch.js";
 import type { SkillLibrary } from "../../skills/skill-library.js";
 import type { ChangeSummarizer } from "../../workers/change-summarizer.js";
 import type { ClosedConversations } from "../../workers/closed-conversations.js";
+import type { QueueControl } from "../../workers/queue-control.js";
+import type { SideQuestions } from "../../workers/side-questions.js";
 import type { QueuedTasks } from "../../workers/queued-tasks.js";
+import type { SessionCompaction } from "../../workers/session-compaction.js";
 import type { SessionControl } from "../../workers/session-control.js";
 import type { SessionReopener } from "../../workers/session-reopener.js";
 import type { TaskIntake } from "../../workers/task-intake.js";
@@ -51,9 +54,24 @@ import {
   removeProject,
   setProjectAccount,
 } from "./project-tools.js";
-import { listQueuedTasks, removeQueuedTask } from "./queue-tools.js";
+import {
+  clearQueue,
+  editQueuedTask,
+  listQueuedTasks,
+  removeQueuedTask,
+  resumeQueue,
+  runQueuedNext,
+} from "./queue-tools.js";
 import { listSkills, loadSkill } from "./skill-tools.js";
-import { closeOtherSessions, closeSession, listSessions, newSession, switchSession } from "./session-tools.js";
+import {
+  closeOtherSessions,
+  closeSession,
+  compactSession,
+  listSessions,
+  newSession,
+  switchSession,
+} from "./session-tools.js";
+import { askSideQuestion } from "./side-question-tools.js";
 import { git, runTask, stopTask, summarizeChanges } from "./task-tools.js";
 import { deleteTodoItem, restoreTodoItem, sendTodoItem, setTodoItemDone } from "./todo-item-change-tools.js";
 import { addTodoItem, editTodoItem, listTodoItems } from "./todo-item-tools.js";
@@ -72,10 +90,13 @@ export interface ToolServices {
   accounts: AccountSwitch;
   intake: TaskIntake;
   control: SessionControl;
+  compaction: SessionCompaction;
   closedSessions: ClosedConversations;
   reopener: SessionReopener;
   workSessions: WorkSessions;
   queuedTasks: QueuedTasks;
+  queueControl: QueueControl;
+  sideQuestions: SideQuestions;
   todos: TodoRunner;
   todoItems: TodoItems;
   todoTrash: TodoTrash;
@@ -113,9 +134,11 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => switchSession(s.registry, s.cfg),
   (s) => closeSession(s.registry, s.control, s.cfg),
   (s) => closeOtherSessions(s.workSessions, s.cfg),
+  (s) => compactSession(s.registry, s.compaction, s.cfg),
   (s) => listClosedSessions(s.closedSessions, s.cfg),
   (s) => reopenSession(s.closedSessions, s.reopener, s.cfg),
   (s) => runTask(s.intake, s.registry, s.cfg),
+  (s) => askSideQuestion(s.sideQuestions, s.registry, s.cfg),
   (s) => listTodo(s.todos),
   (s) => runTodo(s.todos),
   (s) => discardTodo(s.todos),
@@ -131,8 +154,12 @@ const CATALOG: ((s: ToolServices) => OperatorTool)[] = [
   (s) => resetContext(s.requests),
   (s) => restartOrchestrator(s.requests),
   (s) => stopTask(s.control, s.registry, s.cfg),
-  (s) => listQueuedTasks(s.queuedTasks, s.registry, s.cfg),
-  (s) => removeQueuedTask(s.queuedTasks, s.registry, s.cfg),
+  (s) => listQueuedTasks(s),
+  (s) => removeQueuedTask(s),
+  (s) => editQueuedTask(s),
+  (s) => runQueuedNext(s),
+  (s) => resumeQueue(s.queueControl, s.registry, s.cfg),
+  (s) => clearQueue(s.queueControl, s.registry, s.cfg),
   (s) => summarizeChanges(s.summarizer, s.cfg),
   (s) => git(s.git, s.cfg),
   (s) => listPendingPermissions(s.views),

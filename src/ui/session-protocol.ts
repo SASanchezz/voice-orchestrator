@@ -1,6 +1,7 @@
 // What the page gets about each worker session. It imports only types from files that import nothing, as protocol.ts.
 
-import type { QueuedEntry } from "../workers/queued-task.js";
+import type { QueueItem } from "../workers/queued-task.js";
+import type { WorkerEffort } from "../workers/worker-efforts.js";
 
 export type SessionStatus = "idle" | "running" | "waiting_permission" | "done" | "failed" | "stopped";
 
@@ -18,9 +19,13 @@ export interface SessionView {
   /** A few words naming what the session is about, once a model has written them. */
   title?: string;
   task?: string;
-  queued: QueuedEntry[];
+  queued: QueueItem[];
+  /** Its queue waits after a failed or stopped task, until you resume or clear it. */
+  queuePaused?: boolean;
   /** The model the session chose; unset, it runs on its project's. */
   model?: string;
+  /** The effort the session chose; unset, Claude Code's default. */
+  effort?: WorkerEffort;
   /** ISO times of the latest task start, task end and queued instruction. */
   startedAt?: string;
   finishedAt?: string;

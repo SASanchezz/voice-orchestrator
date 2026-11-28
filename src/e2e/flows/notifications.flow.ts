@@ -24,7 +24,7 @@ test("notifications wait until the user has finished speaking", async () => {
   await voice.heard(/^dbadmin session \d+ done: /, i);
 });
 
-test("stop a long task: queue cleared, status stopped, nothing left pending", async () => {
+test("stop a long task: queue paused, status stopped, nothing left pending", async () => {
   let i = mark();
   voice.say("in acme-web do:\nsleep: 10000");
   await voice.heard(/Started on acme-web/, i);
@@ -32,11 +32,23 @@ test("stop a long task: queue cleared, status stopped, nothing left pending", as
   await voice.heard(/queued as #1/, i);
   i = mark();
   voice.say("stop acme-web");
-  await voice.heard(/Stopping acme-web; its queue was cleared/, i);
+  await voice.heard(/Stopping acme-web; anything queued waits until you resume it/, i);
   await pause(100);
   assert.equal(core.registry.activeSession("acme-web").status, "stopped");
   assert.equal(existsSync(join(acmeWeb, "q.txt")), false, "queued task never ran");
   assert.equal(permissions.views.list().length, 0);
+});
+
+test("stop a long task: its queue is kept, paused", () => {
+  const { queued, queuePaused } = core.registry.activeSession("acme-web");
+  assert.deepEqual([queued.map((item) => item.instruction), queuePaused], [["run: echo queued > q.txt"], true]);
+});
+
+test("stop a long task: clearing the paused queue drops it", async () => {
+  const i = mark();
+  voice.say("clear the queue of acme-web");
+  await voice.heard(/Cleared acme-web's queue; 1 removed/, i);
+  assert.equal(core.registry.activeSession("acme-web").queued.length, 0);
 });
 
 test("starting to talk snaps the screen", () => {

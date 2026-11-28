@@ -175,17 +175,17 @@ A **worker session** is one Claude Code conversation inside a project, like a ta
 **Where they live.** `state/registry.json` (schema in `src/registry/registry-schema.ts`, version 2). Per project:
 its `profile` and its `activeSession`. Per session:
 
-| Field                                     | Meaning                                                                                     |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `id`, `project`, `number`                 | Identity. `number` is what you say: "webshop session 2"                                     |
-| `status`                                  | `idle`, `running`, `waiting_permission`, `done`, `failed`, `stopped`                        |
-| `claudeSessionId`                         | Claude Code's own session id; the next task **resumes** it, so the worker keeps its context |
-| `task`, `queued[]`                        | The running task and the tasks waiting behind it                                            |
-| `lastResult`, `lastError`, `lastActivity` | For "what is it doing?" and status questions                                                |
-| `costUsd`, `conversationCostUsd`          | What the session has cost (see [Token management](#8-token-management))                     |
-| `contextTokens`, `contextWindow`          | How full its context is                                                                     |
-| `handoff`                                 | The summary it took over from an earlier session; its first task starts with it             |
-| `history[]`                               | Its last 10 finished tasks                                                                  |
+| Field                                     | Meaning                                                                                             |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `id`, `project`, `number`                 | Identity. `number` is what you say: "webshop session 2"                                             |
+| `status`                                  | `idle`, `running`, `waiting_permission`, `done`, `failed`, `stopped`                                |
+| `claudeSessionId`                         | Claude Code's own session id; the next task **resumes** it, so the worker keeps its context         |
+| `task`, `queued[]`, `queuePaused`         | The running task, the tasks waiting behind it (each with an `id`), and whether they wait for Resume |
+| `lastResult`, `lastError`, `lastActivity` | For "what is it doing?" and status questions                                                        |
+| `costUsd`, `conversationCostUsd`          | What the session has cost (see [Token management](#8-token-management))                             |
+| `contextTokens`, `contextWindow`          | How full its context is                                                                             |
+| `handoff`                                 | The summary it took over from an earlier session; its first task starts with it                     |
+| `history[]`                               | Its last 10 finished tasks                                                                          |
 
 **How they're created.**
 
@@ -209,14 +209,17 @@ worker remembers what it did before in that session.
 | `switch_session`                          | Make another session active                                                           |
 | `close_session`                           | Stop its worker, cancel its approvals, delete its queue and history from the registry |
 | `run_task`                                | Start or queue a task in the **active** session                                       |
-| `stop_task`                               | Stop one session's running task and clear **its** queue; other sessions keep going    |
+| `stop_task`                               | Stop one session's running task and pause **its** queue; other sessions keep going    |
 | `list_queued_tasks`, `remove_queued_task` | See or drop one queued task, by place or words                                        |
+| `edit_queued_task`, `run_queued_next`     | Rewrite one queued task, or move it to the front                                      |
+| `resume_queue`, `clear_queue`             | Run a paused queue again from #1, or drop it whole                                    |
+| `ask_side_question`                       | Ask a session by the way (`/btw`), beside its running task; returns the answer        |
 | `summarize_changes`                       | A spoken 3–4 sentence summary, made in a read-only **fork** of the active session     |
 
 **When to use a new session** is decided by the agent's rules ([section 6](#6-decision-edges-of-the-specialized-agent)):
 in short, follow-ups continue, unrelated work gets its own session.
 
-**What survives a restart.** Open sessions, their `claudeSessionId`s, queues, history and chats
+**What survives a restart.** Open sessions, their `claudeSessionId`s, queues (paused), history and chats
 (`state/chats/`). A task that was running when the app stopped shows as stopped; the next task resumes the same
 conversation. Closing a session doesn't delete Claude Code's own transcript in the account's config folder, so you
 can still `claude --resume <claudeSessionId>` by hand (but never at the same time as the worker).

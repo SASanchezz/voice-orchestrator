@@ -5,6 +5,7 @@ import { mark, pause, uiPost } from "../support/helpers.js";
 
 const { core } = app;
 const sessionOfAcmeWeb = (number: number) => core.registry.sessionByNumber("acme-web", number);
+const instructionsQueuedIn = (number: number) => sessionOfAcmeWeb(number).queued.map((item) => item.instruction);
 
 test("session stop: two acme-web sessions work at once, session 1 with a task queued", async () => {
   let i = mark();
@@ -24,13 +25,13 @@ test("session stop: two acme-web sessions work at once, session 1 with a task qu
 test("session stop: stopping a session that isn't active stops only that one", async () => {
   const i = mark();
   voice.say("stop acme-web session 2");
-  await voice.heard(/Stopping acme-web session 2; its queue was cleared/, i);
+  await voice.heard(/Stopping acme-web session 2; anything queued waits until you resume it/, i);
   await pause(100);
   assert.deepEqual([sessionOfAcmeWeb(2).status, sessionOfAcmeWeb(1).status], ["stopped", "running"]);
 });
 
 test("session stop: the other session keeps its queue", () => {
-  assert.deepEqual(sessionOfAcmeWeb(1).queued, ["run: echo kept > kept.txt"]);
+  assert.deepEqual(instructionsQueuedIn(1), ["run: echo kept > kept.txt"]);
 });
 
 test("session stop: a session number that doesn't exist is an error to read out", async () => {
@@ -40,10 +41,16 @@ test("session stop: a session number that doesn't exist is an error to read out"
   assert.equal(sessionOfAcmeWeb(1).status, "running");
 });
 
-test("ui: any running session can be stopped by click", async () => {
+test("ui: any running session can be stopped by click, keeping its queue paused", async () => {
   const res = await uiPost(`/api/sessions/${sessionOfAcmeWeb(1).id}/stop`, {});
   await pause(100);
-  assert.deepEqual([res.status, sessionOfAcmeWeb(1).status, sessionOfAcmeWeb(1).queued], [200, "stopped", []]);
+  const { status, queuePaused } = sessionOfAcmeWeb(1);
+  assert.deepEqual([res.status, status, instructionsQueuedIn(1).length, queuePaused], [200, "stopped", 1, true]);
+});
+
+test("ui: a paused queue is cleared by click", async () => {
+  const res = await uiPost(`/api/sessions/${sessionOfAcmeWeb(1).id}/queue/clear`, {});
+  assert.deepEqual([res.status, instructionsQueuedIn(1), sessionOfAcmeWeb(1).queuePaused], [200, [], undefined]);
 });
 
 test("session stop: the extra session is closed again", async () => {

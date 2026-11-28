@@ -1,7 +1,10 @@
 import { EventEmitter } from "node:events";
 
-/** task: an instruction sent to the worker; reply: what the worker wrote; tool: a step it took; question: it asked you. */
-export type ChatKind = "task" | "reply" | "tool" | "status" | "permission" | "question";
+/**
+ * task: an instruction sent to the worker; reply: what the worker wrote; tool: a step it took; question: it asked you;
+ * aside: its answer to a /btw side question, kept apart from its task's steps and reply.
+ */
+export type ChatKind = "task" | "reply" | "tool" | "status" | "permission" | "question" | "aside";
 
 /** A line a worker session adds to its own chat. */
 export interface SessionMessage {

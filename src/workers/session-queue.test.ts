@@ -17,33 +17,68 @@ function doneSession() {
   return { queue: new SessionQueue(sessions), sessions, id };
 }
 
-test("session queue: a task without its own model is saved as plain text", () => {
-  const { queue, sessions, id } = doneSession();
+const instructionsIn = (queue: SessionQueue, id: string) => queue.itemsOf(id).map((item) => item.instruction);
+
+test("session queue: each queued task gets its own id", () => {
+  const { queue, id } = doneSession();
   queue.add(id, { instruction: "add tests" });
-  assert.deepEqual(sessions.session(id).queued, ["add tests"]);
+  queue.add(id, { instruction: "add tests" });
+  const [first, second] = queue.itemsOf(id);
+  assert.notEqual(first?.id, second?.id);
 });
 
 test("session queue: a task with its own model is saved with it", () => {
-  const { queue, sessions, id } = doneSession();
-  queue.add(id, { instruction: "add tests", model: "opus" });
-  assert.deepEqual(sessions.session(id).queued, [{ instruction: "add tests", model: "opus" }]);
-});
-
-test("session queue: the next task comes back with its own model", () => {
   const { queue, id } = doneSession();
   queue.add(id, { instruction: "add tests", model: "opus" });
-  assert.deepEqual(queue.takeNext(id), { instruction: "add tests", model: "opus" });
+  assert.equal(queue.itemsOf(id)[0]?.model, "opus");
 });
 
-test("session queue: queued tasks are listed by their instructions", () => {
+test("session queue: the next task comes off the front", () => {
   const { queue, id } = doneSession();
-  queue.add(id, { instruction: "add tests", model: "opus" });
+  queue.add(id, { instruction: "add tests" });
   queue.add(id, { instruction: "fix the footer" });
-  assert.deepEqual(queue.queuedOf(id), ["add tests", "fix the footer"]);
+  assert.equal(queue.takeNext(id)?.instruction, "add tests");
 });
 
-test("session queue: removing a task with its own model returns its instruction", () => {
+test("session queue: nothing is taken after a task that failed", () => {
+  const { queue, sessions, id } = doneSession();
+  queue.add(id, { instruction: "add tests" });
+  sessions.updateSession(id, { status: "failed" });
+  assert.equal(queue.takeNext(id), undefined);
+});
+
+test("session queue: nothing is taken while paused, even after a task that succeeded", () => {
   const { queue, id } = doneSession();
-  queue.add(id, { instruction: "add tests", model: "opus" });
-  assert.equal(queue.removeAt(id, 0), "add tests");
+  queue.add(id, { instruction: "add tests" });
+  queue.pause(id);
+  assert.equal(queue.takeNext(id), undefined);
+});
+
+test("session queue: the first task can be taken while paused, to resume it", () => {
+  const { queue, id } = doneSession();
+  queue.add(id, { instruction: "add tests" });
+  queue.pause(id);
+  assert.equal(queue.takeFirst(id)?.instruction, "add tests");
+});
+
+test("session queue: an empty queue is never paused", () => {
+  const { queue, id } = doneSession();
+  queue.pause(id);
+  assert.equal(queue.isPaused(id), false);
+});
+
+test("session queue: emptying a paused queue unpauses it", () => {
+  const { queue, id } = doneSession();
+  queue.add(id, { instruction: "add tests" });
+  queue.pause(id);
+  queue.clear(id);
+  assert.equal(queue.isPaused(id), false);
+});
+
+test("session queue: replacing keeps the order it is given", () => {
+  const { queue, id } = doneSession();
+  queue.add(id, { instruction: "add tests" });
+  queue.add(id, { instruction: "fix the footer" });
+  queue.replace(id, queue.itemsOf(id).toReversed());
+  assert.deepEqual(instructionsIn(queue, id), ["fix the footer", "add tests"]);
 });

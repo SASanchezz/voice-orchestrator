@@ -5,7 +5,7 @@ import { z } from "zod";
 const chatMessageSchema = z.object({
   id: z.number(),
   at: z.string(),
-  kind: z.enum(["task", "reply", "tool", "status", "permission", "question"]),
+  kind: z.enum(["task", "reply", "tool", "status", "permission", "question", "aside"]),
   text: z.string(),
   failed: z.boolean().optional(),
   toolUseId: z.string().optional(),

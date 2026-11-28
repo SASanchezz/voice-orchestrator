@@ -1,6 +1,6 @@
 import type { QueuedTask } from "./queued-task.js";
 import type { SessionQueue } from "./session-queue.js";
-import type { TaskRunner } from "./task-runner.js";
+import type { TaskStarter } from "./task-starter.js";
 import type { WorkerDirectory } from "./worker-directory.js";
 
 /** A session's worker while it works through its queue. */
@@ -16,7 +16,7 @@ export class SessionRuns {
   constructor(
     private queue: SessionQueue,
     private directory: WorkerDirectory,
-    private runner: TaskRunner,
+    private starter: Pick<TaskStarter, "run">,
   ) {}
 
   isRunning(sessionId: string): boolean {
@@ -26,16 +26,31 @@ export class SessionRuns {
   /** Starts the task, or queues it behind the running one. Returns its place in the queue; 0 when it started. */
   submit(sessionId: string, task: QueuedTask): number {
     if (this.runs.has(sessionId)) return this.queue.add(sessionId, task);
-    const abort = new AbortController();
-    this.runs.set(sessionId, { abort, finished: this.loop(sessionId, task, abort) });
+    this.occupy(sessionId, (abort) => this.starter.run(sessionId, task, abort));
     return 0;
   }
 
-  /** Clears the session's queue and stops its running task. */
+  /** The paused queue goes on after the running task, or from its #1 once the session is idle or its stop is done. */
+  async resume(sessionId: string): Promise<void> {
+    const run = this.runs.get(sessionId);
+    if (run?.abort.signal.aborted) await run.finished;
+    this.queue.unpause(sessionId);
+    if (this.runs.has(sessionId)) return;
+    const first = this.queue.takeFirst(sessionId);
+    if (first) this.occupy(sessionId, (abort) => this.starter.run(sessionId, first, abort));
+  }
+
+  /** Work needing the idle session's conversation to itself, like compacting it; tasks sent meanwhile queue behind it. */
+  runAlone<T>(sessionId: string, work: (abort: AbortController) => Promise<T>): Promise<T> {
+    if (this.runs.has(sessionId)) throw new Error(`${this.directory.labelOf(sessionId)} is working.`);
+    return new Promise<T>((resolve, reject) => this.occupy(sessionId, (abort) => work(abort).then(resolve, reject)));
+  }
+
+  /** Stops the session's running task; what it had queued waits until you resume it. */
   stop(sessionId: string): void {
     const run = this.runs.get(sessionId);
     if (!run) return;
-    this.queue.clear(sessionId);
+    this.queue.pause(sessionId);
     run.abort.abort();
   }
 
@@ -50,12 +65,22 @@ export class SessionRuns {
     await run.finished;
   }
 
-  /** Ends as soon as the queue is empty or a task didn't succeed; the session is free again in that same step. */
-  private async loop(sessionId: string, first: QueuedTask, abort: AbortController): Promise<void> {
+  private occupy(sessionId: string, first: (abort: AbortController) => Promise<void>): void {
+    const abort = new AbortController();
+    this.runs.set(sessionId, { abort, finished: this.loop(sessionId, first(abort), abort) });
+  }
+
+  /**
+   * Ends as soon as the queue is empty, paused, or a task didn't succeed; what is left then waits, paused. The session
+   * is free again in that same step.
+   */
+  private async loop(sessionId: string, first: Promise<void>, abort: AbortController): Promise<void> {
     try {
-      for (let next: QueuedTask | undefined = first; next; next = this.queue.takeNext(sessionId))
-        await this.runner.run(this.directory.newTask(sessionId, next), abort);
+      await first;
+      for (let next = this.queue.takeNext(sessionId); next; next = this.queue.takeNext(sessionId))
+        await this.starter.run(sessionId, next, abort);
     } finally {
+      this.queue.pause(sessionId);
       this.runs.delete(sessionId);
     }
   }

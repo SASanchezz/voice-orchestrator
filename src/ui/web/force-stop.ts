@@ -35,7 +35,7 @@ export function renderForceStop(): void {
   stop.dataset.session = session.id;
   stop.title =
     `Kill session ${session.number}'s running task now (its Claude Code process is ended, forcibly after 5 s) ` +
-    "and clear its queue. Other sessions keep running.";
+    "and pause its queue. Other sessions keep running.";
   stop.setAttribute("aria-label", `Force stop session ${session.number}`);
 }
 

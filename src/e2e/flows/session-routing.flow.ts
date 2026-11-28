@@ -17,7 +17,10 @@ test("session routing: a task for a numbered session goes there after a click ma
   const i = mark();
   voice.say("in acme-web session 2 do:\nrun: echo second > second.txt");
   await voice.heard(/acme-web session 2 is busy; queued as #1/, i);
-  assert.deepEqual(sessionOfAcmeWeb(2).queued, ["run: echo second > second.txt"]);
+  assert.deepEqual(
+    sessionOfAcmeWeb(2).queued.map((item) => item.instruction),
+    ["run: echo second > second.txt"],
+  );
 });
 
 test("session routing: a task without a number goes to the active session", async () => {

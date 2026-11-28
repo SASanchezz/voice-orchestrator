@@ -62,7 +62,10 @@ test("a session waiting for approval says so", () => {
 });
 
 test("a running session names its task and how many wait behind it", () => {
-  const queued = ["next", "after"];
+  const queued = [
+    { id: "q1", instruction: "next" },
+    { id: "q2", instruction: "after" },
+  ];
   const running = session("s", { status: "running", task: "run the e2e suite\nthen push", queued });
   assert.equal(sessionContextOf(running), "Working on: run the e2e suite (2 queued)");
 });

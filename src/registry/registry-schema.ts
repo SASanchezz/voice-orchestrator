@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
+import { WORKER_EFFORT_IDS } from "../workers/worker-efforts.js";
 
 // The shape of state/registry.json. Version 2 has sessions; before that, one worker conversation per project.
 
@@ -17,7 +19,18 @@ const taskRecordSchema = z.object({
 export type TaskRecord = z.infer<typeof taskRecordSchema>;
 
 /** A queued instruction; one sent with its own model is saved with it, so it runs on that model only. */
-const queuedTaskSchema = z.union([z.string(), z.object({ instruction: z.string(), model: z.string() })]);
+const queueItemSchema = z.object({ id: z.string(), instruction: z.string(), model: z.string().optional() });
+type SavedQueueItem = z.infer<typeof queueItemSchema>;
+
+/** Saved before queued tasks had ids: plain text, or text with its own model. It gets an id as it is read. */
+const idlessQueueItemSchema = z
+  .union([z.string(), z.object({ instruction: z.string(), model: z.string() })])
+  .transform((saved): SavedQueueItem => ({
+    id: randomUUID(),
+    ...(typeof saved === "string" ? { instruction: saved } : saved),
+  }));
+
+const queuedTaskSchema = z.union([queueItemSchema, idlessQueueItemSchema]);
 
 /** One worker conversation inside a project, like a Claude Code tab in VS Code. */
 const sessionStateSchema = z.object({
@@ -32,8 +45,12 @@ const sessionStateSchema = z.object({
   claudeSessionId: z.string().optional(),
   task: z.string().optional(),
   queued: z.array(queuedTaskSchema),
+  /** Set when a task failed or was stopped with tasks still queued: they wait until you resume or clear them. */
+  queuePaused: z.boolean().optional(),
   /** The Claude model the session's tasks run on; unset, the project's model from config.yaml. */
   model: z.string().optional(),
+  /** How hard the session's tasks think; unset, the effort Claude Code's settings pick. */
+  effort: z.enum(WORKER_EFFORT_IDS).optional(),
   /** When an instruction was last queued; the page lists projects by their latest activity. */
   queuedAt: z.string().optional(),
   lastResult: z.string().optional(),

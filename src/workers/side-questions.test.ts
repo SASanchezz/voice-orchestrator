@@ -35,11 +35,22 @@ test("side questions: the typed line shows in the chat as sent", () => {
   assert.deepEqual(said[0], { session: id, kind: "task", text: "/btw is it done?" });
 });
 
-test("side questions: the answer arrives in the chat as a reply", async () => {
+test("side questions: the answer arrives in the chat as a side answer", async () => {
   const { questions, id, said } = askWith(() => Promise.resolve("Yes."));
   questions.ask(id, "/btw is it done?", "is it done?");
   await settled();
-  assert.deepEqual(said[1], { session: id, kind: "reply", text: "Yes." });
+  assert.deepEqual(said[1], { session: id, kind: "aside", text: "Yes." });
+});
+
+test("side questions: the assistant gets the answer back to read out", async () => {
+  const { questions, id } = askWith(() => Promise.resolve("Yes."));
+  assert.equal(await questions.answer(id, "is it done?"), "Yes.");
+});
+
+test("side questions: the assistant's question shows in the chat as a /btw line", async () => {
+  const { questions, id, said } = askWith(() => Promise.resolve("Yes."));
+  await questions.answer(id, "is it done?");
+  assert.deepEqual(said[0], { session: id, kind: "task", text: "/btw is it done?" });
 });
 
 test("side questions: the answer comes from the session's own conversation", async () => {

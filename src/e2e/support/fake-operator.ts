@@ -68,6 +68,10 @@ const USER_RULES: Rule[] = [
   [/^queue of (\S+)$/, (m) => call("list_queued_tasks", { project: m[1] })],
   [/^drop #(\d+) from (\S+)$/, (m) => call("remove_queued_task", { project: m[2], place: Number(m[1]) })],
   [/^drop "(.+)" from (\S+)$/, (m) => call("remove_queued_task", { project: m[2], match: m[1] })],
+  [/^change #(\d+) in (\S+) to: (.+)$/, (m) => call("edit_queued_task", queuedEdit(m))],
+  [/^run #(\d+) next in (\S+)$/, (m) => call("run_queued_next", { project: m[2], place: Number(m[1]) })],
+  [/^resume the queue of (\S+)$/, (m) => call("resume_queue", { project: m[1] })],
+  [/^clear the queue of (\S+)$/, (m) => call("clear_queue", { project: m[1] })],
   [/^status$/, () => call("list_projects")],
   [/^history (\S+)$/, (m) => call("project_history", { project: m[1] })],
   [/^new session (\S+)$/, (m) => call("new_session", { project: m[1] })],
@@ -82,6 +86,11 @@ const USER_RULES: Rule[] = [
   [/^list todo$/, () => call("list_todo")],
   [/^run todo (\S+)$/, (m) => call("run_todo", { id: m[1] })],
 ];
+
+/** "change #2 in acme-web to: …" */
+function queuedEdit(match: RegExpMatchArray): Record<string, unknown> {
+  return { project: match[2], place: Number(match[1]), instruction: match[3] };
+}
 
 function askAboutPermission(id: string, request: string): string {
   brain.lastPermission = id;

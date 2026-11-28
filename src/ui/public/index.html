@@ -33,11 +33,13 @@
     <link rel="stylesheet" href="/styles/dialogs.css" />
     <link rel="stylesheet" href="/styles/markdown.css" />
     <link rel="stylesheet" href="/styles/composer.css" />
+    <link rel="stylesheet" href="/styles/model-picker.css" />
     <link rel="stylesheet" href="/styles/attachments.css" />
     <link rel="stylesheet" href="/styles/budget.css" />
     <link rel="stylesheet" href="/styles/todo.css" />
     <link rel="stylesheet" href="/styles/force-stop.css" />
     <link rel="stylesheet" href="/styles/background-jobs.css" />
+    <link rel="stylesheet" href="/styles/queue.css" />
     <link rel="stylesheet" href="/styles/code.css" />
     <link rel="stylesheet" href="/styles/code-roles.css" />
     <link rel="stylesheet" href="/styles/resize.css" />
@@ -267,6 +269,7 @@
 
           <p id="by-path-notice" class="by-path-notice" role="status" hidden></p>
           <ul id="attachment-list" class="attachment-list" aria-label="Attached files" hidden></ul>
+          <ul id="reference-list" class="attachment-list" aria-label="Referenced files and folders" hidden></ul>
 
           <form id="composer" class="composer">
             <div class="composer-box">
@@ -297,13 +300,24 @@
                   </svg>
                 </button>
                 <input type="file" id="attach-input" multiple hidden />
-                <select
-                  id="composer-model"
-                  class="composer-model"
-                  aria-label="Model for this task"
-                  title="The model this task runs on. Picking another applies to this task only; the session keeps its own model (right-click its tab to change that)."
-                  hidden
-                ></select>
+                <span class="model-picker-anchor">
+                  <button
+                    type="button"
+                    id="composer-model"
+                    class="composer-model"
+                    aria-haspopup="dialog"
+                    aria-expanded="false"
+                    title="The session's model and thinking effort; a change stays for all its next tasks"
+                    hidden
+                  ></button>
+                  <div
+                    id="model-picker"
+                    class="model-picker"
+                    role="dialog"
+                    aria-label="Model and thinking effort"
+                    hidden
+                  ></div>
+                </span>
                 <span class="composer-spacer"></span>
                 <span id="mic-target" class="mic-target" hidden></span>
                 <button

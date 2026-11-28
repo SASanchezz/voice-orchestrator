@@ -14,6 +14,7 @@ import { AttachedText } from "../ui/server/attached-text.js";
 import { ChangeActions } from "../ui/server/change-actions.js";
 import { EditorStateView } from "../ui/server/editor-state-view.js";
 import { FrontSessionActions } from "../ui/server/front-session-actions.js";
+import { CompactionActions } from "../ui/server/compaction-actions.js";
 import { HandoffActions } from "../ui/server/handoff-actions.js";
 import { LinkActions } from "../ui/server/link-actions.js";
 import { GetRoutes } from "../ui/server/get-routes.js";
@@ -143,7 +144,7 @@ function routeTable(core: Core, neighbors: UiNeighbors, sources: UiSources): Rou
     policy: permissions.policy,
     permissions: sources.permissionClicks,
     questions: sources.questionClicks,
-    queue: new QueueActions(workers.queuedTasks, lookup, reporter),
+    queue: new QueueActions({ tasks: workers.queuedTasks, control: workers.queueControl }, lookup, reporter),
     ...taskHandlers(neighbors, sources),
     todoItems: todoItemHandlers(todo, lookup, reporter),
     ...sessionHandlers(core, neighbors, sources),
@@ -186,12 +187,13 @@ function sessionHandlers(
   core: Core,
   { workers }: OperatorNeighbors,
   { reporter, lookup, tasks }: UiSources,
-): Pick<RouteHandlers, "tabs" | "freshSessions" | "reopens" | "sessions" | "models" | "sweeps"> {
+): Pick<RouteHandlers, "tabs" | "freshSessions" | "reopens" | "sessions" | "compactions" | "models" | "sweeps"> {
   return {
     tabs: new TabActions(core.registry, lookup, reporter),
     freshSessions: new FreshSessionTasks(core.registry, lookup, tasks),
     reopens: new ReopenActions(workers.closedSessions, workers.reopener, reporter),
     sessions: new SessionActions(workers.control, lookup, reporter),
+    compactions: new CompactionActions(workers.compaction, lookup, reporter),
     models: new SessionModelActions(workers.models, lookup, reporter),
     sweeps: new SessionSweepActions(workers.control, lookup, reporter),
   };

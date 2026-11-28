@@ -1,6 +1,7 @@
 // The tabs along the top: the assistant's chat, then one per project, busiest and most recently active first.
 
 import { byRecentActivity } from "../project-recency.js";
+import { queuedLabel } from "../queue-label.js";
 import type { ProjectView, SessionStatus, SessionView } from "../protocol.js";
 import { act } from "./api.js";
 import { byId, el } from "./dom.js";
@@ -98,6 +99,6 @@ function projectStatus(project: ProjectView): SessionStatus {
 
 function sessionSubtitle(session: SessionView): string {
   if (session.status === "running" && session.lastActivity) return `now: ${session.lastActivity}`;
-  const queued = session.queued.length ? ` · ${session.queued.length} queued` : "";
+  const queued = session.queued.length ? ` · ${queuedLabel(session)}` : "";
   return `${STATUS_LABELS[session.status]}${queued}`;
 }

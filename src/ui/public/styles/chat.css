@@ -54,6 +54,11 @@
   padding: 7px 11px;
   border-radius: 14px 14px 14px 4px;
 }
+/* A /btw answer: set apart from the task's own reply, which may still be coming. */
+.entry.aside .entry-text {
+  border-left: 3px solid var(--accent-text);
+  font-style: italic;
+}
 
 .entry.event .entry-text,
 .entry.action .entry-text {

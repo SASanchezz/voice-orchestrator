@@ -5,6 +5,7 @@ import { isActive, placeRuns, type TodoRunState } from "./todo-run-state.js";
 
 const FOOTER = "Fix the footer";
 const OTHER = "Bump the version";
+const QUEUED_FOOTER = { id: "q1", instruction: FOOTER };
 
 function session(changes: Partial<SessionView>): SessionView {
   return { id: "s1", number: 1, status: "idle", queued: [], costUsd: 0, history: [], ...changes };
@@ -32,11 +33,11 @@ test("todo run: the session working on it gives its status", () => {
 });
 
 test("todo run: waiting behind the session's running task is queued", () => {
-  assert.equal(stateIn(session({ status: "running", task: OTHER, queued: [FOOTER] })), "queued");
+  assert.equal(stateIn(session({ status: "running", task: OTHER, queued: [QUEUED_FOOTER] })), "queued");
 });
 
 test("todo run: a run sent again while it still runs shows as running", () => {
-  assert.equal(stateIn(session({ status: "running", task: FOOTER, queued: [FOOTER] })), "running");
+  assert.equal(stateIn(session({ status: "running", task: FOOTER, queued: [QUEUED_FOOTER] })), "running");
 });
 
 test("todo run: once the session moved on, its outcome comes from the history", () => {
@@ -58,7 +59,10 @@ test("todo run: a session closed since is reported closed", () => {
 });
 
 test("todo run: runs of one item in two sessions are placed separately", () => {
-  const sessions = [session({ status: "running", task: FOOTER }), session({ id: "s2", number: 2, queued: [FOOTER] })];
+  const sessions = [
+    session({ status: "running", task: FOOTER }),
+    session({ id: "s2", number: 2, queued: [QUEUED_FOOTER] }),
+  ];
   const states = placeRuns([footerItem("s1", "s2")], [project(...sessions)]).map((placed) => placed.state);
   assert.deepEqual(states, ["running", "queued"]);
 });

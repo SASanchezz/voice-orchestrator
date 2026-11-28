@@ -1,8 +1,9 @@
 import type { QueuedTask } from "./queued-task.js";
+import { SIDE_QUESTION_PREFIX } from "./side-question-prefix.js";
 import type { SideQuestions } from "./side-questions.js";
 import type { TaskIntake } from "./task-intake.js";
 
-const SIDE_QUESTION = /^\/btw(?:\s+|$)/i;
+const SIDE_QUESTION = new RegExp(String.raw`^${SIDE_QUESTION_PREFIX}(?:\s+|$)`, "i");
 
 /** What you send a session yourself: a /btw side question, or a task it starts or queues. */
 export class SessionInbox {
