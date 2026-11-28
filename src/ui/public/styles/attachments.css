@@ -148,3 +148,18 @@
   font-style: italic;
   white-space: nowrap;
 }
+
+/* Files and folders pasted into the box, which go as their paths. */
+.attachment-list + .attachment-list {
+  border-top: none;
+}
+.attachment.reference {
+  gap: 5px;
+}
+.sent-files .attachment.reference {
+  padding: 4px 9px;
+}
+.reference-icon {
+  font-size: 13px;
+  line-height: 1;
+}

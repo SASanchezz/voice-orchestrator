@@ -51,9 +51,9 @@ test("read_clipboard: saves long copied text in full as a file", async () => {
   assert.equal(readFileSync(savedPath(result), "utf8"), LONG_TEXT);
 });
 
-test("read_clipboard: lists files copied in Finder", async () => {
+test("read_clipboard: lists files copied in Finder or VS Code", async () => {
   const result = await readCopied({ files: ["/a/one.pdf", "/b/two.png"] });
-  assert.equal(textOf(result), "The clipboard holds files copied in Finder:\n- /a/one.pdf\n- /b/two.png");
+  assert.equal(textOf(result), "The clipboard holds files copied in Finder or VS Code:\n- /a/one.pdf\n- /b/two.png");
 });
 
 test("read_clipboard: saves a copied image as a PNG attachment", async () => {

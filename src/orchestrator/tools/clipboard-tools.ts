@@ -17,7 +17,7 @@ export function readClipboard(clipboard: ClipboardSource, attachments: Attachmen
   return defineTool({
     name: "read_clipboard",
     description:
-      "Read what the user copied: an image, a link or other text, or files copied in Finder. Copied images and long " +
+      "Read what the user copied: an image, a link or other text, or files copied in Finder or VS Code. Copied images and long " +
       "text are saved as files whose paths a worker can open. Call only when the user asks about their clipboard or " +
       "what they copied.",
     args: {},
@@ -35,7 +35,7 @@ function clipboardReport(copied: CopiedContent, attachments: AttachmentFiles): T
 
 function filesReport(paths: string[]): string {
   const lines = paths.map((path) => `- ${path}`);
-  return ["The clipboard holds files copied in Finder:", ...lines].join("\n");
+  return ["The clipboard holds files copied in Finder or VS Code:", ...lines].join("\n");
 }
 
 function imageReport(image: CopiedImage, attachments: AttachmentFiles): ToolContent[] {

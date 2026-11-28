@@ -1,13 +1,14 @@
 // The lines of the center chat: the assistant's timeline, or one worker session's messages.
 
 import { readAttachmentNote } from "../../attachments/noted-files.js";
+import { readReferenceNote } from "../../attachments/referenced-paths.js";
 import type { ChatMessageView, FeedEntryView } from "../protocol.js";
 import { chatRows, permissionAnswerOf } from "../permission-lines.js";
 import { collapsible, el, formatWhen } from "./dom.js";
 import { markdownView } from "./markdown-view.js";
 import { permissionItem, permissionRowItem } from "./permission-items.js";
 import { markProject } from "./project-links.js";
-import { sentFiles } from "./sent-files.js";
+import { sentFiles, sentReferences } from "./sent-files.js";
 import { sessionLink } from "./session-link.js";
 
 const SESSION_WHO: Record<ChatMessageView["kind"], string> = {
@@ -17,6 +18,7 @@ const SESSION_WHO: Record<ChatMessageView["kind"], string> = {
   status: "Status",
   permission: "Approval",
   question: "Question",
+  aside: "Side answer",
 };
 const SESSION_KIND_CLASS: Record<ChatMessageView["kind"], string> = {
   task: "user",
@@ -25,6 +27,7 @@ const SESSION_KIND_CLASS: Record<ChatMessageView["kind"], string> = {
   status: "event",
   permission: "event",
   question: "event",
+  aside: "orchestrator aside",
 };
 
 /** The assistant's timeline, with permission answers in a row about the same session folded into one line. */
@@ -67,11 +70,14 @@ function chatItem(kindClass: string, who: string | undefined, line: FeedEntryVie
   );
 }
 
-/** What you sent shows the files attached to it, not the paths listed for the assistant or worker. */
+/** What you sent shows the files and folders that went with it, not the paths listed for the assistant or worker. */
 function entryBody(kindClass: string, text: string): (Node | string)[] {
   if (kindClass !== "user") return [entryText(kindClass, text)];
   const noted = readAttachmentNote(text);
-  return [noted.text ? entryText(kindClass, noted.text) : "", noted.files.length ? sentFiles(noted.files) : ""];
+  const referencing = readReferenceNote(noted.text);
+  const files = noted.files.length ? sentFiles(noted.files) : "";
+  const paths = referencing.paths.length ? sentReferences(referencing.paths) : "";
+  return [referencing.text ? entryText(kindClass, referencing.text) : "", paths, files];
 }
 
 /** Answers (the assistant's, a worker's) are markdown; what you typed and status lines stay as written. */

@@ -3,8 +3,8 @@
 // saying "finish" or Send sends them, with the files attached, to where you were when you started. Esc drops what you just said.
 
 import { routeVoiceBoxes } from "./voice-box-router.js";
-import type { AttachmentTray } from "./attachments.js";
 import { BoxNews } from "./box-news.js";
+import type { ComposerAttachments } from "./composer-attachments.js";
 import { sendRecordedMessage, sendSpokenMessage } from "./conversation.js";
 import { DictationBox } from "./dictation-box.js";
 import { byId } from "./dom.js";
@@ -13,18 +13,18 @@ import { store } from "./store.js";
 let news: BoxNews | undefined;
 let composerBox: DictationBox | undefined;
 
-export function wireMicButton(tray: AttachmentTray): void {
+export function wireMicButton(attachments: ComposerAttachments): void {
   const box = new DictationBox({
     input: byId("composer-input", HTMLTextAreaElement),
     mic: byId("mic-button", HTMLButtonElement),
     cancel: byId("mic-cancel", HTMLButtonElement),
     send: byId("composer-send", HTMLButtonElement),
     target: byId("mic-target", HTMLElement),
-    sendFinished: () => sendRecordedMessage(tray, news?.startedIn()),
+    sendFinished: () => sendRecordedMessage(attachments, news?.startedIn()),
   });
   box.wire(byId("composer", HTMLFormElement));
   composerBox = box;
-  news = new BoxNews(box, { describe: destinationOf, send: (session) => sendSpokenMessage(tray, session) });
+  news = new BoxNews(box, { describe: destinationOf, send: (session) => sendSpokenMessage(attachments, session) });
 }
 
 /** Text mode has no mic, so no button. */

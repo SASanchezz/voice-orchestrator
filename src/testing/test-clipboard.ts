@@ -7,4 +7,8 @@ export class TestClipboard implements ClipboardSource {
   async read(): Promise<CopiedContent> {
     return this.copied;
   }
+
+  async readFiles(): Promise<string[]> {
+    return this.copied.files ?? [];
+  }
 }
