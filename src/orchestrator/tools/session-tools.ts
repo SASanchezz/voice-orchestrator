@@ -1,14 +1,18 @@
+import { z } from "zod";
 import type { AppConfig } from "../../config/app-config.js";
 import type { Registry } from "../../registry/registry.js";
 import type { StatusReport } from "../../registry/status-report.js";
+import type { SessionCompaction } from "../../workers/session-compaction.js";
 import type { SessionControl } from "../../workers/session-control.js";
 import type { TaskIntake } from "../../workers/task-intake.js";
 import {
   defineTool,
   instructionArg,
   needProject,
+  optionalSessionArg,
   projectArg,
   sessionNumberArg,
+  sessionOf,
   text,
   type OperatorTool,
 } from "./tool-kit.js";
@@ -77,3 +81,21 @@ export function closeOtherSessions(workSessions: WorkSessions, cfg: AppConfig): 
     run: async ({ project }) => text(await workSessions.closeOthers(needProject(cfg, project))),
   });
 }
+
+export function compactSession(registry: Registry, compaction: SessionCompaction, cfg: AppConfig): OperatorTool {
+  return defineTool({
+    name: "compact_session",
+    description:
+      "Shrink an idle session's context in place with Claude Code's /compact: its older turns become a summary and " +
+      "the same session goes on from it. For 'compact', 'collapse' or 'shrink the context' of a session. Waits until " +
+      "it is done; tasks sent meanwhile run after it.",
+    args: { project: projectArg, session: optionalSessionArg, focus: focusArg },
+    run: async ({ project, session: number, focus }) =>
+      text(await compaction.compact(sessionOf(registry, needProject(cfg, project), number), focus)),
+  });
+}
+
+const focusArg = z
+  .string()
+  .optional()
+  .describe("What the summary should keep, only if the user said, e.g. 'the failing checkout test'");

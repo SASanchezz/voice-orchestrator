@@ -15,6 +15,7 @@ import type { MicActions } from "./mic-actions.js";
 import type { SpokenMessages } from "../../orchestrator/conversation/spoken-messages.js";
 import type { FrontSessionActions } from "./front-session-actions.js";
 import type { FreshSessionTasks } from "./fresh-session-tasks.js";
+import type { CompactionActions } from "./compaction-actions.js";
 import type { HandoffActions } from "./handoff-actions.js";
 import type { LinkActions } from "./link-actions.js";
 import { MAX_ATTACHED_BODY_BYTES } from "./attachment-body.js";
@@ -73,6 +74,7 @@ export interface RouteHandlers {
   wakeTraining: WakeTrainingControl;
   frontSession: FrontSessionActions;
   handoffs: HandoffActions;
+  compactions: CompactionActions;
   /** Links clicked in a project's chat, opened in its Chrome profile. */
   links: LinkActions;
   /** The notice panel's buttons; its replies go through `tasks`. */
@@ -93,7 +95,7 @@ export interface RouteHandlers {
   freshSessions: FreshSessionTasks;
   todoItems: TodoItemHandlers;
   sessions: SessionActions;
-  /** The model a session's worker runs on. */
+  /** The model a session's worker runs on, and how hard it thinks. */
   models: SessionModelActions;
   /** Which session each open page has on screen, so a task ending there brings up no notice. */
   shownSessions: ShownSessions;
