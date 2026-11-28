@@ -10,6 +10,20 @@ export type ReviewVerdict = z.infer<typeof verdictSchema>;
 /** The model may wrap its JSON in a code fence or a sentence; the object itself is what counts. */
 const JSON_OBJECT = /\{[\s\S]*\}/;
 
+const GUIDANCE =
+  "Allow it when it is routine development work whose effects stay on this machine and can be redone or " +
+  "regenerated: deleting build output, caches, node_modules, temp or scratch files; local git housekeeping that " +
+  "keeps every commit and uncommitted change; editing or reading files the task plausibly needs; downloading a " +
+  "published tool from its official release page or package registry into a temp or project folder and running " +
+  "it on local files. " +
+  "Destructive rules are plain word matches: when the matched word only appears in text the command writes, " +
+  "prints or edits (a document, a string in a script), judge the call by what it actually does. " +
+  "Send it to the user when it could lose work that can't be recovered (uncommitted changes, files outside " +
+  "the project, other people's data), reaches anything shared or remote (pushing, deploying, publishing, " +
+  "databases, cloud resources, sending messages), changes system settings or credentials, sends a secret off " +
+  "this machine, installs software system-wide, pipes a download straight into a shell, runs code from an " +
+  "unknown source, or when you are not sure.\n\n";
+
 /**
  * Reads a worker's tool call the policy wouldn't pass on its own and decides whether it is routine enough to run
  * without you. When in doubt it sends the call to you; it never denies one.
@@ -37,13 +51,7 @@ export class CommandReviewer {
       `You approve tool calls for a coding assistant working in the folder ${folder}; the user has handed routine ` +
       `approvals to you. This call needs approval because ${flagged}:\n\n` +
       `Tool: ${call.toolName}\nInput: ${JSON.stringify(call.input)}\n\n` +
-      "Allow it when it is routine development work whose effects stay on this machine and can be redone or " +
-      "regenerated: deleting build output, caches, node_modules, temp or scratch files; local git housekeeping that " +
-      "keeps every commit and uncommitted change; editing or reading files the task plausibly needs. " +
-      "Send it to the user when it could lose work that can't be recovered (uncommitted changes, files outside " +
-      "the project, other people's data), reaches anything shared or remote (pushing, deploying, publishing, " +
-      "databases, cloud resources, sending messages), changes system settings or credentials, sends a secret off " +
-      "this machine, downloads and runs code, or when you are not sure.\n\n" +
+      GUIDANCE +
       'Reply with only JSON: {"allow": true or false, "reason": "<under 15 words>"}'
     );
   }

@@ -55,3 +55,9 @@ test("reviewer: tells the model the project's folder", async () => {
   await reviewer.review("shop", CLEAN_BUILD, undefined);
   assert.match(prompts[0], /\/code\/shop/);
 });
+
+test("reviewer: tells the model a rule's word may only appear in text the command writes", async () => {
+  const { prompts, reviewer } = reviewerAnswering('{"allow": false, "reason": "unsure"}');
+  await reviewer.review("shop", CLEAN_BUILD, DELETE_RULE);
+  assert.match(prompts[0], /plain word matches/);
+});
