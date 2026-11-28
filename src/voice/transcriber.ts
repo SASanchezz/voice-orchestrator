@@ -3,11 +3,11 @@ import { promisify } from "node:util";
 import type { AppConfig } from "../config/app-config.js";
 import { errorMessage } from "../shared/errors.js";
 import { timed } from "../shared/timing.js";
+import { meansNothingSaid } from "./nothing-said.js";
 
 const run = promisify(execFile);
 
 const MAX_BUFFER_BYTES = 1_048_576; // 1 MiB
-const NOTHING_SAID = /^\(?(blank_audio|silence|music)\)?$/i;
 
 /** whisper.cpp: a WAV recording in, your words out. */
 export class Transcriber {
@@ -36,7 +36,7 @@ export class Transcriber {
       .replace(/\[.*?\]/g, "")
       .replace(/\s+/g, " ")
       .trim();
-    return NOTHING_SAID.test(text) ? "" : text;
+    return meansNothingSaid(text) ? "" : text;
   }
 
   /** The vocabulary goes in as whisper's initial prompt, which nudges it towards those spellings. */
