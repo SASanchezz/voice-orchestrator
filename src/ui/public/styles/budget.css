@@ -49,7 +49,7 @@
   color: var(--danger);
   font-weight: 600;
 }
-/* A session tab's model, next to its context meter. */
+/* A session tab's model, next to its context meter. Each listed model's colour, below, also marks it in the picker. */
 .model-badge {
   --model-colour: var(--muted);
   flex: none;
@@ -61,15 +61,15 @@
   background: color-mix(in srgb, var(--model-colour) 12%, transparent);
   border-radius: 999px;
 }
-.model-badge.model-opus {
+.model-opus {
   --model-colour: #c4a1ff;
 }
-.model-badge.model-sonnet {
+.model-sonnet {
   --model-colour: #79c0ff;
 }
-.model-badge.model-haiku {
+.model-haiku {
   --model-colour: #56d364;
 }
-.model-badge.model-claude-fable-5-1 {
+.model-claude-fable-5-1 {
   --model-colour: #f0b37e;
 }

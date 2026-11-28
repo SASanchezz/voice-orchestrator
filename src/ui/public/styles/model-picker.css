@@ -1,0 +1,148 @@
+/* ---------------------------------------------------------------- model picker */
+
+/* The chip under the message box: the session's model and effort, as quiet as the attach button until hovered. */
+.model-picker-anchor {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+.composer-tools .composer-model {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.composer-tools .composer-model:hover,
+.composer-model[aria-expanded="true"] {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.composer-model[hidden] {
+  display: none;
+}
+.chip-model {
+  font-weight: 500;
+}
+.chip-effort {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip-chevron {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* The panel opens upwards, above the message box, with models and thinking effort side by side. */
+.model-picker {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.model-picker[hidden] {
+  display: none;
+}
+.model-picker-column {
+  display: grid;
+  align-content: start;
+  gap: 1px;
+}
+.model-picker-column + .model-picker-column {
+  padding-left: 4px;
+  border-left: 1px solid var(--border);
+}
+.model-picker-column h3 {
+  margin: 4px 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.model-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
+  text-align: left;
+  border-color: transparent;
+  border-radius: 8px;
+}
+.model-picker-item:hover {
+  background: var(--surface-2);
+}
+.model-picker-item[aria-checked="true"] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--text);
+  font-weight: 500;
+}
+.model-picker-note {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.model-picker-item .effort-meter {
+  margin-left: auto;
+}
+
+/* A listed model's colour, as on its tab's badge; grey for the default or a model off the list. */
+.model-dot {
+  --model-colour: var(--muted);
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--model-colour);
+}
+
+/* Five rising bars, filled up to the effort level. */
+.effort-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 12px;
+}
+.effort-bar {
+  width: 3px;
+  border-radius: 1px;
+  background: color-mix(in srgb, currentColor 25%, transparent);
+}
+.effort-bar:nth-child(1) {
+  height: 4px;
+}
+.effort-bar:nth-child(2) {
+  height: 6px;
+}
+.effort-bar:nth-child(3) {
+  height: 8px;
+}
+.effort-bar:nth-child(4) {
+  height: 10px;
+}
+.effort-bar:nth-child(5) {
+  height: 12px;
+}
+.effort-bar.filled {
+  background: var(--accent);
+}

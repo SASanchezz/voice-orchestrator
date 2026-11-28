@@ -52,11 +52,13 @@ export class WorkerDirectory {
   }
 
   newTask(sessionId: string, { instruction, model }: QueuedTask): RunningTask {
-    const { project, number: sessionNumber, claudeSessionId: resume, handoff } = this.sessions.session(sessionId);
+    const session = this.sessions.session(sessionId);
+    const { project, number: sessionNumber, claudeSessionId: resume, handoff, effort } = session;
     const account = this.accountOf(project);
     const runsOn = model ?? this.sessionModelOf(sessionId);
     // once the conversation exists, the handoff is already in it
     const handoffToSend = resume ? undefined : handoff;
-    return { sessionId, project, sessionNumber, instruction, account, model: runsOn, resume, handoff: handoffToSend };
+    const task = { sessionId, project, sessionNumber, instruction, account, model: runsOn, effort };
+    return { ...task, resume, handoff: handoffToSend };
   }
 }

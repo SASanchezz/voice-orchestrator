@@ -1,5 +1,5 @@
 import { chromeProfileOf, type ChromeProfileSettings } from "../../config/chrome-profile.js";
-import { claudeDefaultModel } from "../../config/claude-default-model.js";
+import { claudeDefaultEffort, claudeDefaultModel } from "../../config/claude-default-model.js";
 import { tildeHome } from "../../config/paths.js";
 import type { Projects } from "../../registry/projects.js";
 import type { SessionState } from "../../registry/registry-schema.js";
@@ -55,14 +55,16 @@ export class UiLookup {
       const folder = config?.path ?? "";
       const sessions = this.sessions.sessionsOf(p.name);
       const chromeProfile = chromeProfileOf(this.settings, p.name);
-      const claudeModel = this.claudeModelOf(folder, p.profile);
+      const claudeDefaults = this.claudeDefaultsOf(folder, p.profile);
       const model = config?.model;
-      return { ...p, folder, folderFromHome: tildeHome(folder), model, claudeModel, chromeProfile, sessions };
+      return { ...p, folder, folderFromHome: tildeHome(folder), model, ...claudeDefaults, chromeProfile, sessions };
     });
   }
 
-  private claudeModelOf(folder: string, profile: string): string | undefined {
+  /** What Claude Code's own settings pick for the project's workers. */
+  private claudeDefaultsOf(folder: string, profile: string): Pick<ProjectView, "claudeModel" | "claudeEffort"> {
     const configDir = this.settings.profiles[profile]?.configDir;
-    return configDir ? claudeDefaultModel(folder, configDir) : undefined;
+    if (!configDir) return {};
+    return { claudeModel: claudeDefaultModel(folder, configDir), claudeEffort: claudeDefaultEffort(folder, configDir) };
   }
 }

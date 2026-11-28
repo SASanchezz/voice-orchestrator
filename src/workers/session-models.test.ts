@@ -57,3 +57,34 @@ test("session models: a cleared session keeps its model", () => {
   sessions.reset(id);
   assert.equal(sessions.session(id).model, "opus");
 });
+
+test("session efforts: a chosen effort is saved on the session", () => {
+  const { models, sessions, id } = sessionModels();
+  models.chooseEffort(id, "xhigh");
+  assert.equal(sessions.session(id).effort, "xhigh");
+});
+
+test("session efforts: choosing one says how the session now thinks", () => {
+  const { models, id } = sessionModels();
+  assert.equal(models.chooseEffort(id, "max"), "webshop now thinks with Max effort.");
+});
+
+test("session efforts: the session's chat says the effort applies from the next task", () => {
+  const { models, lines, id } = sessionModels();
+  models.chooseEffort(id, "low");
+  assert.deepEqual(lines, ["Effort: Low, from the next task on."]);
+});
+
+test("session efforts: no effort drops the session's own", () => {
+  const { models, sessions, id } = sessionModels();
+  models.chooseEffort(id, "high");
+  models.chooseEffort(id, undefined);
+  assert.equal(sessions.session(id).effort, undefined);
+});
+
+test("session efforts: a cleared session keeps its effort", () => {
+  const { models, sessions, id } = sessionModels();
+  models.chooseEffort(id, "high");
+  sessions.reset(id);
+  assert.equal(sessions.session(id).effort, "high");
+});

@@ -2,7 +2,6 @@
 // message reaches the assistant as speech, so it answers aloud.
 
 import type { SentFile } from "./attachments.js";
-import { pickedModel } from "./composer-model.js";
 import { store } from "./store.js";
 
 export interface MessageRoute {
@@ -36,6 +35,6 @@ export function spokenRoute(session: string | undefined): MessageRoute {
 function sessionRoute(session: string): MessageRoute {
   return {
     path: `/api/sessions/${session}/tasks`,
-    body: (instruction, attachments) => ({ instruction, attachments, model: pickedModel() }),
+    body: (instruction, attachments) => ({ instruction, attachments }),
   };
 }

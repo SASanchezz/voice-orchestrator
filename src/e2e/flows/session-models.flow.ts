@@ -45,7 +45,8 @@ test("session models: a task's own model leaves the session's model as it was", 
 test("session models: a queued task keeps its own model until it runs", async () => {
   await typeTask("sleep: 300");
   await typeTask("sleep: 10", "sonnet");
-  assert.deepEqual(acmeWebSession().queued, [{ instruction: "sleep: 10", model: "sonnet" }]);
+  const [queued] = acmeWebSession().queued;
+  assert.deepEqual([queued?.instruction, queued?.model], ["sleep: 10", "sonnet"]);
   await untilIdle("acme-web");
   assert.equal(lastAcmeWebModel(), "sonnet");
 });
@@ -57,4 +58,34 @@ test("session models: a model not on the list is refused", async () => {
 test("session models: no model puts the session back on its project's model", async () => {
   await chooseModel();
   assert.equal(acmeWebSession().model, undefined);
+});
+
+const lastAcmeWebEffort = () => workerCalls.filter((call) => call.cwd === acmeWeb && !call.summary).at(-1)?.effort;
+
+function chooseEffort(effort?: string): Promise<Response> {
+  return uiPost(`/api/sessions/${acmeWebSession().id}/effort`, { effort });
+}
+
+test("session efforts: an effort picked in the chat is saved on the session", async () => {
+  const res = await chooseEffort("high");
+  assert.deepEqual([res.status, acmeWebSession().effort], [200, "high"]);
+});
+
+test("session efforts: the session's chat says which effort its next tasks use", async () => {
+  await chatHas(acmeWebSession().id, /Effort: High, from the next task on\./);
+});
+
+test("session efforts: a task typed to the session thinks with its effort", async () => {
+  await typeTask("sleep: 10");
+  await untilIdle("acme-web");
+  assert.equal(lastAcmeWebEffort(), "high");
+});
+
+test("session efforts: an effort not on the list is refused", async () => {
+  assert.equal((await chooseEffort("extreme")).status, 400);
+});
+
+test("session efforts: no effort puts the session back on Claude Code's default", async () => {
+  await chooseEffort();
+  assert.equal(acmeWebSession().effort, undefined);
 });

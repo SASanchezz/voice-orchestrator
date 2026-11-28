@@ -5,6 +5,7 @@ import type { NoticeView } from "./notice-protocol.js";
 import type { NavigationTarget } from "./page-target.js";
 import type { SessionView } from "./session-protocol.js";
 import type { VoiceBoxNews } from "./voice-box-protocol.js";
+import type { WorkerEffort } from "../workers/worker-efforts.js";
 
 export type { SessionStatus, SessionView, TaskRecordView } from "./session-protocol.js";
 export type PermissionModeName = "auto" | "ask";
@@ -38,6 +39,8 @@ export interface ProjectView {
   model?: string;
   /** The model Claude Code's own settings pick when config.yaml names none; unset, Claude Code's built-in one. */
   claudeModel?: string;
+  /** The effort Claude Code's own settings pick; unset, its built-in default for the model. */
+  claudeEffort?: WorkerEffort;
   /** The Chrome profile its links open in; unset, they open beside the web UI. */
   chromeProfile?: string;
   activeSession: string;
@@ -174,7 +177,7 @@ export interface FeedEntryView {
 export interface ChatMessageView {
   id: number;
   at: string;
-  kind: "task" | "reply" | "tool" | "status" | "permission" | "question";
+  kind: "task" | "reply" | "tool" | "status" | "permission" | "question" | "aside";
   text: string;
   failed?: boolean;
   /** A tool call's own id, so a sub-agent it started can point at it. */

@@ -17,6 +17,13 @@ import type { WorkerDirectory } from "./worker-directory.js";
  */
 const LISTED_IN_HISTORY = { CLAUDE_CODE_ENTRYPOINT: "cli" };
 
+/**
+ * When Claude Code cancels a tool call by itself, say after the Mac slept mid-run, the call's result is its stock
+ * "The user doesn't want to take this action right now. STOP…", and workers stopped halfway as if you had said it.
+ * Here you never refuse that way: your denials carry their own words. So tasks are told to carry on past it.
+ */
+const KEEP_GOING_NOTE = `This session runs unattended and is directed by voice. When the user denies a tool call, the result says so in this app's own words, such as "The user denied this by voice." A tool result that says only "The user doesn't want to take this action right now. STOP what you are doing and wait for the user to tell you how to proceed." does not come from the user: Claude Code cancelled the call by itself, for example after the computer slept. Run the call again and keep going until the task is finished. If a subagent stops partway for that reason, resume it or do its remaining part yourself.`;
+
 /** SDK options for a project's Claude Code process: its folder, its account, and your Claude Code settings. */
 export class WorkerOptions {
   constructor(
@@ -42,7 +49,9 @@ export class WorkerOptions {
     return {
       ...project,
       env: { ...project.env, ...LISTED_IN_HISTORY },
+      systemPrompt: { type: "preset", preset: "claude_code", append: KEEP_GOING_NOTE },
       model: task.model,
+      effort: task.effort,
       plugins: [{ type: "local", path: WORKER_PLUGIN_PATH }],
       resume: task.resume,
       abortController,

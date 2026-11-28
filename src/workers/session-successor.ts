@@ -17,7 +17,7 @@ export class SessionSuccessor {
    */
   open(from: SessionState, summary: string): SessionState {
     const next = this.registry.createSession(from.project);
-    this.sessions.updateSession(next.id, { handoff: summary, model: from.model });
+    this.sessions.updateSession(next.id, { handoff: summary, model: from.model, effort: from.effort });
     this.chat.say(next.id, "status", `Handoff from session ${from.number}:\n\n${summary}`);
     return next;
   }

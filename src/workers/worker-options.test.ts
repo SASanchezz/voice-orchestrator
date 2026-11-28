@@ -81,3 +81,12 @@ test("worker options: a task runs on the model it was given", () => {
   const task = directory.newTask(sessionId, { instruction: "add tests", model: "haiku" });
   assert.equal(options.forTask(task, new AbortController(), denyAll).model, "haiku");
 });
+
+function appendedPrompt({ systemPrompt }: Options): string {
+  const isPreset = typeof systemPrompt === "object" && !Array.isArray(systemPrompt) && systemPrompt.type === "preset";
+  return isPreset ? (systemPrompt.append ?? "") : "";
+}
+
+test("worker options: a task is told that Claude Code's stock STOP result is not the user's denial", () => {
+  assert.match(appendedPrompt(taskOptions()), /does not come from the user/);
+});
